@@ -99,7 +99,9 @@ class EmployeeService {
       'mxNss',
 
       'emergencyContact',
-      'emergencyPhone'
+      'emergencyPhone',
+
+      'jobScheme'
     ]
 
     for (const field of allowedFields) {
@@ -132,7 +134,7 @@ class EmployeeService {
       record.timeEntry = record.schedule?.tuesday?.start
       record.timeDeparture = record.schedule?.tuesday?.end
       record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
-      record.businessHours = convertToBusinessHours(record.schedule)
+      // record.businessHours = convertToBusinessHours(record.schedule)
 
       // console.log(record.name, record.businessHours)
     }
