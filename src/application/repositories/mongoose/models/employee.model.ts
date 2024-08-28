@@ -33,6 +33,8 @@ export const EmployeeSchema = new Schema<IEmployee>({
   emergencyContact: { type: String, trim: true },
   emergencyPhone: { type: String, trim: true },
 
+  jobScheme: { type: String, trim: true },
+
   /* defaults */
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },

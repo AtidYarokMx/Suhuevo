@@ -27,6 +27,8 @@ export interface IEmployee {
   emergencyContact: string
   emergencyPhone: string
 
+  jobScheme: string
+
   /* defaults */
   active: boolean
   updatedAt: Date

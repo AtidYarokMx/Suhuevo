@@ -27,6 +27,23 @@ class AbsenceController {
     }
   }
 
+  public async update (req: Request, res: Response): Promise<any> {
+    const body: any = req.body
+    const session = await AppMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const response = await absenceService.update(body, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      console.log(error)
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
   public async generateDailyAbsences (req: Request, res: Response): Promise<any> {
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()

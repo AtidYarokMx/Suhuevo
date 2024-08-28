@@ -5,6 +5,10 @@ export interface IAbsence {
   employeeName: string
   date: string
 
+  isJustified: boolean;
+  reason: string;
+  isPaid: boolean;
+
   /* defaults */
   active: boolean
   updatedAt: Date

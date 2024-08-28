@@ -1,5 +1,6 @@
 export interface IAttendance {
   id: string
+  name: string
 
   employeeId: string
   employeeName: string

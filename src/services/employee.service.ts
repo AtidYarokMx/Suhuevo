@@ -8,6 +8,7 @@ import { type ClientSession } from 'mongoose'
 import { v4 as uuidv4 } from 'uuid'
 import departmentService from './department.service'
 import jobService from './job.service'
+import { convertToBusinessHours } from '@app/constants/schedule.constants'
 
 
 class EmployeeService {
@@ -53,14 +54,15 @@ class EmployeeService {
 
     const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
     if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
-    return this.populateResults(records)
+    // console.log(await this.populateResults(records))
+    return await this.populateResults(records)
   }
 
   async create (body: any, session: ClientSession): Promise<any> {
     console.log(body)
     const id = uuidv4()
     const employeeNumber = String(await consumeSequence('employees', session)).padStart(6, '0')
-    const schedule = getBaseSchedule(body.timeEntry, body.timeDeparture)
+    const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
     const record = new EmployeeModel({ ...body, id, schedule, employeeNumber })
     customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`)
@@ -106,8 +108,14 @@ class EmployeeService {
       }
     }
 
+    record.schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
+
     await record.save({ validateBeforeSave: true, validateModifiedOnly: true, session })
     return { id: record.id }
+  }
+
+  async delete (body: any, session: ClientSession): Promise<any> {
+    
   }
 
   async populateResults(array: IEmployee[]): Promise<any> {
@@ -123,6 +131,10 @@ class EmployeeService {
       record.jobName = jobs[record.jobId]?.name
       record.timeEntry = record.schedule?.tuesday?.start
       record.timeDeparture = record.schedule?.tuesday?.end
+      record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
+      record.businessHours = convertToBusinessHours(record.schedule)
+
+      // console.log(record.name, record.businessHours)
     }
 
     return populatedArray

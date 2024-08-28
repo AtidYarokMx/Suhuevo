@@ -6,6 +6,7 @@ import { IAttendance } from '@app/dtos/attendance.dto'
 export const AttendanceSchema = new Schema<IAttendance>({
   /* required fields */
   id: { type: String, required: true, trim: true, unique: true },
+  name: { type: String },
 
   employeeId: { type: String, required: true, trim: true },
   employeeName: { type: String },

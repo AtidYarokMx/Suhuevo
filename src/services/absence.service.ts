@@ -12,6 +12,8 @@ import { ClientSession } from "mongoose";
 
 class AbsenceService {
 
+  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
+
   async get (query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await AbsenceModel.find({ active: true, id: { $in: ids } })
@@ -24,7 +26,7 @@ class AbsenceService {
   async search (query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
-    const allowedFields: (keyof IAbsence)[] = ['id', 'employeeId', 'employeeName', 'date']
+    const allowedFields: (keyof IAbsence)[] = ['id', 'employeeId', 'employeeName', 'date', 'isJustified', 'reason']
 
     const filter: any = { active: true }
     const selection: any = size === 'small' ? {} : { active: 0, _id: 0, __v: 0 }
@@ -52,7 +54,27 @@ class AbsenceService {
 
     const records = await AbsenceModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
     if (records.length === 0) return []
-    return records
+    return this.reformatData(records)
+  }
+
+  async update (body: any, session: ClientSession): Promise<any> {
+    console.log(body)
+    const record = await AbsenceModel.findOne({ active: true, id: body.id })
+    if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró la falta' })
+
+    const allowedFields: (keyof IAbsence)[] = [
+      'isJustified',
+      'reason'
+    ]
+
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        (record as any)[field] = body[field]
+      }
+    }
+
+    await record.save({ validateBeforeSave: true, validateModifiedOnly: true, session })
+    return { id: record.id }
   }
 
   async generateDailyAbsences (body: any, session: ClientSession): Promise<any> {
@@ -66,6 +88,7 @@ class AbsenceService {
     const absences = await AbsenceModel.find({ active: true, date: stringDate })
     const scheduleExceptions = await ScheduleExceptionModel.find({
       active: true,
+      name: { $in: this.notWorkableScheduleExceptions },
       $or: [
         {
           $and: [
@@ -84,6 +107,7 @@ class AbsenceService {
     });
     
     let newAbsencesCount = 0;
+    const detail: string[] = []
 
     for (const employee of employees) {
       const employeeName = `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`
@@ -93,27 +117,41 @@ class AbsenceService {
       const scheduleForDay = (schedule as any)?.[dayOfWeek];
 
       console.log(employeeName)
-      if (!scheduleForDay) { console.log('Dia no laboral'); continue }
+      if (!scheduleForDay) { detail.push(`Dia no laboral para ${employeeName}`); continue }
 
       const attendance = attendances.find(x => x.employeeId === employee.id)
-      if (attendance) { console.log('Asistió'); continue }
+      if (attendance) { detail.push(`${employeeName} Asistió`); continue }
 
       const scheduleException = scheduleExceptions.find(x => x.employeeId === employee.id)
-      if (scheduleException) { console.log(`Cambio de horario (${scheduleException.reason})`); continue }
+      if (scheduleException) { detail.push(`No se registró falta para ${employeeName} (${scheduleException.reason})`); continue }
 
       const absence = absences.find(x => x.employeeId === employee.id)
-      if (absence) { console.log('Ya se registró una ausencia hoy'); continue }
+      if (absence) { detail.push(`Ya habia una falta registrada para ${employeeName} el ${stringDate}`); continue }
 
       const id = String(await consumeSequence('absences', session)).padStart(8, '0')
       const record = new AbsenceModel({ id, employeeId: employee.id, employeeName, date: stringDate })
-      customLog(`Creando ausencia ${String(record.id)} (${employee.name} ${employee.lastName})`)
+      customLog(`Creando ausencia ${String(record.id)} (${employeeName})`)
+      detail.push(`Se registró una falta para ${employeeName} (${String(record.id)})`);
       await record.save({ session })
 
       newAbsencesCount++;
     }
 
+    customLog(detail)
+
     const totalAbsences = absences.length + newAbsencesCount;
-    return { totalAbsences, newAbsences: newAbsencesCount };
+    return { totalAbsences, newAbsences: newAbsencesCount, detail };
+  }
+
+  reformatData(array: any[]): any[] {
+    const newArray = array.map(((record: IAbsence) => {
+      const result: any = {
+        ...JSON.parse(JSON.stringify(record)),
+        title: record.isJustified ? 'Falta justificada' : 'Ausente'
+      }
+      return result
+    }))
+    return newArray
   }
 }
 

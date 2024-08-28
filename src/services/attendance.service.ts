@@ -9,6 +9,7 @@ import { customLog } from '@app/utils/util.util'
 import { type ClientSession } from 'mongoose'
 import csvParser from 'csv-parser';
 import fs from 'fs';
+import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
 
 
 class AttendanceService {
@@ -54,7 +55,7 @@ class AttendanceService {
 
     const records = await AttendanceModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
     if (records.length === 0) return []
-    return records
+    return this.reformatData(records)
   }
 
   async create (body: any, session: ClientSession): Promise<any> {
@@ -69,10 +70,13 @@ class AttendanceService {
     console.log('checkInDate', checkInDate)
     const existingAttendance = await AttendanceModel.findOne({ active: true, employeeId, checkInTime: { $regex: `^${checkInDate}` } });
     if (existingAttendance) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una asistencia para ${employeeName} el día ${checkInDate}` })
+
+      const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId, date: { $regex: `^${checkInDate}` } });
+    if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${checkInDate}` })
   
     const dayOfWeek = new Date(checkInTime).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const scheduleForDay = (employee.schedule as any)?.[dayOfWeek];
-    if (!scheduleForDay) throw new AppErrorResponse({ statusCode: 400, name: 'No se encontró horario laboral' })
+    if (!scheduleForDay) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${checkInDate}` })
   
     const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDay.start + ':00');
     const checkInDateTime = new Date(checkInTime);
@@ -112,7 +116,7 @@ class AttendanceService {
   }
 
   async importFromCsv(file: any, session: ClientSession) {
-    if (file == null)  throw new AppErrorResponse({ statusCode: 400, name: 'No se encontró un archivo csv' })
+    if (file == null)  throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
 
     const rows: any[] = [];
 
@@ -140,6 +144,18 @@ class AttendanceService {
     for (const row of reformattedRows) {
       await this.create(row, session);
     }
+  }
+
+  reformatData(array: IAttendance[]): any[] {
+    const newArray = array.map((record => {
+      const result: any = { 
+        ...JSON.parse(JSON.stringify(record)),
+        date: record.checkInTime,
+        title: record.isLate ? 'Retardo' : 'Asistencia'
+      }
+      return result
+    }))
+    return newArray
   }
 
 }

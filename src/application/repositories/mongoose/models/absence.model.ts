@@ -10,6 +10,10 @@ export const AbsenceSchema = new Schema<IAbsence>({
   employeeId: { type: String, required: true, trim: true },
   employeeName: { type: String },
   date: { type: String },
+
+  isJustified: { type: Boolean, default: false },
+  reason: { type: String },
+  isPaid: { type: Boolean, default: false },
   
   /* defaults */
   active: { type: Boolean, default: true },

@@ -24,7 +24,7 @@ class CronjobControlller {
     try {
       session.startTransaction()
       customLog('Ejecutando Cron executeWeeklyPayroll')
-      await payrollService.executeWeeklyPayroll()
+      await payrollService.executeWeeklyPayroll(null, session)
       await session.commitTransaction()
       await session.endSession()
     } catch (e) {

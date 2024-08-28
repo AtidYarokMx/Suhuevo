@@ -1,3 +1,4 @@
+import { mondayToFridaySchedule, tuesdayToSaturdaySchedule } from '@app/constants/schedule.constants'
 import { IEmployeSchedule } from '@app/dtos/employee.dto'
 import { ObjectId } from 'mongodb'
 
@@ -79,31 +80,16 @@ export function arrayToObject (array: any, keyField: string): any {
   return result
 }
 
-export function getBaseSchedule(timeEntry: string, timeDeparture: string): IEmployeSchedule {
-  return {
-    monday: null,
-    tuesday: {
-      start: timeEntry,
-      end: timeDeparture
-    },
-    wednesday: {
-      start: timeEntry,
-      end: timeDeparture
-    },
-    thursday: {
-      start: timeEntry,
-      end: timeDeparture
-    },
-    friday: {
-      start: timeEntry,
-      end: timeDeparture
-    },
-    saturday: {
-      start: timeEntry,
-      end: timeDeparture
-    },
-    sunday: null,
+export function getBaseSchedule(jobScheme: any, timeEntry: string, timeDeparture: string): IEmployeSchedule {
+  if (String(jobScheme) === '5') {
+    return mondayToFridaySchedule(timeEntry, timeDeparture)
+  } 
+  
+  if (String(jobScheme) === '6') {
+    return tuesdayToSaturdaySchedule(timeEntry, timeDeparture)
   }
+  
+  return mondayToFridaySchedule(timeEntry, timeDeparture)
 }
 
 
@@ -115,6 +101,14 @@ export function getLastTuesday(date: Date): Date {
   return lastTuesday;
 }
 
+export function getNextTuesday(date: Date): Date {
+  const nextTuesday = new Date(date);
+  const dayOfWeek = date.getDay();
+  const offset = (dayOfWeek <= 2) ? 2 - dayOfWeek : 9 - dayOfWeek;
+  nextTuesday.setDate(date.getDate() + offset);
+  return nextTuesday;
+}
+
 export function getLastWednesday(date: Date): Date {
   const lastWednesday = new Date(date);
   const dayOfWeek = date.getDay();
@@ -122,3 +116,9 @@ export function getLastWednesday(date: Date): Date {
   lastWednesday.setDate(date.getDate() - offset);
   return lastWednesday;
 }
+
+export function formatDate(date: Date): string {
+  const day = date.getDate();
+  const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(date);
+  return `${day} de ${month}`;
+};

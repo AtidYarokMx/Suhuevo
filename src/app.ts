@@ -33,6 +33,8 @@ import jobRoutes from '@routes/job.routes';
 import scheduleRoutes from '@routes/schedule.routes';
 import attendanceRoutes from '@routes/attendance.routes';
 import { dailyAbsencesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
+import absenceRoutes from '@routes/absence.routes';
+import payrollRoutes from '@routes/payroll.routes';
 
 // import csurf from 'csurf'
 
@@ -79,11 +81,13 @@ export class AppServer {
     this.app.use('/api/job', jobRoutes)
     this.app.use('/api/schedule', scheduleRoutes)
     this.app.use('/api/attendance', attendanceRoutes)
+    this.app.use('/api/absence', absenceRoutes)
+    this.app.use('/api/payroll', payrollRoutes)
   }
 
   crons (): void {
-    dailyAbsencesCronJob.start()
-    dailyPayrollCronJob.start()
+    // dailyAbsencesCronJob.start()
+    // dailyPayrollCronJob.start()
   }
 
   async initFolders (): Promise<void> {
