@@ -57,8 +57,8 @@ export class AppServer {
 
   private getHttpsOptions (): any { // https
     return {
-      key: fs.readFileSync('./SSL/key.pem'),
-      cert: fs.readFileSync('./SSL/fullchain.pem')
+      key: fs.readFileSync('./SSL/proavicolKey.key'),
+      cert: fs.readFileSync('./SSL/proavicolCer.cer')
     }
   }
 
