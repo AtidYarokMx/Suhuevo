@@ -29,6 +29,8 @@ export interface IEmployee {
 
   jobScheme: string
 
+  userId: string
+
   /* defaults */
   active: boolean
   updatedAt: Date

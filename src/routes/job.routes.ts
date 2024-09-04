@@ -12,10 +12,10 @@ class JobRoutes extends ServerRouter {
   }
 
   config (): void {
-    this.router.get('/'/*, [adminMiddleware]*/, this.controller.get as RequestHandler)
-    this.router.post('/create'/*, [adminMiddleware]*/, this.controller.create as RequestHandler)
-    this.router.patch('/update'/*, [adminMiddleware]*/, this.controller.update as RequestHandler)
-    this.router.get('/search'/*, [adminMiddleware]*/, this.controller.search as RequestHandler)
+    this.router.get('/', [adminMiddleware], this.controller.get as RequestHandler)
+    this.router.post('/create', [adminMiddleware], this.controller.create as RequestHandler)
+    this.router.patch('/update', [adminMiddleware], this.controller.update as RequestHandler)
+    this.router.get('/search', [adminMiddleware], this.controller.search as RequestHandler)
   }
 }
 

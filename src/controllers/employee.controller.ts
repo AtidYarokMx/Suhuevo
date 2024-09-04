@@ -16,7 +16,6 @@ class EmployeeController {
   }
 
   public async create (req: Request, res: Response): Promise<any> {
-    console.log(req.body)
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()
     try {
