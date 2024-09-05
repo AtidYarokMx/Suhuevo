@@ -5,8 +5,9 @@ import { AppErrorResponse } from '@app/models/app.response'
 /* utils */
 import { verifyUserToken } from '@app/utils/auth.util'
 /* dtos */
-import { type IBackofficeUserPayload } from '@app/interfaces/auth.dto'
+import { IUserPayload } from '@app/interfaces/auth.dto'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
+import { hasPermission } from '@app/constants/permissions'
 
 export async function adminMiddleware (req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -16,8 +17,16 @@ export async function adminMiddleware (req: Request, res: Response, next: NextFu
 
     if (typeof sessionToken === 'undefined' || sessionToken === false || sessionToken.trim() === '') throw new AppErrorResponse({ statusCode: 401, name: 'Se requiere un token de acceso válido', isOperational: true })
 
-    const verified = verifyUserToken<IBackofficeUserPayload>(sessionToken)
+    const verified = verifyUserToken<IUserPayload>(sessionToken)
     res.locals.user = verified
+
+    console.log('PATH', req.path)
+
+    // Verificar los permisos utilizando la función hasPermission
+    if (!hasPermission(verified.role, req.path)) {
+      throw new AppErrorResponse({ statusCode: 403, name: 'No tiene permiso para acceder a esta ruta', isOperational: true });
+    }
+
     next()
   } catch (error) {
     console.log(error)

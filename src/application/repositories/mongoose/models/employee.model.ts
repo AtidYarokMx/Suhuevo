@@ -35,6 +35,8 @@ export const EmployeeSchema = new Schema<IEmployee>({
 
   jobScheme: { type: String, trim: true },
 
+  userId: { type: String },
+
   /* defaults */
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },

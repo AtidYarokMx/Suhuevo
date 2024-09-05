@@ -20,10 +20,10 @@ export const UserSchema = new Schema<IUser>({
   updatedAt: { type: Date, default: () => Date.now() }
 })
 
-/* methods */
-UserSchema.method('fullname', function fullname () {
-  return `${String(this.name)} ${String(this.firstLastName)} ${String(this.secondLastName)}`.trim()
-})
+// /* methods */
+// UserSchema.method('fullname', function fullname () {
+//   return `${String(this.name)} ${String(this.firstLastName)} ${String(this.secondLastName)}`.trim()
+// })
 
 /* pre (middlewares) */
 UserSchema.pre('save', async function (next) {

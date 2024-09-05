@@ -58,13 +58,13 @@ class UserService {
   async create (body: any, session: ClientSession): Promise<any> {
     const id = uuidv4()
 
-    const password = generatePasswordHash(body.password)
+    const password = body.password ? generatePasswordHash(body.password) : generatePasswordHash('23456')
 
-    const user = new UserModel({ ...body, id, password })
-    customLog(`Creando usuario ${String(user.id)} (${String(user.name)})`)
-    await user.save({ session })
+    const record = new UserModel({ ...body, id, password })
+    customLog(`Creando usuario ${String(record.id)} (${String(record.name)})`)
+    await record.save({ session })
 
-    return { userId: user.id }
+    return { id: record.id }
   }
 
   async update (body: any, session: ClientSession): Promise<any> {

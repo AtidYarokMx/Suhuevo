@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid'
 import departmentService from './department.service'
 import jobService from './job.service'
 import { convertToBusinessHours } from '@app/constants/schedule.constants'
+import userService from './user.service'
 
 
 class EmployeeService {
@@ -64,7 +65,23 @@ class EmployeeService {
     const employeeNumber = String(await consumeSequence('employees', session)).padStart(6, '0')
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
-    const record = new EmployeeModel({ ...body, id, schedule, employeeNumber })
+    /* Create user */
+    let userId = undefined
+    if (body.createUser == null) {
+      const allowedRoles = ['employee.hr', 'employee']
+      const user = await userService.create({
+        userName: body.email,
+        name: body.name,
+        lastName: body.lastName,
+        secondLastName: body.secondLastName ,
+        role: allowedRoles.includes(body.role) ? body.role : 'employee',
+        phone: body.phone,
+        email: body.email
+      }, session)
+      userId = user.id
+    }
+
+    const record = new EmployeeModel({ ...body, id, schedule, employeeNumber, userId })
     customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`)
     await record.save({ session })
 
