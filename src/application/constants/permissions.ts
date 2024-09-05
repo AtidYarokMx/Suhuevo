@@ -12,13 +12,15 @@ const permissionsArray: Permission[] = [
   },
   {
     role: 'employee',
-    whitelist: ['/home', '/about'],
+    whitelist: [
+      '/api/employee/search'
+    ],
     blacklist: '*'
   },
   {
     role: 'employee.hr',
-    whitelist: ['/home', '/about'],
-    blacklist: '*'
+    whitelist: '*',
+    blacklist: []
   },
 ];
 
