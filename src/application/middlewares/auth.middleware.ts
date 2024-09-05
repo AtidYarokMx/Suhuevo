@@ -20,16 +20,16 @@ export async function adminMiddleware (req: Request, res: Response, next: NextFu
     const verified = verifyUserToken<IUserPayload>(sessionToken)
     res.locals.user = verified
 
-    console.log('PATH', req.path)
+    console.log('PATH', req.originalUrl);
 
     // Verificar los permisos utilizando la función hasPermission
-    if (!hasPermission(verified.role, req.path)) {
+    if (!hasPermission(verified.role, req.originalUrl)) {
       throw new AppErrorResponse({ statusCode: 403, name: 'No tiene permiso para acceder a esta ruta', isOperational: true });
     }
 
     next()
   } catch (error) {
-    console.log(error)
+    // console.log(error)
     const { statusCode, error: err } = appErrorResponseHandler(error)
     res.status(statusCode).json({ error: err })
   }
