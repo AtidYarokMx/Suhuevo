@@ -61,8 +61,8 @@ class EmployeeService {
 
   async create (body: any, session: ClientSession): Promise<any> {
     console.log(body)
-    const id = uuidv4()
-    const employeeNumber = String(await consumeSequence('employees', session)).padStart(6, '0')
+    const id = String(await consumeSequence('employees', session)).padStart(6, '0')
+    const employeeNumber = id
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
     /* Create user */
