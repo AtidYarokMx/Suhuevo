@@ -62,16 +62,11 @@ class AttendanceController {
 
   public async importFromCsv (req: Request, res: Response): Promise<any> {
     const file = req.file
-    const session = await AppMongooseRepo.startSession()
     try {
-      session.startTransaction()
-      const response = await attendanceService.importFromCsv(file, session)
-      await session.commitTransaction()
-      await session.endSession()
+      const response = await attendanceService.importFromCsv(file)
       return res.status(200).json(response)
     } catch (error) {
-      console.log(error)
-      await session.abortTransaction()
+
       const { statusCode, error: err } = appErrorResponseHandler(error)
       return res.status(statusCode).json(err)
     }

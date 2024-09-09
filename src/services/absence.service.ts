@@ -128,7 +128,7 @@ class AbsenceService {
       const absence = absences.find(x => x.employeeId === employee.id)
       if (absence) { detail.push(`Ya habia una falta registrada para ${employeeName} el ${stringDate}`); continue }
 
-      const id = String(await consumeSequence('absences', session)).padStart(8, '0')
+      const id = 'AB' + String(await consumeSequence('absences', session)).padStart(8, '0')
       const record = new AbsenceModel({ id, employeeId: employee.id, employeeName, date: stringDate })
       customLog(`Creando ausencia ${String(record.id)} (${employeeName})`)
       detail.push(`Se registró una falta para ${employeeName} (${String(record.id)})`);

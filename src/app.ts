@@ -87,8 +87,8 @@ export class AppServer {
   }
 
   crons (): void {
-    // dailyAbsencesCronJob.start()
-    // dailyPayrollCronJob.start()
+    dailyAbsencesCronJob.start()
+    dailyPayrollCronJob.start()
   }
 
   async initFolders (): Promise<void> {

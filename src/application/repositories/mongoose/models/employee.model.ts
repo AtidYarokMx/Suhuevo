@@ -18,7 +18,6 @@ export const EmployeeSchema = new Schema<IEmployee>({
   birthdate: { type: String },
   bloodType: { type: String },
 
-  employeeNumber: { type: String, required: true },
   departmentId: { type: String },
   hireDate: { type: String },
   jobId: { type: String },

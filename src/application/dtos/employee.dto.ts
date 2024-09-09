@@ -12,7 +12,6 @@ export interface IEmployee {
   birthdate: string
   bloodType: string
 
-  employeeNumber: string
   departmentId: string
   jobId: string
   hireDate: string
