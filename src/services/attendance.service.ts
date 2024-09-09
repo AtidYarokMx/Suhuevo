@@ -10,10 +10,13 @@ import { type ClientSession } from 'mongoose'
 import csvParser from 'csv-parser';
 import fs from 'fs';
 import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
+import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
 
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 10;
+  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
 
   async get (query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
@@ -63,7 +66,7 @@ class AttendanceService {
     checkInTime = new Date(checkInTime).toISOString()
 
     const employee = await EmployeeModel.findOne({ id: employeeId, status: EEmployeStatus.ACTIVE });
-    if (!employee) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el empleado' })
+    if (!employee) throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` })
     const employeeName = `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`
 
     const checkInDate = new Date(checkInTime).toISOString().slice(0, 10); // YYYY-MM-DD
@@ -76,9 +79,30 @@ class AttendanceService {
   
     const dayOfWeek = new Date(checkInTime).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const scheduleForDay = (employee.schedule as any)?.[dayOfWeek];
-    if (!scheduleForDay) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${checkInDate}` })
+
+    const scheduleException = await ScheduleExceptionModel.findOne({
+      active: true,
+      name: { $nin: this.notWorkableScheduleExceptions },
+      $or: [
+        {
+          $and: [
+            { startDate: { $regex: `^${checkInDate}` } },
+            { allDay: true },
+          ]
+        },
+        {
+          $and: [
+            { startDate: { $lte: checkInDate } },
+            { endDate: { $gt: checkInDate } }
+          ]
+        }
+        
+      ]
+    });
+    if (!scheduleForDay && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${checkInDate}` })
   
-    const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDay.start + ':00');
+    const scheduleForDayStart = scheduleForDay?.start ?? Object.values(employee.schedule).find(x => x?.start != null).start
+    const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDayStart + ':00');
     const checkInDateTime = new Date(checkInTime);
     const differenceInMinutes = (checkInDateTime.getTime() - scheduleStartTime.getTime()) / 60_000;
 
@@ -88,7 +112,7 @@ class AttendanceService {
 
     const isLate = differenceInMinutes > this.MAX_TIME_DELAY;
   
-    const id = String(await consumeSequence('attendances', session)).padStart(8, '0')
+    const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
     const record = new AttendanceModel({ id, employeeId, employeeName, checkInTime, isLate });
   
     customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)})`);
@@ -115,7 +139,7 @@ class AttendanceService {
     return { id: record.id }
   }
 
-  async importFromCsv(file: any, session: ClientSession) {
+  async importFromCsv(file: any) {
     if (file == null)  throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
 
     const rows: any[] = [];
@@ -131,19 +155,33 @@ class AttendanceService {
         .on('error', (err) => reject(err));
     });
 
-    // console.log('rows', rows)
-
     const reformattedRows = rows.map(row => {
       return {
-        employeeId: row['Person ID'],
+        employeeId: row['Person ID'].replaceAll('\'', ''),
         checkInTime: row['Time']
       }
     })
 
-    // Procesar el array de manera secuencial usando for...of
-    for (const row of reformattedRows) {
-      await this.create(row, session);
+    let detail: any = []
+    let createdAttendances = 0
+    for (const [index, row] of reformattedRows.entries()) {
+      let session = await AppMongooseRepo.startSession()
+      session.startTransaction()
+      try { 
+        const attendance = await this.create(row, session);
+        detail.push({row: index + 1, result: attendance.id})
+        createdAttendances++
+        await session.commitTransaction()
+        await session.endSession()
+      }
+      catch (error: any) {
+        await session.abortTransaction()
+        detail.push({row: index + 1, error: error.name})
+      }
     }
+
+    return {totalRows: reformattedRows.length, detail, createdAttendances }
+
   }
 
   reformatData(array: IAttendance[]): any[] {

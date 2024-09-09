@@ -62,7 +62,6 @@ class EmployeeService {
   async create (body: any, session: ClientSession): Promise<any> {
     console.log(body)
     const id = String(await consumeSequence('employees', session)).padStart(6, '0')
-    const employeeNumber = id
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
     /* Create user */
@@ -81,7 +80,7 @@ class EmployeeService {
       userId = user.id
     }
 
-    const record = new EmployeeModel({ ...body, id, schedule, employeeNumber, userId })
+    const record = new EmployeeModel({ ...body, id, schedule, userId })
     customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`)
     await record.save({ session })
 

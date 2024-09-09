@@ -20,7 +20,7 @@ class ScheduleExceptionService {
   async search (query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
-    const allowedFields: (keyof IScheduleException)[] = ['id', 'employeeNumber', 'employeeId', 'approved', 'startDate', 'endDate']
+    const allowedFields: (keyof IScheduleException)[] = ['id', 'employeeId', 'approved', 'startDate', 'endDate']
 
     const filter: any = { active: true }
     const selection: any = size === 'small' ? {} : { active: 0, _id: 0, __v: 0 }

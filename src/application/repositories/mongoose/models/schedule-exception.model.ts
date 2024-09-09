@@ -6,7 +6,6 @@ import { IScheduleException } from '@app/dtos/schedule-exception.dto'
 export const ScheduleExceptionSchema = new Schema<IScheduleException>({
   /* required fields */
   id: { type: String, required: true, trim: true, unique: true },
-  employeeNumber: { type: String },
   employeeId: { type: String },
   name: { type: String, required: true, trim: true },
   reason: { type: String, trim: true },

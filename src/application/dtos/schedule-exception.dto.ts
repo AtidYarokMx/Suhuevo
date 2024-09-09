@@ -1,6 +1,5 @@
 export interface IScheduleException {
   id: string
-  employeeNumber: string
   employeeId: string
   name: string
   reason: string
