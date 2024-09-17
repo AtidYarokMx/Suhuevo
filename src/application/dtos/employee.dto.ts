@@ -1,6 +1,7 @@
 export interface IEmployee {
   id: string
   status: EEmployeStatus
+  biometricId: string
 
   name: string
   lastName: string
