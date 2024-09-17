@@ -7,6 +7,7 @@ export const EmployeeSchema = new Schema<IEmployee>({
   /* required fields */
   id: { type: String, required: true, trim: true, unique: true },
   status: { type: String, enum: EEmployeStatus, default: EEmployeStatus.ACTIVE, required: true },
+  biometricId: { type: String },
 
   name: { type: String, required: true, trim: true },
   lastName: { type: String, required: true, trim: true },

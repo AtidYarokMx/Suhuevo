@@ -5,7 +5,6 @@ import { EmployeeModel } from '@app/repositories/mongoose/models/employee.model'
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog, getBaseSchedule } from '@app/utils/util.util'
 import { type ClientSession } from 'mongoose'
-import { v4 as uuidv4 } from 'uuid'
 import departmentService from './department.service'
 import jobService from './job.service'
 import { convertToBusinessHours } from '@app/constants/schedule.constants'
@@ -93,6 +92,7 @@ class EmployeeService {
 
     const allowedFields: (keyof IEmployee)[] = [
       'status',
+      'biometricId',
 
       'name',
       'lastName',
@@ -149,7 +149,7 @@ class EmployeeService {
       record.jobName = jobs[record.jobId]?.name
       record.timeEntry = record.schedule?.tuesday?.start
       record.timeDeparture = record.schedule?.tuesday?.end
-      record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
+      // record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
       // record.businessHours = convertToBusinessHours(record.schedule)
 
       // console.log(record.name, record.businessHours)

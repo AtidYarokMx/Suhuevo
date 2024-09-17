@@ -78,7 +78,10 @@ class PayrollService {
     if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime())) {
       throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
     }
-    weekStartDate = new Date(weekStartDate)
+    weekStartDate = new Date(weekStartDate); 
+    // Se le suman las horas UTC del servidor ya que por defecto viene como las 00:00 UTC 0, para que sea interpretado como las 00:00 UTC-6
+    weekStartDate = new Date(weekStartDate.getTime() + (weekStartDate.getTimezoneOffset() * 60000));
+
     console.log(weekStartDate, weekStartDate.getDay(), this.daysOfWeekInSpanish[weekStartDate.getDay()])
 
     if (weekStartDate.getDay() !== this.weekStartDay) {
@@ -86,10 +89,10 @@ class PayrollService {
       throw new AppErrorResponse({ statusCode: 400, name: `La fecha de inicio de semana debe ser un ${dayName}` });
     }
 
-    const existingPayroll = await PayrollModel.findOne({ active: true, startDate: weekStartDate })
-    if (existingPayroll != null) {
-      throw new AppErrorResponse({ statusCode: 400, name: `Ya se ejecutó la nomina para el periodo ${weekStartDate.toISOString().slice(0,10)}` });
-    }
+    // const existingPayroll = await PayrollModel.findOne({ active: true, startDate: weekStartDate })
+    // if (existingPayroll != null) {
+    //   throw new AppErrorResponse({ statusCode: 400, name: `Ya se ejecutó la nomina para el periodo ${weekStartDate.toISOString().slice(0,10)}` });
+    // }
 
     const currentDate = new Date();
     const currentDay = currentDate.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
@@ -109,9 +112,9 @@ class PayrollService {
 
     const weekCutoffDate = getNextTuesday(weekStartDate); // (último martes despues del inicio de semana)
 
-    if (currentDate < weekCutoffDate) {
-      throw new AppErrorResponse({ statusCode: 400, name: `La fecha de corte (${weekCutoffDate.toISOString().slice(0,10)}) aún no ha llegado. No se puede ejecutar la nómina.` });
-    }
+    // if (currentDate < weekCutoffDate) {
+    //   throw new AppErrorResponse({ statusCode: 400, name: `La fecha de corte (${weekCutoffDate.toISOString().slice(0,10)}) aún no ha llegado. No se puede ejecutar la nómina.` });
+    // }
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE });
 
@@ -202,18 +205,26 @@ class PayrollService {
       rowIndex++
     }
 
-    // console.log(lines);
-    const id = String(await consumeSequence('payrolls', session)).padStart(8, '0')
-    const record = new PayrollModel({
-      id,
-      name: `Nomina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
-      lines,
-      startDate: weekStartDate,
-      cutoffDate: weekCutoffDate
-    })
-    await record.save({ session })
+    if (body.preview != null) return { lines, startDate: weekStartDate, cutoffDate: weekCutoffDate }
 
-    return record
+    let record = await PayrollModel.findOne({ active: true, startDate: weekStartDate });
+    if (record) {
+      record.lines = lines;
+      record.cutoffDate = weekCutoffDate;
+      record.name = `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
+    }
+    else {
+      record = new PayrollModel({
+        id: String(await consumeSequence('payrolls', session)).padStart(8, '0'),
+        name: `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
+        lines,
+        startDate: weekStartDate,
+        cutoffDate: weekCutoffDate,
+      });
+    }
+
+    await record.save({ session });
+    return record;
   }
 
   calculateAttendanceBonus(absences: IAbsence[], salary: number): number {

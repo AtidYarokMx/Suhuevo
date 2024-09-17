@@ -20,6 +20,7 @@ export function appErrorResponseHandler (error: unknown | any): IErrorHandlerRes
   if (error instanceof AppErrorResponse) {
     result.message = error.message ?? 'Error del server'
     result.code = error.code ?? null
+    console.log(result)
     return { statusCode: error.statusCode, error: result }
   }
 
@@ -28,5 +29,6 @@ export function appErrorResponseHandler (error: unknown | any): IErrorHandlerRes
   }
 
   result.message = String(error)
+  console.log(error)
   return { statusCode: 500, error: result }
 }

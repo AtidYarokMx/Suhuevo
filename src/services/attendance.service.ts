@@ -65,16 +65,22 @@ class AttendanceService {
     let { employeeId, checkInTime } = body;
     checkInTime = new Date(checkInTime).toISOString()
 
-    const employee = await EmployeeModel.findOne({ id: employeeId, status: EEmployeStatus.ACTIVE });
+    const employee = await EmployeeModel.findOne({
+      $or: [
+        { id: employeeId },
+        { biometricId: employeeId }
+      ],
+      status: EEmployeStatus.ACTIVE
+    });
     if (!employee) throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` })
     const employeeName = `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`
 
     const checkInDate = new Date(checkInTime).toISOString().slice(0, 10); // YYYY-MM-DD
     console.log('checkInDate', checkInDate)
-    const existingAttendance = await AttendanceModel.findOne({ active: true, employeeId, checkInTime: { $regex: `^${checkInDate}` } });
+    const existingAttendance = await AttendanceModel.findOne({ active: true, employeeId: employee.id, checkInTime: { $regex: `^${checkInDate}` } });
     if (existingAttendance) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una asistencia para ${employeeName} el día ${checkInDate}` })
 
-      const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId, date: { $regex: `^${checkInDate}` } });
+    const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId: employee.id, date: { $regex: `^${checkInDate}` } });
     if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${checkInDate}` })
   
     const dayOfWeek = new Date(checkInTime).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
@@ -82,6 +88,7 @@ class AttendanceService {
 
     const scheduleException = await ScheduleExceptionModel.findOne({
       active: true,
+      employeeId: employee.id,
       name: { $nin: this.notWorkableScheduleExceptions },
       $or: [
         {
@@ -113,7 +120,7 @@ class AttendanceService {
     const isLate = differenceInMinutes > this.MAX_TIME_DELAY;
   
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
-    const record = new AttendanceModel({ id, employeeId, employeeName, checkInTime, isLate });
+    const record = new AttendanceModel({ id, employeeId: employee.id, employeeName, checkInTime, isLate });
   
     customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)})`);
     await record.save({ session });
