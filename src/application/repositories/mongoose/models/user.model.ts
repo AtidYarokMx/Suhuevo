@@ -4,17 +4,17 @@ import { type IUser } from '@app/dtos/user.dto'
 
 export const UserSchema = new Schema<IUser>({
   /* required fields */
-  id: { type: String, required: true, trim: true, unique: true },
-  name: { type: String, required: true, trim: true },
+  id: { type: String, trim: true, unique: true },
+  name: { type: String, trim: true },
   firstLastName: { type: String, trim: true, default: '' },
   secondLastName: { type: String, trim: true, default: '' },
-  role: { type: String, required: true },
+  role: { type: String },
 
-  userName: { type: String, required: true, trim: true, unique: true },
+  userName: { type: String, trim: true, unique: true },
   phone: { type: String, trim: true },
   email: { type: String, trim: true, lowercase: true },
   /* defaults */
-  password: { type: String, required: true },
+  password: { type: String },
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
