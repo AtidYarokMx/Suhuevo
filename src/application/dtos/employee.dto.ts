@@ -8,24 +8,24 @@ export interface IEmployee {
   secondLastName: string
 
   email: string
-  phone: string
-  address: string
-  birthdate: string
-  bloodType: string
+  phone?: string
+  address?: string
+  birthdate?: string
+  bloodType?: string
 
   departmentId: string
   jobId: string
-  hireDate: string
+  hireDate?: string
   schedule: IEmployeSchedule
-  bankAccountNumber: string
+  bankAccountNumber?: string
   dailySalary: number
   
   mxCurp?: string
   mxRfc?: string
   mxNss?: string
 
-  emergencyContact: string
-  emergencyPhone: string
+  emergencyContact?: string
+  emergencyPhone?: string
 
   jobScheme: string
 
