@@ -64,6 +64,7 @@ export class AppServer {
 
   config (): void {
     this.app.set('port', process.env.PORT ?? 443)
+    this.app.set('port2', process.env.PORT2 ?? 80)
     this.app.use(morgan('dev'))
     this.app.use(cors(serverCors))
     // this.app.use(clientMiddleware)
@@ -99,8 +100,8 @@ export class AppServer {
     this.server.listen(this.app.get('port'), () => {
       ServerLogger.info(`Server listening on \x1b[34mhttps://localhost:${this.app.get('port') as string}\x1b[0m`)
     })
-    this.serverInsecure.listen(60102, () => {
-      ServerLogger.info(`Server listening on \x1b[34mhttp://localhost:${60102}\x1b[0m`)
+    this.serverInsecure.listen(this.app.get('port2'), () => {
+      ServerLogger.info(`Server listening on \x1b[34mhttp://localhost:${this.app.get('port2')}\x1b[0m`)
     })
   }
 }
