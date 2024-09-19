@@ -1,3 +1,5 @@
+import { Model } from "@app/repositories/mongoose"
+
 export interface IEmployee {
   id: string
   status: EEmployeStatus
@@ -19,7 +21,7 @@ export interface IEmployee {
   schedule: IEmployeSchedule
   bankAccountNumber?: string
   dailySalary: number
-  
+
   mxCurp?: string
   mxRfc?: string
   mxNss?: string
@@ -52,3 +54,10 @@ export enum EEmployeStatus {
   ACTIVE = 'activo',
   INACTIVE = 'inactivo'
 }
+
+export interface IEmployeeMethods {
+  fullname(): string
+}
+
+/* types */
+export type AppEmployeeModel = Model<IEmployee, {}, IEmployeeMethods>

@@ -5,6 +5,9 @@
 # Logs
 logs
 
+# remote development
+cloudflared.exe
+
 examples
 db.json
 *.log

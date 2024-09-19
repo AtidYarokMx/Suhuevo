@@ -1,3 +1,5 @@
+import { type Types } from "@app/repositories/mongoose"
+
 export interface IAttendance {
   id: string
   name: string
@@ -12,4 +14,13 @@ export interface IAttendance {
   active: boolean
   updatedAt: Date
   createdAt: Date
+}
+
+export type CreateAttendanceBody = {
+  employeeId: string
+  checkInTime: string
+}
+
+export type CreateAttendanceResponse = {
+  id: Types.ObjectId
 }

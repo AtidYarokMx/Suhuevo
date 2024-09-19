@@ -1,9 +1,9 @@
 import { Schema, model } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
-import { EEmployeStatus, IEmployee } from '@app/dtos/employee.dto'
+import { EEmployeStatus, AppEmployeeModel, IEmployee, IEmployeeMethods } from '@app/dtos/employee.dto'
 
 
-export const EmployeeSchema = new Schema<IEmployee>({
+export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeMethods>({
   /* required fields */
   id: { type: String, required: true, trim: true, unique: true },
   status: { type: String, enum: EEmployeStatus, default: EEmployeStatus.ACTIVE, required: true },
@@ -25,7 +25,7 @@ export const EmployeeSchema = new Schema<IEmployee>({
   schedule: { type: Object },
   bankAccountNumber: { type: String },
   dailySalary: { type: Number },
-  
+
   mxCurp: { type: String, trim: true },
   mxRfc: { type: String, trim: true },
   mxNss: { type: String, trim: true },
@@ -43,6 +43,14 @@ export const EmployeeSchema = new Schema<IEmployee>({
   createdAt: { type: Date, default: () => Date.now(), immutable: true }
 })
 
+/* methods */
+EmployeeSchema.method('fullname', function fullname() {
+  /* solución alterna */
+  // const nameParts = [this.name, this.lastName, this.secondLastName].filter(Boolean);
+  // return nameParts.join(' ');
+  return `${this.name ?? ''} ${this.lastName ?? ''} ${this.secondLastName ?? ''}`.trim()
+})
+
 /* pre (middlewares) */
 EmployeeSchema.pre('save', async function (next) {
   this.updatedAt = new Date(Date.now())
@@ -55,4 +63,4 @@ EmployeeSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const EmployeeModel = model<IEmployee>('employee', EmployeeSchema)
+export const EmployeeModel = model<IEmployee, AppEmployeeModel>('employee', EmployeeSchema)
