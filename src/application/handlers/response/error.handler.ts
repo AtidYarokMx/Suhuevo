@@ -15,9 +15,9 @@ export function appErrorResponseHandler(error: unknown | any): IErrorHandlerResp
 
   if (error instanceof MongooseError) {
     result.message = error.message ?? 'Error del server'
-    result.code = "database error"
+    result.code = 500
     console.log('MONGOOO', error.name)
-    return { statusCode: 500, code: error.name, error: result, name: error.name }
+    return { statusCode: result.code, code: error.name, error: result, name: error.name }
   }
 
   if (error instanceof AppErrorResponse) {
