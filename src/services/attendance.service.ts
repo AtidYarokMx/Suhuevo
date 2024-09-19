@@ -6,7 +6,7 @@ import { type ClientSession } from 'mongoose'
 import { AppMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from '@app/dtos/attendance.dto'
-import { EEmployeStatus } from '@app/dtos/employee.dto'
+import { EEmployeStatus, IEmployeSchedule } from '@app/dtos/employee.dto'
 /* models */
 import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
 import { AttendanceModel } from '@app/repositories/mongoose/models/attendance.model'
@@ -17,6 +17,7 @@ import { AppErrorResponse } from '@app/models/app.response'
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog } from '@app/utils/util.util'
 import { parse as parseDate } from '@app/utils/date.util';
+// import { readCsv } from '@app/utils/file.util';
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 10;
@@ -67,10 +68,12 @@ class AttendanceService {
 
   async create(body: CreateAttendanceBody, session: ClientSession): Promise<CreateAttendanceResponse> {
     let { employeeId, checkInTime } = body;
-    checkInTime = new Date(checkInTime).toISOString()
     /* solución de formateado de fecha */
     const parsedCheckInTime = parseDate(checkInTime)
     const desiredCheckInTime = parsedCheckInTime.format("YYYY-MM-DD") // Asignar el formato deseado
+    console.log(parsedCheckInTime)
+
+    checkInTime = new Date(checkInTime).toISOString()
 
     const employee = await EmployeeModel.findOne({
       $or: [
@@ -79,10 +82,11 @@ class AttendanceService {
       ],
       status: EEmployeStatus.ACTIVE
     });
+
     if (!employee) throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` })
     const employeeName = employee.fullname()
 
-    const checkInDate = new Date(checkInTime).toISOString().slice(0, 10); // YYYY-MM-DD
+    const checkInDate = desiredCheckInTime
     console.log('checkInDate', checkInDate)
     const existingAttendance = await AttendanceModel.findOne({ active: true, employeeId: employee.id, checkInTime: { $regex: `^${checkInDate}` } });
     if (existingAttendance) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una asistencia para ${employeeName} el día ${checkInDate}` })
@@ -129,7 +133,7 @@ class AttendanceService {
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
     const record = new AttendanceModel({ id, employeeId: employee.id, employeeName, checkInTime, isLate });
 
-    customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)})`);
+    customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)}) el día ${desiredCheckInTime}`);
     await record.save({ session });
 
     return { id: record.id };
@@ -178,6 +182,7 @@ class AttendanceService {
 
     let detail: any = []
     let createdAttendances = 0
+
     for (const [index, row] of reformattedRows.entries()) {
       let session = await AppMongooseRepo.startSession()
       session.startTransaction()
