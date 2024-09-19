@@ -67,13 +67,13 @@ class AttendanceService {
   }
 
   async create(body: CreateAttendanceBody, session: ClientSession): Promise<CreateAttendanceResponse> {
-    let { employeeId, checkInTime } = body;
+    const { employeeId, checkInTime: checkInTimeBody } = body;
     /* solución de formateado de fecha */
-    const parsedCheckInTime = parseDate(checkInTime)
+    const parsedCheckInTime = parseDate(checkInTimeBody)
     const desiredCheckInTime = parsedCheckInTime.format("YYYY-MM-DD") // Asignar el formato deseado
-    console.log(parsedCheckInTime)
 
-    checkInTime = new Date(checkInTime).toISOString()
+    const checkInTime = new Date(checkInTimeBody).toISOString()
+    console.log(parsedCheckInTime, checkInTime)
 
     const employee = await EmployeeModel.findOne({
       $or: [
@@ -94,8 +94,8 @@ class AttendanceService {
     const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId: employee.id, date: { $regex: `^${checkInDate}` } });
     if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${checkInDate}` })
 
-    const dayOfWeek = new Date(checkInTime).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    const scheduleForDay = (employee.schedule as any)?.[dayOfWeek];
+    const dayOfWeek = parsedCheckInTime.format("dddd").toLowerCase()
+    const scheduleForDay = employee.schedule[dayOfWeek as keyof IEmployeSchedule];
 
     const scheduleException = await ScheduleExceptionModel.findOne({
       active: true,
@@ -117,6 +117,7 @@ class AttendanceService {
 
       ]
     });
+
     if (!scheduleForDay && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${checkInDate}` })
 
     const scheduleForDayStart = scheduleForDay?.start ?? Object.values(employee.schedule).find(x => x?.start != null).start
