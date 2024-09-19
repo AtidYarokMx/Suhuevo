@@ -7,14 +7,17 @@ export interface IErrorHandlerResponse {
   error: unknown
   code?: string
   message?: string
+  name?: string
 }
 
-export function appErrorResponseHandler (error: unknown | any): IErrorHandlerResponse {
+export function appErrorResponseHandler(error: unknown | any): IErrorHandlerResponse {
   const result = new AppResponse()
 
   if (error instanceof MongooseError) {
+    result.message = error.message ?? 'Error del server'
+    result.code = "database error"
     console.log('MONGOOO', error.name)
-    return { statusCode: 400, code: error.name, error }
+    return { statusCode: 500, code: error.name, error: result, name: error.name }
   }
 
   if (error instanceof AppErrorResponse) {

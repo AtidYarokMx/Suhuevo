@@ -19,9 +19,9 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
   birthdate: { type: String },
   bloodType: { type: String },
 
-  departmentId: { type: String },
+  departmentId: { type: String, required: true },
   hireDate: { type: String },
-  jobId: { type: String },
+  jobId: { type: String, required: true },
   schedule: { type: Object },
   bankAccountNumber: { type: String },
   dailySalary: { type: Number },

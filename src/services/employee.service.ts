@@ -12,7 +12,7 @@ import userService from './user.service'
 
 
 class EmployeeService {
-  async get (query: any): Promise<any> {
+  async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await EmployeeModel.find({ active: true, id: { $in: ids } })
 
@@ -21,7 +21,7 @@ class EmployeeService {
     return result
   }
 
-  async search (query: any): Promise<any> {
+  async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
     const allowedFields: (keyof IEmployee)[] = ['id', 'name', 'departmentId', 'jobId', 'mxCurp', 'mxRfc', 'mxNss', 'status']
@@ -58,7 +58,7 @@ class EmployeeService {
     return await this.populateResults(records)
   }
 
-  async create (body: any, session: ClientSession): Promise<any> {
+  async create(body: any, session: ClientSession): Promise<any> {
     console.log(body)
     const id = String(await consumeSequence('employees', session)).padStart(6, '0')
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
@@ -71,7 +71,7 @@ class EmployeeService {
         userName: body.email,
         name: body.name,
         lastName: body.lastName,
-        secondLastName: body.secondLastName ,
+        secondLastName: body.secondLastName,
         role: allowedRoles.includes(body.role) ? body.role : 'employee',
         phone: body.phone,
         email: body.email
@@ -86,7 +86,7 @@ class EmployeeService {
     return { id: record.id }
   }
 
-  async update (body: any, session: ClientSession): Promise<any> {
+  async update(body: any, session: ClientSession): Promise<any> {
     const record = await EmployeeModel.findOne({ id: body.id })
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el empleado' })
 
@@ -109,7 +109,7 @@ class EmployeeService {
       'hireDate',
       'bankAccountNumber',
       'dailySalary',
-      
+
       'mxCurp',
       'mxRfc',
       'mxNss',
@@ -128,12 +128,12 @@ class EmployeeService {
 
     record.schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
-    await record.save({ validateBeforeSave: true, validateModifiedOnly: true, session })
+    await record.save({ validateBeforeSave: true, session })
     return { id: record.id }
   }
 
-  async delete (body: any, session: ClientSession): Promise<any> {
-    
+  async delete(body: any, session: ClientSession): Promise<any> {
+
   }
 
   async populateResults(array: IEmployee[]): Promise<any> {

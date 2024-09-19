@@ -8,7 +8,7 @@ export const UserSchema = new Schema<IUser>({
   name: { type: String, trim: true },
   firstLastName: { type: String, trim: true, default: '' },
   secondLastName: { type: String, trim: true, default: '' },
-  role: { type: String },
+  role: { type: String, required: true },
 
   userName: { type: String, trim: true, unique: true },
   phone: { type: String, trim: true },
