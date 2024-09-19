@@ -17,7 +17,7 @@ import { AppErrorResponse } from '@app/models/app.response'
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog } from '@app/utils/util.util'
 import { parse as parseDate } from '@app/utils/date.util';
-// import { readCsv } from '@app/utils/file.util';
+import { readCsv } from '@app/utils/file.util';
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 10;
@@ -160,25 +160,7 @@ class AttendanceService {
   async importFromCsv(file: any) {
     if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
 
-    const rows: any[] = [];
-
-    // Convertir el archivo CSV a un array
-    await new Promise<void>((resolve, reject) => {
-      const stream = fs.createReadStream(file.path)
-        .pipe(csvParser())
-        .on('data', (row) => {
-          rows.push(row);
-        })
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err));
-    });
-
-    const reformattedRows = rows.map(row => {
-      return {
-        employeeId: row['Person ID'].replaceAll('\'', ''),
-        checkInTime: row['Time']
-      }
-    })
+    const reformattedRows = await readCsv(file)
 
     let detail: any = []
     let createdAttendances = 0
