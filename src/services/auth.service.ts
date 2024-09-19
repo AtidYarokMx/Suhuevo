@@ -12,7 +12,7 @@ class AuthService {
     console.log(body)
     const userName = body.userName ?? body.email
     const user = await UserModel.findOne({ userName, active: true }, undefined, { session })
-    if (user == null) throw new AppErrorResponse({ statusCode: 404, name: 'Credenciales incorrectas', isOperational: true })
+    if (user == null) throw new AppErrorResponse({ statusCode: 404, name: 'Credenciales incorrectas*', isOperational: true })
 
     const valid = comparePassword(body.password, user.password)
     if (!valid) throw new AppErrorResponse({ statusCode: 401, name: 'Credenciales incorrectas', isOperational: true })

@@ -59,7 +59,6 @@ class EmployeeService {
   }
 
   async create (body: any, session: ClientSession): Promise<any> {
-    console.log(body)
     const id = String(await consumeSequence('employees', session)).padStart(6, '0')
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
@@ -109,6 +108,7 @@ class EmployeeService {
       'hireDate',
       'bankAccountNumber',
       'dailySalary',
+      'schedule',
       
       'mxCurp',
       'mxRfc',

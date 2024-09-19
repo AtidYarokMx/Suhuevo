@@ -1,4 +1,3 @@
-import { type Types } from "@app/repositories/mongoose"
 
 export interface IAttendance {
   id: string
@@ -22,5 +21,5 @@ export type CreateAttendanceBody = {
 }
 
 export type CreateAttendanceResponse = {
-  id: Types.ObjectId
+  id: string
 }

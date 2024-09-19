@@ -70,6 +70,7 @@ class AttendanceService {
     checkInTime = new Date(checkInTime).toISOString()
     /* solución de formateado de fecha */
     const parsedCheckInTime = parseDate(checkInTime)
+    console.log(checkInTime, parsedCheckInTime)
     const desiredCheckInTime = parsedCheckInTime.format("YYYY-MM-DD") // Asignar el formato deseado
 
     const employee = await EmployeeModel.findOne({
