@@ -1,24 +1,28 @@
-
-import { IAttendance } from '@app/dtos/attendance.dto'
+/* lib */
+import fs from 'fs';
+import csvParser from 'csv-parser';
+/* repos & clients */
+import { type ClientSession } from 'mongoose'
+import { AppMongooseRepo } from '@app/repositories/mongoose'
+/* dtos */
+import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from '@app/dtos/attendance.dto'
 import { EEmployeStatus } from '@app/dtos/employee.dto'
-import { AppErrorResponse } from '@app/models/app.response'
+/* models */
+import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
 import { AttendanceModel } from '@app/repositories/mongoose/models/attendance.model'
 import { EmployeeModel } from '@app/repositories/mongoose/models/employee.model'
+import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
+import { AppErrorResponse } from '@app/models/app.response'
+/* utils */
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog } from '@app/utils/util.util'
-import { type ClientSession } from 'mongoose'
-import csvParser from 'csv-parser';
-import fs from 'fs';
-import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
-import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
-
+import { parse as parseDate } from '@app/utils/date.util';
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 10;
   private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
 
-  async get (query: any): Promise<any> {
+  async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await AttendanceModel.find({ active: true, id: { $in: ids } })
 
@@ -27,7 +31,7 @@ class AttendanceService {
     return result
   }
 
-  async search (query: any): Promise<any> {
+  async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
     const allowedFields: (keyof IAttendance)[] = ['id', 'employeeId', 'checkInTime', 'isLate']
@@ -61,9 +65,12 @@ class AttendanceService {
     return this.reformatData(records)
   }
 
-  async create (body: any, session: ClientSession): Promise<any> {
+  async create(body: CreateAttendanceBody, session: ClientSession): Promise<CreateAttendanceResponse> {
     let { employeeId, checkInTime } = body;
     checkInTime = new Date(checkInTime).toISOString()
+    /* solución de formateado de fecha */
+    const parsedCheckInTime = parseDate(checkInTime)
+    const desiredCheckInTime = parsedCheckInTime.format("YYYY-MM-DD") // Asignar el formato deseado
 
     const employee = await EmployeeModel.findOne({
       $or: [
@@ -73,7 +80,7 @@ class AttendanceService {
       status: EEmployeStatus.ACTIVE
     });
     if (!employee) throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` })
-    const employeeName = `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`
+    const employeeName = employee.fullname()
 
     const checkInDate = new Date(checkInTime).toISOString().slice(0, 10); // YYYY-MM-DD
     console.log('checkInDate', checkInDate)
@@ -82,7 +89,7 @@ class AttendanceService {
 
     const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId: employee.id, date: { $regex: `^${checkInDate}` } });
     if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${checkInDate}` })
-  
+
     const dayOfWeek = new Date(checkInTime).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const scheduleForDay = (employee.schedule as any)?.[dayOfWeek];
 
@@ -103,11 +110,11 @@ class AttendanceService {
             { endDate: { $gt: checkInDate } }
           ]
         }
-        
+
       ]
     });
     if (!scheduleForDay && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${checkInDate}` })
-  
+
     const scheduleForDayStart = scheduleForDay?.start ?? Object.values(employee.schedule).find(x => x?.start != null).start
     const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDayStart + ':00');
     const checkInDateTime = new Date(checkInTime);
@@ -118,17 +125,17 @@ class AttendanceService {
     console.log('differenceInMinutes', differenceInMinutes)
 
     const isLate = differenceInMinutes > this.MAX_TIME_DELAY;
-  
+
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
     const record = new AttendanceModel({ id, employeeId: employee.id, employeeName, checkInTime, isLate });
-  
+
     customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)})`);
     await record.save({ session });
-  
+
     return { id: record.id };
   }
 
-  async update (body: any, session: ClientSession): Promise<any> {
+  async update(body: any, session: ClientSession): Promise<any> {
     const record = await AttendanceModel.findOne({ id: body.id })
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró la asistencia' })
 
@@ -147,7 +154,7 @@ class AttendanceService {
   }
 
   async importFromCsv(file: any) {
-    if (file == null)  throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
+    if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
 
     const rows: any[] = [];
 
@@ -174,26 +181,26 @@ class AttendanceService {
     for (const [index, row] of reformattedRows.entries()) {
       let session = await AppMongooseRepo.startSession()
       session.startTransaction()
-      try { 
+      try {
         const attendance = await this.create(row, session);
-        detail.push({row: index + 1, result: attendance.id})
+        detail.push({ row: index + 1, result: attendance.id })
         createdAttendances++
         await session.commitTransaction()
         await session.endSession()
       }
       catch (error: any) {
         await session.abortTransaction()
-        detail.push({row: index + 1, error: error.name})
+        detail.push({ row: index + 1, error: error.name })
       }
     }
 
-    return {totalRows: reformattedRows.length, detail, createdAttendances }
+    return { totalRows: reformattedRows.length, detail, createdAttendances }
 
   }
 
   reformatData(array: IAttendance[]): any[] {
     const newArray = array.map((record => {
-      const result: any = { 
+      const result: any = {
         ...JSON.parse(JSON.stringify(record)),
         date: record.checkInTime,
         title: record.isLate ? 'Retardo' : 'Asistencia'
