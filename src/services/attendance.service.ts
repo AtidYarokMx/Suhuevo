@@ -64,11 +64,11 @@ class AttendanceService {
   }
 
   async create(body: CreateAttendanceBody, session: ClientSession): Promise<CreateAttendanceResponse> {
-    const { employeeId, checkInTime: checkInTimeBody, checkOutTime: checkOutTimebody } = body;
+    const { employeeId, checkInTime: checkInTimeBody, checkOutTime: checkOutTimeBody } = body;
     /* solución de formateado de fecha */
     const parsedCheckInTime = parseDate(checkInTimeBody)
-    const parsedCheckOutTime = checkOutTimebody ? parseDate(checkOutTimebody) : null
-    
+    const parsedCheckOutTime = checkOutTimeBody ? parseDate(checkOutTimeBody) : null
+
     // const checkInTime = new Date(checkInTimeBody).toISOString
     const day = parsedCheckInTime.format("YYYY-MM-DD")
 
@@ -132,7 +132,7 @@ class AttendanceService {
     const record = new AttendanceModel({
       id,
       employeeId:
-      employee.id,
+        employee.id,
       employeeName,
       checkInTime: parsedCheckInTime.format("YYYY-MM-DD HH:MM:SS"),
       checkOutTime: parsedCheckOutTime?.format("YYYY-MM-DD HH:MM:SS"),
@@ -169,19 +169,19 @@ class AttendanceService {
     let reformattedRows = await readCsv(file)
     reformattedRows = groupCheckInCheckOut(reformattedRows)
 
-    function groupCheckInCheckOut(rows: { employeeId: string, checkInTime: string}[]) {
+    function groupCheckInCheckOut(rows: { employeeId: string, checkInTime: string }[]) {
       const groupedRows: Record<string, { checkInTime: string, checkOutTime?: string }> = {};
-    
+
       rows.forEach(row => {
         const employeeId = row.employeeId;
         const checkInTime = row.checkInTime;
         const date = checkInTime.split(' ')[0]
         const key = `${employeeId}-${date}`;
-    
+
         if (!groupedRows[key]) groupedRows[key] = { checkInTime };
         else if (!groupedRows[key].checkOutTime) groupedRows[key].checkOutTime = checkInTime;
       });
-    
+
       const reformattedRows = Object.keys(groupedRows).map(key => {
         const { checkInTime, checkOutTime } = groupedRows[key];
         return {
@@ -192,7 +192,7 @@ class AttendanceService {
       });
       return reformattedRows;
     }
-    
+
 
     let detail: any = []
     let createdAttendances = 0

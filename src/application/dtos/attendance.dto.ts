@@ -25,3 +25,10 @@ export type CreateAttendanceBody = {
 export type CreateAttendanceResponse = {
   id: string
 }
+
+export type AttendanceCsvFields = {
+  Name: string
+  Time: string
+  'Person ID': string
+  'Attendance Check Point': string
+}
