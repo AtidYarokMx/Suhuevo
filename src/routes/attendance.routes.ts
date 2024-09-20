@@ -8,16 +8,17 @@ import { uploadFileMiddleware } from '@app/middlewares/upload.middleware'
 class AttendanceRoutes extends ServerRouter {
   controller = attendanceController
 
-  constructor () {
+  constructor() {
     super()
     this.config()
   }
 
-  config (): void {
+  config(): void {
     this.router.get('/', [adminMiddleware], this.controller.get as RequestHandler)
     this.router.post('/create', [adminMiddleware], this.controller.create as RequestHandler)
     this.router.patch('/update', [adminMiddleware], this.controller.update as RequestHandler)
     this.router.get('/search', [adminMiddleware], this.controller.search as RequestHandler)
+    this.router.get('/csv', this.controller.startCalculations as RequestHandler)
 
     this.router.post('/import-csv', [adminMiddleware, uploadFileMiddleware.single('file')], attendanceController.importFromCsv)
   }

@@ -1,3 +1,5 @@
+/* lib */
+import moment from 'moment'
 /* repos & clients */
 import { type ClientSession } from 'mongoose'
 import { AppMongooseRepo } from '@app/repositories/mongoose'
@@ -161,6 +163,67 @@ class AttendanceService {
 
     await record.save({ validateBeforeSave: true, validateModifiedOnly: true, session })
     return { id: record.id }
+  }
+
+  async startCalculations(session: ClientSession) {
+    const startDate = moment("9/11/2024 00:00:00", "M/D/YYYY H:m:s")
+    const endDate = moment("9/17/2024 23:59:59", "M/D/YYYY H:m:s")
+
+    const attendances = await AttendanceModel.aggregate<IAttendance & {
+      checkInDate: Date
+      checkOutDate: Date
+    }>([
+      {
+        $addFields: {
+          checkInDate: {
+            $dateFromString: {
+              dateString: "$checkInTime", // Convertir checkInTime de string a Date
+              format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
+            }
+          },
+          checkOutDate: {
+            $dateFromString: {
+              dateString: "$checkOutTime", // Convertir checkInTime de string a Date
+              format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
+            }
+          },
+        }
+      },
+      {
+        $match: {
+          checkInDate: {
+            $gte: startDate.toDate(),
+            $lte: endDate.toDate()
+          }
+        }
+      }
+    ])
+
+    for await (const attendance of attendances) {
+      if (attendance.checkOutDate == null) {
+        const idSequence = await consumeSequence("absences", session)
+        const id = String(idSequence).padStart(8, '0')
+        await AbsenceModel.create({
+          id,
+          employeeId: attendance.employeeId,
+          employeeName: attendance.employeeName,
+          date: attendance.checkInDate,
+          isJustified: false,
+          reason: "No se hizo el check out",
+          isPaid: false,
+        })
+      }
+    }
+
+    // await Promise.all([
+    //   attendances.forEach(async (attendance) => {
+
+    //   })
+    // ])
+
+    // console.log(attendances)
+
+    return null
   }
 
   async importFromCsv(file: any) {

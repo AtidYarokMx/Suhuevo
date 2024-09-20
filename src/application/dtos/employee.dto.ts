@@ -1,4 +1,6 @@
 import { Model } from "@app/repositories/mongoose"
+import { IJob } from "./job.dto"
+import { IDepartment } from "./deparment.dto"
 
 export interface IEmployee {
   id: string
@@ -64,5 +66,10 @@ export interface IEmployeeMethods {
   fullname(): string
 }
 
+export interface IEmployeeVirtuals {
+  department: IDepartment | null
+  job: IJob | null
+}
+
 /* types */
-export type AppEmployeeModel = Model<IEmployee, {}, IEmployeeMethods>
+export type AppEmployeeModel = Model<IEmployee, {}, IEmployeeMethods, IEmployeeVirtuals>
