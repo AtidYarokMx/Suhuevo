@@ -22,7 +22,15 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
   departmentId: { type: String, required: true },
   hireDate: { type: String },
   jobId: { type: String, required: true },
-  schedule: { type: Object },
+  schedule: { type: {
+    monday: { start: String, end: String },
+    tuesday: { start: String, end: String },
+    wednesday: { start: String, end: String },
+    thursday: { start: String, end: String },
+    friday: { start: String, end: String },
+    saturday: { start: String, end: String },
+    sunday: { start: String, end: String }
+  } },
   bankAccountNumber: { type: String },
   dailySalary: { type: Number },
 

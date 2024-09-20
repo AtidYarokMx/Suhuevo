@@ -6,6 +6,7 @@ export interface IAttendance {
   employeeId: string
   employeeName: string
   checkInTime: string
+  checkOutTime?: string
 
   isLate: boolean
 
@@ -18,6 +19,7 @@ export interface IAttendance {
 export type CreateAttendanceBody = {
   employeeId: string
   checkInTime: string
+  checkOutTime?: string
 }
 
 export type CreateAttendanceResponse = {

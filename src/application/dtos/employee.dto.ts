@@ -39,14 +39,19 @@ export interface IEmployee {
   createdAt: Date
 }
 
+type EmployeeSchedule = {
+  start: string
+  end: string
+} | null
+
 export interface IEmployeSchedule {
-  monday: any,
-  tuesday: any
-  wednesday: any
-  thursday: any
-  friday: any
-  saturday: any
-  sunday: any,
+  monday: EmployeeSchedule,
+  tuesday: EmployeeSchedule
+  wednesday: EmployeeSchedule
+  thursday: EmployeeSchedule
+  friday: EmployeeSchedule
+  saturday: EmployeeSchedule
+  sunday: EmployeeSchedule,
 }
 
 
