@@ -12,7 +12,7 @@ import userService from './user.service'
 
 
 class EmployeeService {
-  async get (query: any): Promise<any> {
+  async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await EmployeeModel.find({ active: true, id: { $in: ids } })
 
@@ -21,7 +21,7 @@ class EmployeeService {
     return result
   }
 
-  async search (query: any): Promise<any> {
+  async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
     const allowedFields: (keyof IEmployee)[] = ['id', 'name', 'departmentId', 'jobId', 'mxCurp', 'mxRfc', 'mxNss', 'status']
@@ -58,8 +58,7 @@ class EmployeeService {
     return await this.populateResults(records)
   }
 
-  async create (body: any, session: ClientSession): Promise<any> {
-    console.log(body)
+  async create(body: any, session: ClientSession): Promise<any> {
     const id = String(await consumeSequence('employees', session)).padStart(6, '0')
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
@@ -71,7 +70,7 @@ class EmployeeService {
         userName: body.email,
         name: body.name,
         lastName: body.lastName,
-        secondLastName: body.secondLastName ,
+        secondLastName: body.secondLastName,
         role: allowedRoles.includes(body.role) ? body.role : 'employee',
         phone: body.phone,
         email: body.email
@@ -86,7 +85,7 @@ class EmployeeService {
     return { id: record.id }
   }
 
-  async update (body: any, session: ClientSession): Promise<any> {
+  async update(body: any, session: ClientSession): Promise<any> {
     const record = await EmployeeModel.findOne({ id: body.id })
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el empleado' })
 
@@ -109,6 +108,7 @@ class EmployeeService {
       'hireDate',
       'bankAccountNumber',
       'dailySalary',
+      'schedule',
       
       'mxCurp',
       'mxRfc',
@@ -126,14 +126,14 @@ class EmployeeService {
       }
     }
 
-    record.schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
+    if (body.schedule != null && typeof body.schedule === 'string') record.schedule = JSON.parse(body.schedule)
+    // record.schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
 
-    await record.save({ validateBeforeSave: true, validateModifiedOnly: true, session })
+    await record.save({ validateBeforeSave: true, session })
     return { id: record.id }
   }
 
-  async delete (body: any, session: ClientSession): Promise<any> {
-    
+  async delete(body: any, session: ClientSession): Promise<any> {
   }
 
   async populateResults(array: IEmployee[]): Promise<any> {
@@ -147,8 +147,8 @@ class EmployeeService {
     for (const record of populatedArray) {
       record.departmentName = departments[record.departmentId]?.name
       record.jobName = jobs[record.jobId]?.name
-      record.timeEntry = record.schedule?.tuesday?.start
-      record.timeDeparture = record.schedule?.tuesday?.end
+      record.timeEntry = Object.values(record.schedule as IEmployee).find(x => x?.start != null)?.start
+      record.timeDeparture = Object.values(record.schedule as IEmployee).find(x => x?.end != null)?.end
       // record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
       // record.businessHours = convertToBusinessHours(record.schedule)
 

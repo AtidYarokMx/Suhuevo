@@ -5,7 +5,7 @@ import attendanceService from '../services/attendance.service'
 
 class AttendanceController {
 
-  public async get (req: Request, res: Response): Promise<any> {
+  public async get(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await attendanceService.get(query)
@@ -16,7 +16,7 @@ class AttendanceController {
     }
   }
 
-  public async create (req: Request, res: Response): Promise<any> {
+  public async create(req: Request, res: Response): Promise<any> {
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()
     try {
@@ -32,7 +32,7 @@ class AttendanceController {
     }
   }
 
-  public async update (req: Request, res: Response): Promise<any> {
+  public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()
     try {
@@ -49,7 +49,7 @@ class AttendanceController {
     }
   }
 
-  public async search (req: Request, res: Response): Promise<any> {
+  public async search(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await attendanceService.search(query)
@@ -60,7 +60,22 @@ class AttendanceController {
     }
   }
 
-  public async importFromCsv (req: Request, res: Response): Promise<any> {
+  public async startCalculations(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {
+    const session = await AppMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const response = await attendanceService.startCalculations(session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async importFromCsv(req: Request, res: Response): Promise<any> {
     const file = req.file
     try {
       const response = await attendanceService.importFromCsv(file)

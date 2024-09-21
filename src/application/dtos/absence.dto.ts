@@ -3,7 +3,7 @@ export interface IAbsence {
 
   employeeId: string
   employeeName: string
-  date: string
+  date: Date
 
   isJustified: boolean;
   reason: string;

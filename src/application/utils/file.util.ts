@@ -1,0 +1,20 @@
+import fs from 'node:fs'
+import csvParser from 'csv-parser'
+/* dtos */
+import { AttendanceCsvFields } from '@app/dtos/attendance.dto';
+
+export async function readCsv(file: Express.Multer.File) {
+  const rows: { employeeId: string, checkInTime: string }[] = []
+  await new Promise<void>((resolve, reject) => {
+    const stream = fs.createReadStream(file.path).pipe(csvParser())
+    stream.on("data", (row: AttendanceCsvFields) => {
+      rows.push({
+        checkInTime: row['Time'],
+        employeeId: row['Person ID'].replaceAll('\'', ''),
+      })
+    })
+    stream.on("end", () => resolve())
+    stream.on("error", (err) => reject(err))
+  });
+  return rows
+}

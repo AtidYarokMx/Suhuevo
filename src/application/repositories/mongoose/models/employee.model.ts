@@ -1,9 +1,9 @@
 import { Schema, model } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
-import { EEmployeStatus, IEmployee } from '@app/dtos/employee.dto'
+import { EEmployeStatus, AppEmployeeModel, IEmployee, IEmployeeMethods, IEmployeeVirtuals } from '@app/dtos/employee.dto'
 
 
-export const EmployeeSchema = new Schema<IEmployee>({
+export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeMethods, Record<string, unknown>, IEmployeeVirtuals>({
   /* required fields */
   id: { type: String, required: true, trim: true, unique: true },
   status: { type: String, enum: EEmployeStatus, default: EEmployeStatus.ACTIVE, required: true },
@@ -19,13 +19,23 @@ export const EmployeeSchema = new Schema<IEmployee>({
   birthdate: { type: String },
   bloodType: { type: String },
 
-  departmentId: { type: String },
+  departmentId: { type: String, required: true },
   hireDate: { type: String },
-  jobId: { type: String },
-  schedule: { type: Object },
+  jobId: { type: String, required: true },
+  schedule: {
+    type: {
+      monday: { start: String, end: String },
+      tuesday: { start: String, end: String },
+      wednesday: { start: String, end: String },
+      thursday: { start: String, end: String },
+      friday: { start: String, end: String },
+      saturday: { start: String, end: String },
+      sunday: { start: String, end: String }
+    }
+  },
   bankAccountNumber: { type: String },
   dailySalary: { type: Number },
-  
+
   mxCurp: { type: String, trim: true },
   mxRfc: { type: String, trim: true },
   mxNss: { type: String, trim: true },
@@ -41,6 +51,31 @@ export const EmployeeSchema = new Schema<IEmployee>({
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },
   createdAt: { type: Date, default: () => Date.now(), immutable: true }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+})
+
+/* methods */
+EmployeeSchema.method('fullname', function fullname() {
+  /* solución alterna */
+  // const nameParts = [this.name, this.lastName, this.secondLastName].filter(Boolean);
+  // return nameParts.join(' ');
+  return `${this.name ?? ''} ${this.lastName ?? ''} ${this.secondLastName ?? ''}`.trim()
+})
+
+EmployeeSchema.virtual("job", {
+  ref: "job",
+  localField: "jobId",
+  foreignField: "id",
+  justOne: true
+})
+
+EmployeeSchema.virtual("department", {
+  ref: "department",
+  localField: "departmentId",
+  foreignField: "id",
+  justOne: true
 })
 
 /* pre (middlewares) */
@@ -55,4 +90,4 @@ EmployeeSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const EmployeeModel = model<IEmployee>('employee', EmployeeSchema)
+export const EmployeeModel = model<IEmployee, AppEmployeeModel>('employee', EmployeeSchema)

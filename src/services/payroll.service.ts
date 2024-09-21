@@ -28,7 +28,7 @@ class PayrollService {
   private readonly weekStartDay = 3 // Miercoles
   private readonly weekCutOffDay = 2 // Martes
 
-  async search (query: any): Promise<any> {
+  async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
     const allowedFields: (keyof IPayroll)[] = ['id', 'name', 'startDate', 'cutoffDate']
@@ -78,7 +78,7 @@ class PayrollService {
     if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime())) {
       throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
     }
-    weekStartDate = new Date(weekStartDate); 
+    weekStartDate = new Date(weekStartDate);
     // Se le suman las horas UTC del servidor ya que por defecto viene como las 00:00 UTC 0, para que sea interpretado como las 00:00 UTC-6
     weekStartDate = new Date(weekStartDate.getTime() + (weekStartDate.getTimezoneOffset() * 60000));
 
@@ -116,7 +116,8 @@ class PayrollService {
     //   throw new AppErrorResponse({ statusCode: 400, name: `La fecha de corte (${weekCutoffDate.toISOString().slice(0,10)}) aún no ha llegado. No se puede ejecutar la nómina.` });
     // }
 
-    const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE });
+    const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
+    // console.log(employees)
 
     const lines = [];
     let rowIndex = 1
@@ -154,7 +155,7 @@ class PayrollService {
       const salary = dailySalary * (totalDays)
 
       const extraHours = await this.calculateExtraHours(employee.id, weekStartDate, weekCutoffDate)
-      const extraHoursPayment = extraHours * ((dailySalary / 8) * 2) 
+      const extraHoursPayment = extraHours * ((dailySalary / 8) * 2)
 
       // Bono de asistencia (10% del salario base)
       const attendanceBonus = this.calculateAttendanceBonus(absences, salary);
@@ -164,7 +165,7 @@ class PayrollService {
 
       // Bono de despensa ($290 MXN)
       const pantryBonus = this.groceryBonus;
-      
+
       // Bono por día festivo (triple pago)
       const holidayBonus = this.calculateHolidayBonus(attendances, dailySalary);
 
@@ -180,8 +181,12 @@ class PayrollService {
       lines.push({
         rowIndex,
         employeeId: employee.id,
-        employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`,
+        employeeName: employee.fullname(),
+        jobId: employee.jobId,
+        jobName: employee.job?.name ?? null,
         jobPosition: employee.jobId,
+        departmentId: employee.departmentId,
+        departmentName: employee.department?.name ?? null,
 
         dailySalary: employee.dailySalary,
         daysWorked,
@@ -269,7 +274,7 @@ class PayrollService {
     for (const exception of scheduleEvents) {
       const start = new Date(exception.startDate);
       const end = new Date(exception.endDate);
-      
+
       const exceptionStart = start < weekStartDate ? weekStartDate : start;
       const exceptionEnd = end > weekCutoffDate ? weekCutoffDate : end;
 
@@ -278,7 +283,7 @@ class PayrollService {
     }
 
     return totalExtraHours
-        
+
   }
 
   notifyPayrollAdmin(attendances: any[]): void {
@@ -288,7 +293,7 @@ class PayrollService {
     if (missingCheckIns.length || missingCheckOuts.length) {
       // Lógica para enviar notificación al administrador
       console.log("Notificación: Faltan registros de check-in o check-out.");
-    } 
+    }
   }
 
   async excelReport(query: any) {
@@ -310,7 +315,7 @@ class PayrollService {
         employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`,
 
         sdi: '',
-        
+
         dailySalary: line.dailySalary,
         daysWorked: line.daysWorked,
         paidRestDays: line.paidRestDays,
@@ -336,25 +341,25 @@ class PayrollService {
     // ------------------- Construir archivo excel ----------------------------------------------------
     const workbook = new ExcelJS.Workbook()
 
-    for (const item of [{ sheetName: '5', rowArray: rowsArrayScheme5}, { sheetName: '6', rowArray: rowArrayScheme6}]) {
+    for (const item of [{ sheetName: '5', rowArray: rowsArrayScheme5 }, { sheetName: '6', rowArray: rowArrayScheme6 }]) {
       const rowArray = item.rowArray
       const worksheet = workbook.addWorksheet(`CALCULO DE NOMINA ${item.sheetName} DIAS`, {
         views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
       })
-  
+
       const borderStyle: Partial<ExcelJS.Borders> = {
         top: { style: 'thin', color: { argb: 'aaaaaa' } },
         left: { style: 'thin', color: { argb: 'aaaaaa' } },
         bottom: { style: 'thin', color: { argb: 'aaaaaa' } },
         right: { style: 'thin', color: { argb: 'aaaaaa' } }
       }
-  
+
       const headerStyle: ExcelJS.FillPattern = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'dce6f1' }
       }
-  
+
       // Headers 1
       const columnHeaders = ('Nomina,CURP,Numero Seguro Social,Nombre del empleado,S.D.I,Salario Diario,Dias Trabajados,Parte Proporcional Sab y Dom,Dias a Pagar,Sueldo del Periodo,Horas Tiempo Extra,Valor Tiempo Extra,Premios de puntualidad,Bono de Asistencia,Despensa,Otras Percepciones,Base Gravable').split(',')
       const headerRow = worksheet.addRow(
@@ -363,15 +368,15 @@ class PayrollService {
       headerRow.eachCell((cell: any) => { cell.fill = headerStyle })
       headerRow.eachCell((cell: any) => { cell.border = borderStyle })
       headerRow.font = { bold: true }
-  
+
       worksheet.columns = [
         { key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
         { key: 'mxCurp', width: 20, style: { numFmt: '@' } },
         { key: 'mxNss', width: 20, style: { numFmt: '@' } },
         { key: 'employeeName', width: 30, style: { numFmt: '@' } },
-  
+
         { key: 'sdi', width: 10, style: { numFmt: '@' } },
-  
+
         { key: 'dailySalary', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { key: 'daysWorked', width: 11, style: { numFmt: '@' } },
         { key: 'paidRestDays', width: 20, style: { numFmt: '@' } },
@@ -379,30 +384,30 @@ class PayrollService {
         { key: 'salary', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { key: 'extraHours', width: 10, style: { numFmt: '@' } },
         { key: 'extraHoursPayment', width: 10, style: { numFmt: '"$"#,##0.00' } },
-  
+
         { key: 'punctualityBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { key: 'attendanceBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
         { key: 'pantryBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
-  
+
         { key: 'otherPayments', width: 15, style: { numFmt: '"$"#,##0.00' } },
         // { key: 'tardies', width: 10, style: { numFmt: '@' } },
         { key: 'netPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
       ]
-  
+
       rowArray.forEach((doc: any, index: any) => {
         const row = worksheet.addRow(Object.values(doc))
         row.eachCell({ includeEmpty: true }, (cell: any) => { cell.border = borderStyle })
       })
-  
+
       columnHeaders.forEach((header, index) => {
         const column = worksheet.getColumn(index + 1)
         column.eachCell({ includeEmpty: true }, (cell: any) => {
           cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
         })
       })
-  
+
       const totalsRow = worksheet.addRow([
-        'Totales', '', '', '', '', '', '', '', '', 
+        'Totales', '', '', '', '', '', '', '', '',
         { formula: `SUM(J2:J${worksheet.rowCount})` }, // Total salary
         { formula: `SUM(K2:K${worksheet.rowCount})` }, // Total extraHours 
         { formula: `SUM(L2:L${worksheet.rowCount})` }, // Total extraHoursPayment
@@ -412,7 +417,7 @@ class PayrollService {
         { formula: `SUM(P2:P${worksheet.rowCount})` }, // Total others
         { formula: `SUM(Q2:Q${worksheet.rowCount})` }, // Total netPay
       ]);
-      
+
       totalsRow.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
         cell.font = { bold: true };
         cell.border = {

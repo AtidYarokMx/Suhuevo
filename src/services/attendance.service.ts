@@ -1,24 +1,28 @@
-
-import { IAttendance } from '@app/dtos/attendance.dto'
-import { EEmployeStatus } from '@app/dtos/employee.dto'
-import { AppErrorResponse } from '@app/models/app.response'
+/* lib */
+import moment from 'moment'
+/* repos & clients */
+import { type ClientSession } from 'mongoose'
+import { AppMongooseRepo } from '@app/repositories/mongoose'
+/* dtos */
+import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from '@app/dtos/attendance.dto'
+import { EEmployeStatus, IEmployeSchedule } from '@app/dtos/employee.dto'
+/* models */
+import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
 import { AttendanceModel } from '@app/repositories/mongoose/models/attendance.model'
 import { EmployeeModel } from '@app/repositories/mongoose/models/employee.model'
+import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
+import { AppErrorResponse } from '@app/models/app.response'
+/* utils */
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog } from '@app/utils/util.util'
-import { type ClientSession } from 'mongoose'
-import csvParser from 'csv-parser';
-import fs from 'fs';
-import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
-import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
-
+import { parse as parseDate } from '@app/utils/date.util';
+import { readCsv } from '@app/utils/file.util';
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 10;
   private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
 
-  async get (query: any): Promise<any> {
+  async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await AttendanceModel.find({ active: true, id: { $in: ids } })
 
@@ -27,7 +31,7 @@ class AttendanceService {
     return result
   }
 
-  async search (query: any): Promise<any> {
+  async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
     const allowedFields: (keyof IAttendance)[] = ['id', 'employeeId', 'checkInTime', 'isLate']
@@ -61,9 +65,14 @@ class AttendanceService {
     return this.reformatData(records)
   }
 
-  async create (body: any, session: ClientSession): Promise<any> {
-    let { employeeId, checkInTime } = body;
-    checkInTime = new Date(checkInTime).toISOString()
+  async create(body: CreateAttendanceBody, session: ClientSession): Promise<CreateAttendanceResponse> {
+    const { employeeId, checkInTime: checkInTimeBody, checkOutTime: checkOutTimeBody } = body;
+    /* solución de formateado de fecha */
+    const parsedCheckInTime = parseDate(checkInTimeBody)
+    const parsedCheckOutTime = checkOutTimeBody ? parseDate(checkOutTimeBody) : null
+
+    // const checkInTime = new Date(checkInTimeBody).toISOString
+    const day = parsedCheckInTime.format("YYYY-MM-DD")
 
     const employee = await EmployeeModel.findOne({
       $or: [
@@ -72,19 +81,18 @@ class AttendanceService {
       ],
       status: EEmployeStatus.ACTIVE
     });
+
     if (!employee) throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` })
-    const employeeName = `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`
+    const employeeName = employee.fullname()
 
-    const checkInDate = new Date(checkInTime).toISOString().slice(0, 10); // YYYY-MM-DD
-    console.log('checkInDate', checkInDate)
-    const existingAttendance = await AttendanceModel.findOne({ active: true, employeeId: employee.id, checkInTime: { $regex: `^${checkInDate}` } });
-    if (existingAttendance) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una asistencia para ${employeeName} el día ${checkInDate}` })
+    const existingAttendance = await AttendanceModel.findOne({ active: true, employeeId: employee.id, checkInTime: { $regex: `^${day}` } });
+    if (existingAttendance) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una asistencia para ${employeeName} el día ${day}` })
 
-    const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId: employee.id, date: { $regex: `^${checkInDate}` } });
-    if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${checkInDate}` })
-  
-    const dayOfWeek = new Date(checkInTime).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-    const scheduleForDay = (employee.schedule as any)?.[dayOfWeek];
+    const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId: employee.id, date: { $regex: `^${day}` } });
+    if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${day}` })
+
+    const dayOfWeek = parsedCheckInTime.format("dddd").toLowerCase()
+    const scheduleForDay = employee.schedule[dayOfWeek as keyof IEmployeSchedule];
 
     const scheduleException = await ScheduleExceptionModel.findOne({
       active: true,
@@ -93,24 +101,27 @@ class AttendanceService {
       $or: [
         {
           $and: [
-            { startDate: { $regex: `^${checkInDate}` } },
+            { startDate: { $regex: `^${day}` } },
             { allDay: true },
           ]
         },
         {
           $and: [
-            { startDate: { $lte: checkInDate } },
-            { endDate: { $gt: checkInDate } }
+            { startDate: { $lte: day } },
+            { endDate: { $gt: day } }
           ]
         }
-        
       ]
     });
-    if (!scheduleForDay && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${checkInDate}` })
-  
+
+    if (!scheduleForDay && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${day}` })
+
     const scheduleForDayStart = scheduleForDay?.start ?? Object.values(employee.schedule).find(x => x?.start != null).start
-    const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDayStart + ':00');
-    const checkInDateTime = new Date(checkInTime);
+    // const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDayStart + ':00');
+    // const checkInDateTime = new Date(checkInTime);
+    // const differenceInMinutes = (checkInDateTime.getTime() - scheduleStartTime.getTime()) / 60_000;
+    const scheduleStartTime = new Date(day + 'T' + scheduleForDayStart + ':00');
+    const checkInDateTime = new Date(checkInTimeBody);
     const differenceInMinutes = (checkInDateTime.getTime() - scheduleStartTime.getTime()) / 60_000;
 
     console.log(scheduleStartTime, checkInDateTime)
@@ -118,17 +129,25 @@ class AttendanceService {
     console.log('differenceInMinutes', differenceInMinutes)
 
     const isLate = differenceInMinutes > this.MAX_TIME_DELAY;
-  
+
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
-    const record = new AttendanceModel({ id, employeeId: employee.id, employeeName, checkInTime, isLate });
-  
-    customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)})`);
+    const record = new AttendanceModel({
+      id,
+      employeeId:
+        employee.id,
+      employeeName,
+      checkInTime: parsedCheckInTime.format("YYYY-MM-DD HH:MM:SS"),
+      checkOutTime: parsedCheckOutTime?.format("YYYY-MM-DD HH:MM:SS"),
+      isLate
+    });
+
+    customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)}) el día ${day}`);
     await record.save({ session });
-  
+
     return { id: record.id };
   }
 
-  async update (body: any, session: ClientSession): Promise<any> {
+  async update(body: any, session: ClientSession): Promise<any> {
     const record = await AttendanceModel.findOne({ id: body.id })
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró la asistencia' })
 
@@ -146,54 +165,124 @@ class AttendanceService {
     return { id: record.id }
   }
 
-  async importFromCsv(file: any) {
-    if (file == null)  throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
+  async startCalculations(session: ClientSession) {
+    const startDate = moment("9/11/2024 00:00:00", "M/D/YYYY H:m:s")
+    const endDate = moment("9/17/2024 23:59:59", "M/D/YYYY H:m:s")
 
-    const rows: any[] = [];
-
-    // Convertir el archivo CSV a un array
-    await new Promise<void>((resolve, reject) => {
-      const stream = fs.createReadStream(file.path)
-        .pipe(csvParser())
-        .on('data', (row) => {
-          rows.push(row);
-        })
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err));
-    });
-
-    const reformattedRows = rows.map(row => {
-      return {
-        employeeId: row['Person ID'].replaceAll('\'', ''),
-        checkInTime: row['Time']
+    const attendances = await AttendanceModel.aggregate<IAttendance & {
+      checkInDate: Date
+      checkOutDate: Date
+    }>([
+      {
+        $addFields: {
+          checkInDate: {
+            $dateFromString: {
+              dateString: "$checkInTime", // Convertir checkInTime de string a Date
+              format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
+            }
+          },
+          checkOutDate: {
+            $dateFromString: {
+              dateString: "$checkOutTime", // Convertir checkInTime de string a Date
+              format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
+            }
+          },
+        }
+      },
+      {
+        $match: {
+          checkInDate: {
+            $gte: startDate.toDate(),
+            $lte: endDate.toDate()
+          }
+        }
       }
-    })
+    ])
+
+    for await (const attendance of attendances) {
+      if (attendance.checkOutDate == null) {
+        const idSequence = await consumeSequence("absences", session)
+        const id = String(idSequence).padStart(8, '0')
+        await AbsenceModel.create({
+          id,
+          employeeId: attendance.employeeId,
+          employeeName: attendance.employeeName,
+          date: attendance.checkInDate,
+          isJustified: false,
+          reason: "No se hizo el check out",
+          isPaid: false,
+        })
+      }
+    }
+
+    // await Promise.all([
+    //   attendances.forEach(async (attendance) => {
+
+    //   })
+    // ])
+
+    // console.log(attendances)
+
+    return null
+  }
+
+  async importFromCsv(file: any) {
+    if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
+
+    let reformattedRows = await readCsv(file)
+    reformattedRows = groupCheckInCheckOut(reformattedRows)
+
+    function groupCheckInCheckOut(rows: { employeeId: string, checkInTime: string }[]) {
+      const groupedRows: Record<string, { checkInTime: string, checkOutTime?: string }> = {};
+
+      rows.forEach(row => {
+        const employeeId = row.employeeId;
+        const checkInTime = row.checkInTime;
+        const date = checkInTime.split(' ')[0]
+        const key = `${employeeId}-${date}`;
+
+        if (!groupedRows[key]) groupedRows[key] = { checkInTime };
+        else if (!groupedRows[key].checkOutTime) groupedRows[key].checkOutTime = checkInTime;
+      });
+
+      const reformattedRows = Object.keys(groupedRows).map(key => {
+        const { checkInTime, checkOutTime } = groupedRows[key];
+        return {
+          employeeId: key.split('-')[0],
+          checkInTime,
+          checkOutTime: checkOutTime || null
+        };
+      });
+      return reformattedRows;
+    }
+
 
     let detail: any = []
     let createdAttendances = 0
+
     for (const [index, row] of reformattedRows.entries()) {
       let session = await AppMongooseRepo.startSession()
       session.startTransaction()
-      try { 
+      try {
         const attendance = await this.create(row, session);
-        detail.push({row: index + 1, result: attendance.id})
+        detail.push({ row: index + 1, result: attendance.id })
         createdAttendances++
         await session.commitTransaction()
         await session.endSession()
       }
       catch (error: any) {
         await session.abortTransaction()
-        detail.push({row: index + 1, error: error.name})
+        detail.push({ row: index + 1, error: error.name })
       }
     }
 
-    return {totalRows: reformattedRows.length, detail, createdAttendances }
+    return { totalRows: reformattedRows.length, detail, createdAttendances }
 
   }
 
   reformatData(array: IAttendance[]): any[] {
     const newArray = array.map((record => {
-      const result: any = { 
+      const result: any = {
         ...JSON.parse(JSON.stringify(record)),
         date: record.checkInTime,
         title: record.isLate ? 'Retardo' : 'Asistencia'

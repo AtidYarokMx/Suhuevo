@@ -11,6 +11,7 @@ export const AttendanceSchema = new Schema<IAttendance>({
   employeeId: { type: String, required: true, trim: true },
   employeeName: { type: String },
   checkInTime: { type: String, required: true },
+  checkOutTime: { type: String },
 
   isLate: { type: Boolean, default: false },
   

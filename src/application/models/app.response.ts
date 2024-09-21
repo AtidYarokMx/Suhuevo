@@ -8,7 +8,7 @@ export class AppResponse<T> {
   public code?: string | number
   public response?: T
 
-  constructor (init?: Partial<AppResponse<T>>) {
+  constructor(init?: Partial<AppResponse<T>>) {
     Object.assign(this, init)
   }
 }
@@ -20,7 +20,7 @@ export class AppErrorResponse extends Error {
   public readonly statusCode: number
   public readonly isOperational: boolean = true
 
-  constructor (args: AppErrorArgs) {
+  constructor(args: AppErrorArgs) {
     super(args.description)
 
     Object.setPrototypeOf(this, new.target.prototype)
@@ -32,6 +32,10 @@ export class AppErrorResponse extends Error {
 
     if (args.isOperational !== undefined) {
       this.isOperational = args.isOperational
+    }
+
+    if (args.message !== undefined) {
+      this.message = args.message
     }
 
     if (args.code !== undefined) {

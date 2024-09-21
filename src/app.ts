@@ -10,7 +10,7 @@ import fs from 'fs'
 import https from 'https'
 import * as http from 'http'
 import cookieParser from 'cookie-parser'
-
+import mongoSanitize from 'express-mongo-sanitize'
 import fsPromises from 'fs/promises'
 /* routes */
 import userRoutes from './routes/user.routes'
@@ -71,6 +71,7 @@ export class AppServer {
     this.app.use(cookieParser())
     this.app.use(express.json())
     this.app.use(express.urlencoded({ extended: false }))
+    this.app.use(mongoSanitize())
     // this.app.use(csurf({ cookie: true }))
   }
 

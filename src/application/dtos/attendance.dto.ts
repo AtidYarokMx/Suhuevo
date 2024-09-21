@@ -1,3 +1,4 @@
+
 export interface IAttendance {
   id: string
   name: string
@@ -5,6 +6,7 @@ export interface IAttendance {
   employeeId: string
   employeeName: string
   checkInTime: string
+  checkOutTime?: string
 
   isLate: boolean
 
@@ -12,4 +14,21 @@ export interface IAttendance {
   active: boolean
   updatedAt: Date
   createdAt: Date
+}
+
+export type CreateAttendanceBody = {
+  employeeId: string
+  checkInTime: string
+  checkOutTime?: string
+}
+
+export type CreateAttendanceResponse = {
+  id: string
+}
+
+export type AttendanceCsvFields = {
+  Name: string
+  Time: string
+  'Person ID': string
+  'Attendance Check Point': string
 }

@@ -1,3 +1,7 @@
+import { Model } from "@app/repositories/mongoose"
+import { IJob } from "./job.dto"
+import { IDepartment } from "./deparment.dto"
+
 export interface IEmployee {
   id: string
   status: EEmployeStatus
@@ -19,7 +23,7 @@ export interface IEmployee {
   schedule: IEmployeSchedule
   bankAccountNumber?: string
   dailySalary: number
-  
+
   mxCurp?: string
   mxRfc?: string
   mxNss?: string
@@ -37,14 +41,19 @@ export interface IEmployee {
   createdAt: Date
 }
 
+type EmployeeSchedule = {
+  start: string
+  end: string
+} | null
+
 export interface IEmployeSchedule {
-  monday: any,
-  tuesday: any
-  wednesday: any
-  thursday: any
-  friday: any
-  saturday: any
-  sunday: any,
+  monday: EmployeeSchedule,
+  tuesday: EmployeeSchedule
+  wednesday: EmployeeSchedule
+  thursday: EmployeeSchedule
+  friday: EmployeeSchedule
+  saturday: EmployeeSchedule
+  sunday: EmployeeSchedule,
 }
 
 
@@ -52,3 +61,15 @@ export enum EEmployeStatus {
   ACTIVE = 'activo',
   INACTIVE = 'inactivo'
 }
+
+export interface IEmployeeMethods {
+  fullname(): string
+}
+
+export interface IEmployeeVirtuals {
+  department: IDepartment | null
+  job: IJob | null
+}
+
+/* types */
+export type AppEmployeeModel = Model<IEmployee, {}, IEmployeeMethods, IEmployeeVirtuals>
