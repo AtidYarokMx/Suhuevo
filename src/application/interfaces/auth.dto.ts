@@ -28,3 +28,7 @@ export interface IUserPayload {
   /* media */
   avatar?: string
 }
+
+export type AppLocals = {
+  user: IUserPayload
+}

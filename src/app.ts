@@ -6,35 +6,37 @@ import 'dotenv/config'
 import express, { type Application } from 'express'
 import morgan from 'morgan';
 import cors from 'cors'
+import path from 'path'
 import fs from 'fs'
 import https from 'https'
 import * as http from 'http'
 import cookieParser from 'cookie-parser'
 import mongoSanitize from 'express-mongo-sanitize'
 import fsPromises from 'fs/promises'
-/* routes */
-import userRoutes from './routes/user.routes'
-import authRoutes from './routes/auth.routes'
-
-/* middlewares */
-// import { clientMiddleware } from '@app/middlewares/client.middleware'
 
 /* consts */
 import { cors as serverCors } from '@app/constants/cors.constants'
 import { tempDocsDir } from '@app/constants/file.constants'
-import { ServerLogger } from '@app/handlers/loggers/server.logger'
-import path from 'path'
 
+/* handlers */
+import { ServerLogger } from '@app/handlers/loggers/server.logger'
+
+/* routes */
+import userRoutes from './routes/user.routes'
 import selectRoutes from '@routes/select.routes'
+import authRoutes from './routes/auth.routes'
 import serverRoutes from '@routes/server.routes'
 import employeeRoutes from '@routes/employee.routes';
 import deparmentRoutes from '@routes/deparment.routes';
 import jobRoutes from '@routes/job.routes';
 import scheduleRoutes from '@routes/schedule.routes';
 import attendanceRoutes from '@routes/attendance.routes';
-import { dailyAbsencesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
 import absenceRoutes from '@routes/absence.routes';
 import payrollRoutes from '@routes/payroll.routes';
+import fileRoutes from '@routes/file.routes';
+
+/* cronjobs */
+import { dailyAbsencesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
 
 // import csurf from 'csurf'
 
@@ -45,7 +47,7 @@ export class AppServer {
   private readonly server: https.Server // https
   private readonly serverInsecure
 
-  constructor () {
+  constructor() {
     this.app = express()
     this.server = https.createServer(this.getHttpsOptions(), this.app) // https
     this.serverInsecure = http.createServer(this.app)
@@ -55,14 +57,14 @@ export class AppServer {
     void this.initFolders()
   }
 
-  private getHttpsOptions (): any { // https
+  private getHttpsOptions(): any { // https
     return {
       key: fs.readFileSync(path.resolve(__dirname, 'SSL/proavicolKey.key')),
-    cert: fs.readFileSync(path.resolve(__dirname, 'SSL/fullchain.pem'))
+      cert: fs.readFileSync(path.resolve(__dirname, 'SSL/fullchain.pem'))
     }
   }
 
-  config (): void {
+  config(): void {
     this.app.set('port', process.env.PORT ?? 443)
     this.app.use(morgan('dev'))
     this.app.use(cors(serverCors))
@@ -74,7 +76,7 @@ export class AppServer {
     // this.app.use(csurf({ cookie: true }))
   }
 
-  routes (): void {
+  routes(): void {
     this.app.use('/favicon.ico', express.static(path.join(__dirname, '../images/favicon.ico')))
     this.app.use('/api/server', serverRoutes)
     this.app.use('/api/auth', authRoutes)
@@ -85,18 +87,19 @@ export class AppServer {
     this.app.use('/api/attendance', attendanceRoutes)
     this.app.use('/api/absence', absenceRoutes)
     this.app.use('/api/payroll', payrollRoutes)
+    this.app.use('/api/file', fileRoutes)
   }
 
-  crons (): void {
+  crons(): void {
     dailyAbsencesCronJob.start()
     dailyPayrollCronJob.start()
   }
 
-  async initFolders (): Promise<void> {
+  async initFolders(): Promise<void> {
     if (!fs.existsSync(tempDocsDir)) await fsPromises.mkdir(tempDocsDir, { recursive: true })
   }
 
-  start (): void {
+  start(): void {
     this.server.listen(this.app.get('port'), () => {
       ServerLogger.info(`Server listening on \x1b[34mhttps://localhost:${this.app.get('port') as string}\x1b[0m`)
     })
