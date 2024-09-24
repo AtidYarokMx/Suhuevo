@@ -31,6 +31,7 @@ import deparmentRoutes from '@routes/deparment.routes';
 import jobRoutes from '@routes/job.routes';
 import scheduleRoutes from '@routes/schedule.routes';
 import attendanceRoutes from '@routes/attendance.routes';
+import downloadRoutes from '@routes/download.routes';
 import absenceRoutes from '@routes/absence.routes';
 import payrollRoutes from '@routes/payroll.routes';
 import fileRoutes from '@routes/file.routes';
@@ -78,6 +79,7 @@ export class AppServer {
 
   routes(): void {
     this.app.use('/favicon.ico', express.static(path.join(__dirname, '../images/favicon.ico')))
+    this.app.use('/docs', downloadRoutes)
     this.app.use('/api/server', serverRoutes)
     this.app.use('/api/auth', authRoutes)
     this.app.use('/api/employee', employeeRoutes)

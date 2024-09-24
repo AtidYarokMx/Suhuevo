@@ -1,4 +1,4 @@
-import { Model } from "@app/repositories/mongoose"
+import { Model, Types } from "@app/repositories/mongoose"
 import { IJob } from "./job.dto"
 import { IDepartment } from "./deparment.dto"
 
@@ -34,6 +34,11 @@ export interface IEmployee {
   jobScheme: string
 
   userId: string
+
+  /* files */
+  ineFront: Types.ObjectId
+  ineBack: Types.ObjectId
+  contract: Types.ObjectId
 
   /* defaults */
   active: boolean
@@ -73,3 +78,9 @@ export interface IEmployeeVirtuals {
 
 /* types */
 export type AppEmployeeModel = Model<IEmployee, {}, IEmployeeMethods, IEmployeeVirtuals>
+
+/* endpoint types */
+export type AppUpdateBody = Omit<IEmployee, "createdAt" | "updatedAt" | "active"> & {
+  schedule: string
+  dailySalary: string
+}

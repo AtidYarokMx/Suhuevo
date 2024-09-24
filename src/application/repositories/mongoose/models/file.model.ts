@@ -2,10 +2,10 @@ import { Schema, model } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
-import type { TemporalFile, AppTemporalFile, TemporalFileMethods } from '@app/dtos/file.dto'
+import type { IAppFile, AppFile, IAppFileVirtuals } from '@app/dtos/file.dto'
 
 
-export const TemporalFileSchema = new Schema<TemporalFile, AppTemporalFile, TemporalFileMethods>({
+export const AppFileSchema = new Schema<IAppFile, AppFile, Record<string, unknown>, Record<string, unknown>, IAppFileVirtuals>({
   /* required fields */
   filename: { type: String, required: true },
   mimetype: { type: String, required: true },
@@ -16,23 +16,27 @@ export const TemporalFileSchema = new Schema<TemporalFile, AppTemporalFile, Temp
   /* defaults */
   updatedAt: { type: Date, default: () => Date.now() },
   createdAt: { type: Date, default: () => Date.now(), immutable: true }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 })
 
-/* methods */
-TemporalFileSchema.method("fullpath", function fullpath() {
+/* virtual fields */
+AppFileSchema.virtual("fullpath").get(function () {
   return `${this.path}${this.filename}`
 })
 
 /* pre (middlewares) */
-TemporalFileSchema.pre('save', async function (next) {
+AppFileSchema.pre('save', async function (next) {
   this.updatedAt = new Date(Date.now())
   next()
 })
 
 /* post (middlewares) */
-TemporalFileSchema.post('save', function (doc) {
-  DbLogger.info(`[TemporalFile][${String(doc._id)}] Uploaded File: ${JSON.stringify(doc.toJSON())}`)
+AppFileSchema.post('save', function (doc) {
+  DbLogger.info(`[IAppFile][${String(doc._id)}] Uploaded File: ${JSON.stringify(doc.toJSON())}`)
 })
 
 /* model instance */
-export const TemporalFileModel = model<TemporalFile, AppTemporalFile>('temporal-file', TemporalFileSchema)
+export const AppTemporalFileModel = model<IAppFile, AppFile>('temporal-file', AppFileSchema)
+export const AppFileModel = model<IAppFile, AppFile>('file', AppFileSchema)
