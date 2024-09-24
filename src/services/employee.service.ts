@@ -1,23 +1,25 @@
 /* lib */
 import fs from 'node:fs'
 import path from 'node:path'
-/* ... */
-import { AppUpdateBody, IEmployee } from '@app/dtos/employee.dto'
-import { AppErrorResponse } from '@app/models/app.response'
+import { type ClientSession } from 'mongoose'
+/* models */
 import { EmployeeModel } from '@app/repositories/mongoose/models/employee.model'
+import { AppFileModel, AppTemporalFileModel } from '@app/repositories/mongoose/models/file.model'
+/* services */
+import departmentService from './department.service'
+import userService from './user.service'
+import jobService from './job.service'
+/* response models */
+import { AppErrorResponse } from '@app/models/app.response'
+/* utils */
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog, getBaseSchedule } from '@app/utils/util.util'
-import { type ClientSession } from 'mongoose'
-import departmentService from './department.service'
-import jobService from './job.service'
-import { convertToBusinessHours } from '@app/constants/schedule.constants'
-import userService from './user.service'
-import { AppFileModel, AppTemporalFileModel } from '@app/repositories/mongoose/models/file.model'
-/* utils */
-import { getFileExtension } from '@app/utils/file.util'
 /* consts */
+import { convertToBusinessHours } from '@app/constants/schedule.constants'
 import { docsDir, tempDocsDir } from '@app/constants/file.constants'
 import { Types } from '@app/repositories/mongoose'
+/* dtos */
+import { AppUpdateBody, IEmployee } from '@app/dtos/employee.dto'
 
 
 class EmployeeService {
