@@ -4,24 +4,24 @@ import jwt from 'jsonwebtoken'
 /* consts */
 import { rounds, expiresIn } from '@app/constants/auth.constants'
 /* dtos */
-import { type IAccountToken } from '@app/interfaces/auth.dto'
+import type { IUserPayload, IAccountToken } from '@app/interfaces/auth.dto'
 
-export function generatePasswordHash (password: string): string {
+export function generatePasswordHash(password: string): string {
   const salt: string = bcrypt.genSaltSync(rounds)
   const hash: string = bcrypt.hashSync(password, salt)
   return hash
 }
 
-export function comparePassword (password: string, hashPassword: string): boolean {
+export function comparePassword(password: string, hashPassword: string): boolean {
   return bcrypt.compareSync(password, hashPassword)
 }
 
-export function generateUserToken (payload: any): IAccountToken {
+export function generateUserToken(payload: IUserPayload): IAccountToken {
   const token: string = jwt.sign(payload, process.env.USER_JWT_SIGNATURE ?? '', { expiresIn })
   return { token, expiresIn }
 }
 
-export function verifyUserToken<T> (token: string): T {
+export function verifyUserToken<T>(token: string): T {
   return jwt.verify(token, process.env.USER_JWT_SIGNATURE ?? '') as T
 }
 

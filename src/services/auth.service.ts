@@ -8,7 +8,7 @@ import { SessionModel } from '@app/repositories/mongoose/models/session.model'
 /* dtos */
 
 class AuthService {
-  async login (body: any, locals: any, session: any): Promise<any> {
+  async login(body: any, locals: any, session: any): Promise<any> {
     console.log(body)
     const userName = body.userName ?? body.email
     const user = await UserModel.findOne({ userName, active: true }, undefined, { session })
@@ -18,11 +18,14 @@ class AuthService {
     if (!valid) throw new AppErrorResponse({ statusCode: 401, name: 'Credenciales incorrectas', isOperational: true })
 
     const { token, expiresIn } = generateUserToken({
+      _id: user._id,
       id: user.id,
+      email: user.email,
       name: user.name,
       firstLastName: user.firstLastName,
       secondLastName: user.secondLastName,
-      role: user.role
+      role: user.role,
+      phone: user.phone
     })
 
     // const accountSession = new SessionModel({

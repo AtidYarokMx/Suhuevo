@@ -12,6 +12,7 @@
   "_moduleAliases": {
     "@app": "dist/application",
     "@controllers": "dist/controllers",
+    "@services": "dist/services",
     "@routes": "dist/routes",
     "@producers": "dist/producers",
     "@consumers": "dist/consumers"
