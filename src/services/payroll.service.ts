@@ -14,6 +14,7 @@ import { ScheduleExceptionModel } from "@app/repositories/mongoose/models/schedu
 import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
 import { IAttendance } from "@app/dtos/attendance.dto";
 import { IAbsence } from "@app/dtos/absence.dto";
+import { bigMath } from "@app/utils/math.util";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -147,7 +148,12 @@ class PayrollService {
         date: { $gte: weekStartDate, $lte: weekCutoffDate },
       });
 
-      const restDaysMultiplier = jobScheme === '5' ? 0.2 : 0.16666
+      const fiveDaysSchemeBase = bigMath.chain(7).divide(5).done()
+      const sixDaysSchemeBase = bigMath.chain(7).divide(6).done()
+
+      console.log(fiveDaysSchemeBase, sixDaysSchemeBase)
+
+      const restDaysMultiplier = jobScheme === '5' ? fiveDaysSchemeBase : sixDaysSchemeBase
       // Salario base por los días trabajados
       const daysWorked = attendances.length + paidAbsences.length // TODO update later
       const paidRestDays = (daysWorked * restDaysMultiplier).toFixed(2);

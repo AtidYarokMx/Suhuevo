@@ -1,7 +1,8 @@
 import { Model, Types } from "@app/repositories/mongoose";
 
 /* model types */
-export type TemporalFile = {
+export type IAppFile = {
+  _id?: Types.ObjectId
   /* populated */
   idUser: Types.ObjectId
   /* defaults */
@@ -9,11 +10,11 @@ export type TemporalFile = {
   createdAt: Date
 } & Omit<Express.Multer.File, "buffer" | "stream" | "fieldname" | "originalname" | "destination">
 
-export type TemporalFileMethods = {
-  fullpath(): string
+export type IAppFileVirtuals = {
+  fullpath: string
 }
 
-export type AppTemporalFile = Model<TemporalFile, {}, TemporalFileMethods>
+export type AppFile = Model<IAppFile, {}, {}, IAppFileVirtuals>
 
 /* endpoint types */
 export type UploadSingleResponse = {

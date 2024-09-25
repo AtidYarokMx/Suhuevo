@@ -1,17 +1,31 @@
-
-import { IEmployee } from '@app/dtos/employee.dto'
-import { AppErrorResponse } from '@app/models/app.response'
+/* lib */
+import fs from 'node:fs'
+import path from 'node:path'
+import { type ClientSession } from 'mongoose'
+/* models */
 import { EmployeeModel } from '@app/repositories/mongoose/models/employee.model'
+import { AppFileModel, AppTemporalFileModel } from '@app/repositories/mongoose/models/file.model'
+/* services */
+import departmentService from './department.service'
+import userService from './user.service'
+import jobService from './job.service'
+/* response models */
+import { AppErrorResponse } from '@app/models/app.response'
+/* utils */
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog, getBaseSchedule } from '@app/utils/util.util'
-import { type ClientSession } from 'mongoose'
-import departmentService from './department.service'
-import jobService from './job.service'
+/* consts */
 import { convertToBusinessHours } from '@app/constants/schedule.constants'
-import userService from './user.service'
+import { docsDir, tempDocsDir } from '@app/constants/file.constants'
+import { Types } from '@app/repositories/mongoose'
+/* dtos */
+import { AppUpdateBody, IEmployee } from '@app/dtos/employee.dto'
 
 
 class EmployeeService {
+  private allowedUpdateFields = ['status', 'biometricId', 'name', 'lastName', 'secondLastName', 'email', 'phone', 'address', 'birthdate', 'bloodType', 'departmentId', 'jobId', 'hireDate', 'bankAccountNumber', 'dailySalary', 'schedule', 'mxCurp', 'mxRfc', 'mxNss', 'emergencyContact', 'emergencyPhone', 'jobScheme', 'ineFront', 'ineBack', 'contract'] as (keyof AppUpdateBody)[]
+
+  /* methods */
   async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await EmployeeModel.find({ active: true, id: { $in: ids } })
@@ -52,7 +66,7 @@ class EmployeeService {
 
     // console.log('filter', filter)
 
-    const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
+    const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' }).populate(["ineFront", "ineBack", "contract"]).exec()
     if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
     // console.log(await this.populateResults(records))
     return await this.populateResults(records)
@@ -85,52 +99,38 @@ class EmployeeService {
     return { id: record.id }
   }
 
-  async update(body: any, session: ClientSession): Promise<any> {
+  async update(body: AppUpdateBody, session: ClientSession): Promise<any> {
     const record = await EmployeeModel.findOne({ id: body.id })
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el empleado' })
 
-    const allowedFields: (keyof IEmployee)[] = [
-      'status',
-      'biometricId',
-
-      'name',
-      'lastName',
-      'secondLastName',
-
-      'email',
-      'phone',
-      'address',
-      'birthdate',
-      'bloodType',
-
-      'departmentId',
-      'jobId',
-      'hireDate',
-      'bankAccountNumber',
-      'dailySalary',
-      'schedule',
-      
-      'mxCurp',
-      'mxRfc',
-      'mxNss',
-
-      'emergencyContact',
-      'emergencyPhone',
-
-      'jobScheme'
-    ]
-
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        (record as any)[field] = body[field]
+    for (const field of this.allowedUpdateFields) {
+      if (typeof body[field] !== "undefined" && body[field] !== "") {
+        if (field === "ineFront" || field === "ineBack" || field === "contract") {
+          const id = body[field]
+          if (Types.ObjectId.isValid(id)) {
+            const tempFile = await AppTemporalFileModel.findById(id)
+            if (tempFile != null) {
+              const file = new AppFileModel({
+                idUser: tempFile.idUser,
+                filename: tempFile.filename,
+                mimetype: tempFile.mimetype,
+                path: "/docs/",
+                size: tempFile.size,
+              })
+              fs.renameSync(`${path.join(tempDocsDir, tempFile.filename)}`, `${path.join(docsDir, file.filename)}`)
+              const savedFile = await file.save({ session })
+              record[field] = savedFile._id
+            }
+          }
+        } else {
+          (record as any)[field] = body[field]
+        }
       }
     }
 
-    if (body.schedule != null && typeof body.schedule === 'string') record.schedule = JSON.parse(body.schedule)
-    // record.schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
-
-    await record.save({ validateBeforeSave: true, session })
-    return { id: record.id }
+    const savedRecord = await record.save({ validateBeforeSave: true, session })
+    const populated = await savedRecord.populate(["ineFront", "ineBack", "contract"])
+    return { ...populated.toJSON() }
   }
 
   async delete(body: any, session: ClientSession): Promise<any> {
@@ -149,6 +149,9 @@ class EmployeeService {
       record.jobName = jobs[record.jobId]?.name
       record.timeEntry = Object.values(record.schedule as IEmployee).find(x => x?.start != null)?.start
       record.timeDeparture = Object.values(record.schedule as IEmployee).find(x => x?.end != null)?.end
+      record.ineFront = record.ineFront?.fullpath ?? null
+      record.ineBack = record.ineBack?.fullpath ?? null
+      record.contract = record.contract?.fullpath ?? null
       // record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
       // record.businessHours = convertToBusinessHours(record.schedule)
 

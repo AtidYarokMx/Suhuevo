@@ -1,7 +1,7 @@
 /* lib */
 import { type ClientSession } from 'mongoose'
 /* models */
-import { TemporalFileModel } from '@app/repositories/mongoose/models/file.model'
+import { AppFileModel, AppTemporalFileModel } from '@app/repositories/mongoose/models/file.model'
 /* model response */
 import { AppErrorResponse } from '@app/models/app.response'
 /* dtos */
@@ -13,20 +13,16 @@ class FileService {
   async uploadSingle(file: Express.Multer.File | undefined, locals: AppLocals, session: ClientSession): Promise<UploadSingleResponse> {
     if (typeof file === "undefined") throw new AppErrorResponse({ statusCode: 500, name: "No se mandó un archivo desde el lado del cliente" })
 
-    const temporalFile = new TemporalFileModel({
+    const temporalFile = new AppTemporalFileModel({
       idUser: locals.user._id,
       filename: file.filename,
       mimetype: file.mimetype,
+      path: "/tmp/docs/",
       size: file.size,
-      path: "/tmp/docs/"
     })
 
     const savedFile = await temporalFile.save({ session })
-
-    return {
-      ...savedFile.toJSON(),
-      fullpath: savedFile.fullpath()
-    }
+    return savedFile.toJSON()
   }
 }
 

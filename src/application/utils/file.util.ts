@@ -1,3 +1,4 @@
+import mime from 'mime'
 import fs from 'node:fs'
 import csvParser from 'csv-parser'
 /* dtos */
@@ -17,4 +18,8 @@ export async function readCsv(file: Express.Multer.File) {
     stream.on("error", (err) => reject(err))
   });
   return rows
+}
+
+export function getFileExtension(mimetype: string) {
+  return mime.extension(mimetype)
 }

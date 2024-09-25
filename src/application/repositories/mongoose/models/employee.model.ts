@@ -47,6 +47,11 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
 
   userId: { type: String },
 
+  /* documents */
+  ineFront: { type: Schema.Types.ObjectId, ref: "file" },
+  ineBack: { type: Schema.Types.ObjectId, ref: "file" },
+  contract: { type: Schema.Types.ObjectId, ref: "file" },
+
   /* defaults */
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },
