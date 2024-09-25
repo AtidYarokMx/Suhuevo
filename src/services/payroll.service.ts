@@ -15,13 +15,14 @@ import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
 import { IAttendance } from "@app/dtos/attendance.dto";
 import { IAbsence } from "@app/dtos/absence.dto";
 import { bigMath } from "@app/utils/math.util";
+import { IScheduleException } from "@app/dtos/schedule-exception.dto";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
   private readonly attendanceBonusPercentage = 0.1;
   private readonly punctualityBonusPercentage = 0.1;
-  private readonly groceryBonus = 290.00;
+  private readonly groceryBonus = 145.00;
   private readonly vacationBonusPercentage = 0.25;
   private readonly holidayList = ['240101', '241225', '241231'];
 
@@ -76,13 +77,11 @@ class PayrollService {
 
   async executeWeeklyPayroll(body: any, session: ClientSession): Promise<any> {
     let weekStartDate = body.weekStartDate
-    if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime())) {
-      throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
-    }
+    if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime())) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
+
     weekStartDate = new Date(weekStartDate);
     // Se le suman las horas UTC del servidor ya que por defecto viene como las 00:00 UTC 0, para que sea interpretado como las 00:00 UTC-6
     weekStartDate = new Date(weekStartDate.getTime() + (weekStartDate.getTimezoneOffset() * 60000));
-
     console.log(weekStartDate, weekStartDate.getDay(), this.daysOfWeekInSpanish[weekStartDate.getDay()])
 
     if (weekStartDate.getDay() !== this.weekStartDay) {
@@ -90,99 +89,90 @@ class PayrollService {
       throw new AppErrorResponse({ statusCode: 400, name: `La fecha de inicio de semana debe ser un ${dayName}` });
     }
 
-    // const existingPayroll = await PayrollModel.findOne({ active: true, startDate: weekStartDate })
-    // if (existingPayroll != null) {
-    //   throw new AppErrorResponse({ statusCode: 400, name: `Ya se ejecutó la nomina para el periodo ${weekStartDate.toISOString().slice(0,10)}` });
-    // }
-
-    const currentDate = new Date();
-    const currentDay = currentDate.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
-
-    // Verificar si es día de pago de nómina
-    // if (currentDay !== this.paymentDay && currentDay !== (this.paymentDay - 1)) {
-    //   throw new AppErrorResponse({ statusCode: 400, name: `El pago de nómina debe ser un ${this.daysOfWeekInSpanish[this.paymentDay]}` });
-    // }
-
-    // if (currentDay === (this.paymentDay - 1)) {
-    //   const nextDate = new Date(currentDate);
-    //   nextDate.setDate(nextDate.getDate() + 1);
-    //   if (!this.holidayList.includes(formatDateToYYMMDD(nextDate))) {
-    //     throw new AppErrorResponse({ statusCode: 400, name: `El pago de nómina debe ser un ${this.daysOfWeekInSpanish[this.paymentDay]}` });
-    //   }
-    // }
-
     const weekCutoffDate = getNextTuesday(weekStartDate); // (último martes despues del inicio de semana)
 
-    // if (currentDate < weekCutoffDate) {
-    //   throw new AppErrorResponse({ statusCode: 400, name: `La fecha de corte (${weekCutoffDate.toISOString().slice(0,10)}) aún no ha llegado. No se puede ejecutar la nómina.` });
-    // }
-
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
-    // console.log(employees)
-
     const lines = [];
     let rowIndex = 1
+    
+    // Obtener las asistencias y faltas entre las fechas de corte y inicio de semana
+    const attendances = await AttendanceModel.find({ active: true, checkInTime: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() }});
+    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: weekStartDate, $lte: weekCutoffDate },});
+    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: weekStartDate, $lte: weekCutoffDate },});
+    const overtimeRecords = await ScheduleExceptionModel.find({
+      active: true, name: 'Horas Extra',
+      $or: [
+        { startDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
+        { endDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
+        { $and: [
+            { startDate: { $lte: weekStartDate.toISOString() } },
+            { endDate: { $gte: weekCutoffDate.toISOString() } }
+          ]
+        }
+      ]
+    })
+
+    const attendancesByEmployee = attendances.reduce((acc: any, attendance: IAttendance) => {
+      acc[attendance.employeeId] = acc[attendance.employeeId] || [];
+      acc[attendance.employeeId].push(attendance);
+      return acc;
+    }, {});
+    
+    const absencesByEmployee = absences.reduce((acc: any, absence: IAbsence) => {
+      acc[absence.employeeId] = acc[absence.employeeId] || [];
+      acc[absence.employeeId].push(absence);
+      return acc;
+    }, {});
+    
+    const paidAbsencesByEmployee = paidAbsences.reduce((acc: any, absence: IAbsence) => {
+      acc[absence.employeeId] = acc[absence.employeeId] || [];
+      acc[absence.employeeId].push(absence);
+      return acc;
+    }, {});
+
+    const overtimeRecordsByEmployee = overtimeRecords.reduce((acc: any, record: IScheduleException) => {
+      acc[record.employeeId] = acc[record.employeeId] || [];
+      acc[record.employeeId].push(record);
+      return acc;
+    }, {});
+
+    const fiveDaysSchemeBase = bigMath.chain(7).divide(5).done()
+    const sixDaysSchemeBase = bigMath.chain(7).divide(6).done()
 
     for (const employee of employees) {
       const dailySalary = employee.dailySalary
       const jobScheme = employee.jobScheme
 
-      // Obtener las asistencias del empleado entre las fechas de corte y inicio de semana
-      const attendances = await AttendanceModel.find({
-        active: true,
-        employeeId: employee.id,
-        checkInTime: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() },
-      });
-
-      const absences = await AbsenceModel.find({
-        active: true,
-        isJustified: false,
-        employeeId: employee.id,
-        date: { $gte: weekStartDate, $lte: weekCutoffDate },
-      });
-
-      const paidAbsences = await AbsenceModel.find({
-        active: true,
-        isPaid: true,
-        employeeId: employee.id,
-        date: { $gte: weekStartDate, $lte: weekCutoffDate },
-      });
-
-      const fiveDaysSchemeBase = bigMath.chain(7).divide(5).done()
-      const sixDaysSchemeBase = bigMath.chain(7).divide(6).done()
-
-      console.log(fiveDaysSchemeBase, sixDaysSchemeBase)
+      const employeeAttendances = attendancesByEmployee[employee.id] || []; // attendances.filter((x) => x.employeeId === employee.id)
+      const employeeAbsences = absencesByEmployee[employee.id] || []; // absences.filter((x) => x.employeeId === employee.id)
+      const employeePaidAbsences = paidAbsencesByEmployee[employee.id] || []; // paidAbsences.filter((x) => x.employeeId === employee.id)
+      const employeeOverTimeRecords = overtimeRecordsByEmployee[employee.id] || []; // overtimeRecords.filter((x) => x.employeeId === employee.id)
 
       const restDaysMultiplier = jobScheme === '5' ? fiveDaysSchemeBase : sixDaysSchemeBase
       // Salario base por los días trabajados
-      const daysWorked = attendances.length + paidAbsences.length // TODO update later
+      const daysWorked = employeeAttendances.length + employeePaidAbsences.length // TODO update later
       const paidRestDays = (daysWorked * restDaysMultiplier).toFixed(2);
       const totalDays = daysWorked + Number(paidRestDays)
       const salary = dailySalary * (totalDays)
 
-      const extraHours = await this.calculateExtraHours(employee.id, weekStartDate, weekCutoffDate)
+      const extraHours = this.calculateExtraHours(employeeOverTimeRecords, weekStartDate, weekCutoffDate)
       const extraHoursPayment = extraHours * ((dailySalary / 8) * 2)
 
+      // Contar retardos
+      const tardies = employeeAttendances.filter((attendance: IAttendance) => attendance.isLate);
       // Bono de asistencia (10% del salario base)
-      const attendanceBonus = this.calculateAttendanceBonus(absences, salary);
-
+      const attendanceBonus = this.calculateAttendanceBonus(employeeAbsences, salary);
       // Bono de puntualidad (10% del salario base)
-      const punctualityBonus = this.calculatePunctualityBonus(attendances, salary);
-
-      // Bono de despensa ($290 MXN)
+      const punctualityBonus = this.calculatePunctualityBonus(tardies, salary);
+      // Bono de despensa ($145 MXN)
       const pantryBonus = this.groceryBonus;
-
       // Bono por día festivo (triple pago)
-      const holidayBonus = this.calculateHolidayBonus(attendances, dailySalary);
-
+      const holidayBonus = this.calculateHolidayBonus(employeeAttendances, dailySalary);
       // Otras percepciones
       const otherPayments = holidayBonus
       const totalBonuses = attendanceBonus + punctualityBonus + pantryBonus + holidayBonus;
       // Calcular el neto a pagar
       const netPay = salary + extraHoursPayment + otherPayments;
-
-      // Contar retardos
-      const tardies = attendances.filter(attendance => attendance.isLate).length;
 
       lines.push({
         rowIndex,
@@ -207,7 +197,7 @@ class PayrollService {
         pantryBonus,
         // holidayBonus,
         otherPayments,
-        tardies,
+        tardies: tardies.length,
         netPay,
 
         jobScheme
@@ -242,8 +232,7 @@ class PayrollService {
     return absences.length > 0 ? 0 : salary * this.attendanceBonusPercentage;
   }
 
-  calculatePunctualityBonus(attendances: IAttendance[], salary: number): number {
-    const tardies = attendances.filter(attendance => attendance.isLate);
+  calculatePunctualityBonus(tardies: IAttendance[], salary: number): number {
     return tardies.length >= 2 ? 0 : salary * this.punctualityBonusPercentage;
   }
 
@@ -253,33 +242,13 @@ class PayrollService {
     return holidayAttendances.length * dailySalary * 2; // Bono = 2 días extra (por triple pago)
   }
 
-  async calculateExtraHours(employeeId: string, weekStartDate: Date, weekCutoffDate: Date) {
-    const scheduleEvents = await ScheduleExceptionModel.find({
-      active: true,
-      employeeId,
-      name: 'Horas Extra',
-      $or: [
-        {
-          startDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() }
-        },
-        {
-          endDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() }
-        },
-        {
-          $and: [
-            { startDate: { $lte: weekStartDate.toISOString() } },
-            { endDate: { $gte: weekCutoffDate.toISOString() } }
-          ]
-        }
-      ]
-    })
-
+  calculateExtraHours(scheduleExceptions: IScheduleException[], weekStartDate: Date, weekCutoffDate: Date) {
     // Calcular horas extras si las fechas están en formato adecuado
     let totalExtraHours = 0;
 
-    for (const exception of scheduleEvents) {
-      const start = new Date(exception.startDate);
-      const end = new Date(exception.endDate);
+    for (const record of scheduleExceptions) {
+      const start = new Date(record.startDate);
+      const end = new Date(record.endDate);
 
       const exceptionStart = start < weekStartDate ? weekStartDate : start;
       const exceptionEnd = end > weekCutoffDate ? weekCutoffDate : end;
@@ -287,19 +256,7 @@ class PayrollService {
       const hours = (exceptionEnd.getTime() - exceptionStart.getTime()) / 1000 / 60 / 60; // Conversión de milisegundos a horas
       totalExtraHours += hours;
     }
-
     return totalExtraHours
-
-  }
-
-  notifyPayrollAdmin(attendances: any[]): void {
-    const missingCheckIns = attendances.filter(attendance => !attendance.checkedIn);
-    const missingCheckOuts = attendances.filter(attendance => !attendance.checkedOut);
-
-    if (missingCheckIns.length || missingCheckOuts.length) {
-      // Lógica para enviar notificación al administrador
-      console.log("Notificación: Faltan registros de check-in o check-out.");
-    }
   }
 
   async excelReport(query: any) {
@@ -344,6 +301,7 @@ class PayrollService {
 
     const rowsArrayScheme5 = rowsArray.filter((row: any) => row.jobScheme === '5').map(({ jobScheme, ...rest }) => rest);
     const rowArrayScheme6 = rowsArray.filter((row: any) => row.jobScheme === '6').map(({ jobScheme, ...rest }) => rest);
+
     // ------------------- Construir archivo excel ----------------------------------------------------
     const workbook = new ExcelJS.Workbook()
 
@@ -366,50 +324,41 @@ class PayrollService {
         fgColor: { argb: 'dce6f1' }
       }
 
+      worksheet.columns = [
+        { header: 'Nomina', key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
+        { header: 'CURP', key: 'mxCurp', width: 20, style: { numFmt: '@' } },
+        { header: 'Numero seguro social', key: 'mxNss', width: 20, style: { numFmt: '@' } },
+        { header: 'Nombre del empleado', key: 'employeeName', width: 30, style: { numFmt: '@' } },
+
+        { header: 'S.D.I', key: 'sdi', width: 10, style: { numFmt: '@' } },
+
+        { header: 'Salario Diario', key: 'dailySalary', width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Dias Trabajados', key: 'daysWorked', width: 11, style: { numFmt: '@' } },
+        { header: 'Parte Proporcional Sab y Dom', key: 'paidRestDays', width: 20, style: { numFmt: '@' } },
+        { header: 'Dias a Pargar', key: 'totalDays', width: 10, style: { numFmt: '@' } },
+        { header: 'Sueldo del Periodo', key: 'salary', width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Horas Tiempo Extra', key: 'extraHours', width: 10, style: { numFmt: '@' } },
+        { header: 'Valor Tiempo Extra', key: 'extraHoursPayment', width: 10, style: { numFmt: '"$"#,##0.00' } },
+
+        { header: 'Premios de puntualidad', key: 'punctualityBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Bono de Asistencia', key: 'attendanceBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Despensa', key: 'pantryBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
+
+        { header: 'Otras Percepciones', key: 'otherPayments', width: 15, style: { numFmt: '"$"#,##0.00' } },
+        // { header: '', key: 'tardies', width: 10, style: { numFmt: '@' } },
+        { header: 'Base Gravable', key: 'netPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
+      ]
+
       // Headers 1
-      const columnHeaders = ('Nomina,CURP,Numero Seguro Social,Nombre del empleado,S.D.I,Salario Diario,Dias Trabajados,Parte Proporcional Sab y Dom,Dias a Pagar,Sueldo del Periodo,Horas Tiempo Extra,Valor Tiempo Extra,Premios de puntualidad,Bono de Asistencia,Despensa,Otras Percepciones,Base Gravable').split(',')
-      const headerRow = worksheet.addRow(
-        columnHeaders
-      )
+      const headerRow = worksheet.getRow(1)
       headerRow.eachCell((cell: any) => { cell.fill = headerStyle })
       headerRow.eachCell((cell: any) => { cell.border = borderStyle })
+      headerRow.eachCell((cell: any) => { cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true } })
       headerRow.font = { bold: true }
-
-      worksheet.columns = [
-        { key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
-        { key: 'mxCurp', width: 20, style: { numFmt: '@' } },
-        { key: 'mxNss', width: 20, style: { numFmt: '@' } },
-        { key: 'employeeName', width: 30, style: { numFmt: '@' } },
-
-        { key: 'sdi', width: 10, style: { numFmt: '@' } },
-
-        { key: 'dailySalary', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        { key: 'daysWorked', width: 11, style: { numFmt: '@' } },
-        { key: 'paidRestDays', width: 20, style: { numFmt: '@' } },
-        { key: 'totalDays', width: 10, style: { numFmt: '@' } },
-        { key: 'salary', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        { key: 'extraHours', width: 10, style: { numFmt: '@' } },
-        { key: 'extraHoursPayment', width: 10, style: { numFmt: '"$"#,##0.00' } },
-
-        { key: 'punctualityBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        { key: 'attendanceBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
-        { key: 'pantryBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
-
-        { key: 'otherPayments', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        // { key: 'tardies', width: 10, style: { numFmt: '@' } },
-        { key: 'netPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
-      ]
 
       rowArray.forEach((doc: any, index: any) => {
         const row = worksheet.addRow(Object.values(doc))
         row.eachCell({ includeEmpty: true }, (cell: any) => { cell.border = borderStyle })
-      })
-
-      columnHeaders.forEach((header, index) => {
-        const column = worksheet.getColumn(index + 1)
-        column.eachCell({ includeEmpty: true }, (cell: any) => {
-          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-        })
       })
 
       const totalsRow = worksheet.addRow([

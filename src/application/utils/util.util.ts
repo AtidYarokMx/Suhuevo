@@ -122,7 +122,3 @@ export function formatDate(date: Date): string {
   const month = new Intl.DateTimeFormat('es-ES', { month: 'short' }).format(date);
   return `${day} de ${month}`;
 };
-
-// export getScheduleWithSameStartAndEnd() {
-
-// }
