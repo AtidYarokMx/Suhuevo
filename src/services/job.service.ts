@@ -46,8 +46,6 @@ class JobService {
       }
     }
 
-    // console.log('filter', filter)
-
     const records = await JobModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
     if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
     return records

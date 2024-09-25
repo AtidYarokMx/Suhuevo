@@ -64,8 +64,6 @@ class EmployeeService {
       }
     }
 
-    // console.log('filter', filter)
-
     const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' }).populate(["ineFront", "ineBack", "contract"]).exec()
     if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
     // console.log(await this.populateResults(records))

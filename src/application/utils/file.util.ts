@@ -5,12 +5,12 @@ import csvParser from 'csv-parser'
 import { AttendanceCsvFields } from '@app/dtos/attendance.dto';
 
 export async function readCsv(file: Express.Multer.File) {
-  const rows: { employeeId: string, checkInTime: string }[] = []
+  const rows: { employeeId: string, time: string }[] = []
   await new Promise<void>((resolve, reject) => {
     const stream = fs.createReadStream(file.path).pipe(csvParser())
     stream.on("data", (row: AttendanceCsvFields) => {
       rows.push({
-        checkInTime: row['Time'],
+        time: row['Time'],
         employeeId: row['Person ID'].replaceAll('\'', ''),
       })
     })

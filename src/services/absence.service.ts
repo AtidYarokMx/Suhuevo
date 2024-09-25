@@ -1,4 +1,5 @@
 import { IAbsence } from "@app/dtos/absence.dto";
+import { IAttendance } from "@app/dtos/attendance.dto";
 import { EEmployeStatus } from "@app/dtos/employee.dto";
 import { AppErrorResponse } from "@app/models/app.response";
 import { AppMongooseRepo } from "@app/repositories/mongoose";
@@ -8,6 +9,7 @@ import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model"
 import { ScheduleExceptionModel } from "@app/repositories/mongoose/models/schedule-exception.model";
 import { consumeSequence } from "@app/utils/sequence";
 import { customLog } from "@app/utils/util.util";
+import moment from "moment";
 import { ClientSession } from "mongoose";
 
 class AbsenceService {
@@ -79,27 +81,27 @@ class AbsenceService {
 
   async generateDailyAbsences (body: any, session: ClientSession): Promise<any> {
     const date = body.date
-    if (date == null || isNaN(new Date(date).getTime())) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
+    if (!date || !moment(date, true).isValid()) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
 
-    const stringDate = new Date(date).toISOString().slice(0,10)
+    const day = moment(date).format('YYYY-MM-DD');
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE });
-    const attendances = await AttendanceModel.find({ active: true, checkInTime: { $regex: `^${stringDate}`}})
-    const absences = await AbsenceModel.find({ active: true, date: stringDate })
+    const attendances: IAttendance[] = await AttendanceModel.find({ active: true, checkInTime: { $regex: `^${day}`}})
+    const absences = await AbsenceModel.find({ active: true, date: day })
     const scheduleExceptions = await ScheduleExceptionModel.find({
       active: true,
       name: { $in: this.notWorkableScheduleExceptions },
       $or: [
         {
           $and: [
-            { startDate: { $regex: `^${stringDate}` } },
+            { startDate: { $regex: `^${day}` } },
             { allDay: true },
           ]
         },
         {
           $and: [
-            { startDate: { $lte: stringDate } },
-            { endDate: { $gt: stringDate } }
+            { startDate: { $lte: day } },
+            { endDate: { $gt: day } }
           ]
         }
         
@@ -113,25 +115,26 @@ class AbsenceService {
       const employeeName = `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`
       const schedule = employee.schedule
 
-      const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const dayOfWeek = moment(date).format("dddd").toLowerCase()
       const scheduleForDay = (schedule as any)?.[dayOfWeek];
 
-      console.log(employeeName)
-      if (!scheduleForDay) { detail.push(`Dia no laboral para ${employeeName}`); continue }
+      if (!scheduleForDay || !scheduleForDay.start) { detail.push(`Dia no laboral para ${employeeName}`); continue }
 
       const attendance = attendances.find(x => x.employeeId === employee.id)
-      if (attendance) { detail.push(`${employeeName} Asistió`); continue }
+      if (attendance && attendance.checkOutTime != null) { detail.push(`${employeeName} Asistió`); continue }
 
       const scheduleException = scheduleExceptions.find(x => x.employeeId === employee.id)
       if (scheduleException) { detail.push(`No se registró falta para ${employeeName} (${scheduleException.reason})`); continue }
 
       const absence = absences.find(x => x.employeeId === employee.id)
-      if (absence) { detail.push(`Ya habia una falta registrada para ${employeeName} el ${stringDate}`); continue }
+      if (absence) { detail.push(`Ya habia una falta registrada para ${employeeName} el ${day}`); continue }
+
+      const reason = attendance == null ? 'No se hizo el check in' : 'No se hizo el check out'
 
       const id = 'AB' + String(await consumeSequence('absences', session)).padStart(8, '0')
-      const record = new AbsenceModel({ id, employeeId: employee.id, employeeName, date: stringDate })
-      customLog(`Creando ausencia ${String(record.id)} (${employeeName})`)
-      detail.push(`Se registró una falta para ${employeeName} (${String(record.id)})`);
+      const record = new AbsenceModel({ id, employeeId: employee.id, employeeName, date: day, reason })
+      customLog(`Creando ausencia ${String(record.id)} (${employeeName}) (${reason})`)
+      detail.push(`Se registró una falta para ${employeeName} (${String(record.id)}) (${reason})`);
       await record.save({ session })
 
       newAbsencesCount++;

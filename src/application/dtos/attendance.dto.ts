@@ -8,6 +8,8 @@ export interface IAttendance {
   checkInTime: string
   checkOutTime?: string
 
+  date: string
+
   isLate: boolean
 
   /* defaults */
