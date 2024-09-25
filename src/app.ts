@@ -34,6 +34,7 @@ import attendanceRoutes from '@routes/attendance.routes';
 import downloadRoutes from '@routes/download.routes';
 import absenceRoutes from '@routes/absence.routes';
 import payrollRoutes from '@routes/payroll.routes';
+import holidayRoutes from '@routes/holiday.routes';
 import fileRoutes from '@routes/file.routes';
 
 /* cronjobs */
@@ -89,6 +90,7 @@ export class AppServer {
     this.app.use('/api/attendance', attendanceRoutes)
     this.app.use('/api/absence', absenceRoutes)
     this.app.use('/api/payroll', payrollRoutes)
+    this.app.use('/api/holiday', holidayRoutes)
     this.app.use('/api/file', fileRoutes)
   }
 
