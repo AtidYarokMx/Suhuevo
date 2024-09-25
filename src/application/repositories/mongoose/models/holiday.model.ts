@@ -1,14 +1,15 @@
 import { Schema, model } from '@app/repositories/mongoose'
+/* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
-import { IHoliday } from '@app/dtos/holiday.dto'
+import { type IHoliday, HolidayType } from '@app/dtos/holiday.dto'
 import { validateYear } from '@app/utils/date.util'
 
 
 export const HolidaySchema = new Schema<IHoliday>({
   /* required fields */
   name: { type: String, required: true, trim: true },
-  type: { type: String, enum: ["fixed", "variable"], required: true, lowercase: true },
+  type: { type: String, enum: HolidayType, required: true, lowercase: true },
   rule: {
     type: String,
     required: function () {

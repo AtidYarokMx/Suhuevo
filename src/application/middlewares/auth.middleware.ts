@@ -9,7 +9,7 @@ import { IUserPayload } from '@app/interfaces/auth.dto'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 import { hasPermission } from '@app/constants/permissions'
 
-export async function adminMiddleware (req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function adminMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // console.log(req.headers)
     const authHeader = req.headers.authorization

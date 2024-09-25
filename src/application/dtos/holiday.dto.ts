@@ -11,6 +11,11 @@ export type IHoliday = {
   createdAt: Date
 }
 
+export enum HolidayType {
+  FIXED = "fixed",
+  VARIABLE = "variable"
+}
+
 /* endpoint dtos */
 export type ICreateBody = {
   name: string
