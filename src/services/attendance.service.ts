@@ -133,8 +133,7 @@ class AttendanceService {
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
     const record = new AttendanceModel({
       id,
-      employeeId:
-        employee.id,
+      employeeId: employee.id,
       employeeName,
       checkInTime: parsedCheckInTime.format("YYYY-MM-DD HH:MM:SS"),
       checkOutTime: parsedCheckOutTime?.format("YYYY-MM-DD HH:MM:SS"),
