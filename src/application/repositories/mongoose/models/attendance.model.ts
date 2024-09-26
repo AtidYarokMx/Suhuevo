@@ -13,6 +13,8 @@ export const AttendanceSchema = new Schema<IAttendance>({
   checkInTime: { type: String, required: true },
   checkOutTime: { type: String },
 
+  date: { type: String },
+
   isLate: { type: Boolean, default: false },
   
   /* defaults */

@@ -1,7 +1,7 @@
 import { EEmployeStatus, IEmployee } from "@app/dtos/employee.dto";
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";
-import { formatDate, formatDateToYYMMDD, getNextTuesday } from "@app/utils/util.util";
+import { formatDate, formatDateToYYMMDD, getNextTuesday, sumField } from "@app/utils/util.util";
 import { getLastTuesday, getLastWednesday } from '../application/utils/util.util';
 import * as ExcelJS from 'exceljs'
 import { consumeSequence } from "@app/utils/sequence";
@@ -16,6 +16,8 @@ import { IAttendance } from "@app/dtos/attendance.dto";
 import { IAbsence } from "@app/dtos/absence.dto";
 import { bigMath } from "@app/utils/math.util";
 import { IScheduleException } from "@app/dtos/schedule-exception.dto";
+import { OvertimeModel } from "@app/repositories/mongoose/models/overtime.model";
+import moment from "moment";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -91,6 +93,10 @@ class PayrollService {
 
     const weekCutoffDate = getNextTuesday(weekStartDate); // (último martes despues del inicio de semana)
 
+    const formattedWeekStartDate = moment(weekStartDate).format('YYYY-MM-DD HH:mm:ss')
+    const formattedWeekCutoffDate = moment(weekCutoffDate).format('YYYY-MM-DD HH:mm:ss')
+    console.log('formattedWeekStartDate', formattedWeekStartDate, 'formattedWeekCutoffDate', formattedWeekCutoffDate)
+
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
     const lines = [];
     let rowIndex = 1
@@ -99,18 +105,19 @@ class PayrollService {
     const attendances = await AttendanceModel.find({ active: true, checkInTime: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() }});
     const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: weekStartDate, $lte: weekCutoffDate },});
     const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: weekStartDate, $lte: weekCutoffDate },});
-    const overtimeRecords = await ScheduleExceptionModel.find({
-      active: true, name: 'Horas Extra',
-      $or: [
-        { startDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
-        { endDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
-        { $and: [
-            { startDate: { $lte: weekStartDate.toISOString() } },
-            { endDate: { $gte: weekCutoffDate.toISOString() } }
-          ]
-        }
-      ]
-    })
+    // const overtimeRecords = await ScheduleExceptionModel.find({
+    //   active: true, name: 'Horas Extra',
+    //   $or: [
+    //     { startDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
+    //     { endDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
+    //     { $and: [
+    //         { startDate: { $lte: weekStartDate.toISOString() } },
+    //         { endDate: { $gte: weekCutoffDate.toISOString() } }
+    //       ]
+    //     }
+    //   ]
+    // })
+    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate} })
 
     const attendancesByEmployee = attendances.reduce((acc: any, attendance: IAttendance) => {
       acc[attendance.employeeId] = acc[attendance.employeeId] || [];
@@ -130,7 +137,7 @@ class PayrollService {
       return acc;
     }, {});
 
-    const overtimeRecordsByEmployee = overtimeRecords.reduce((acc: any, record: IScheduleException) => {
+    const overtimeRecordsByEmployee = overtimeRecords.reduce((acc: any, record: any) => {
       acc[record.employeeId] = acc[record.employeeId] || [];
       acc[record.employeeId].push(record);
       return acc;
@@ -155,7 +162,7 @@ class PayrollService {
       const totalDays = daysWorked + Number(paidRestDays)
       const salary = dailySalary * (totalDays)
 
-      const extraHours = this.calculateExtraHours(employeeOverTimeRecords, weekStartDate, weekCutoffDate)
+      const extraHours = Math.floor(sumField(employeeOverTimeRecords, 'hours'))
       const extraHoursPayment = extraHours * ((dailySalary / 8) * 2)
 
       // Contar retardos
@@ -216,7 +223,7 @@ class PayrollService {
     }
     else {
       record = new PayrollModel({
-        id: String(await consumeSequence('payrolls', session)).padStart(8, '0'),
+        id: 'PR' + String(await consumeSequence('payrolls', session)).padStart(8, '0'),
         name: `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
         lines,
         startDate: weekStartDate,
@@ -240,23 +247,6 @@ class PayrollService {
     // Calcular el bono por día festivo (triple salario)
     const holidayAttendances = attendances.filter(attendance => this.holidayList.includes(formatDateToYYMMDD(new Date(attendance.checkInTime))));
     return holidayAttendances.length * dailySalary * 2; // Bono = 2 días extra (por triple pago)
-  }
-
-  calculateExtraHours(scheduleExceptions: IScheduleException[], weekStartDate: Date, weekCutoffDate: Date) {
-    // Calcular horas extras si las fechas están en formato adecuado
-    let totalExtraHours = 0;
-
-    for (const record of scheduleExceptions) {
-      const start = new Date(record.startDate);
-      const end = new Date(record.endDate);
-
-      const exceptionStart = start < weekStartDate ? weekStartDate : start;
-      const exceptionEnd = end > weekCutoffDate ? weekCutoffDate : end;
-
-      const hours = (exceptionEnd.getTime() - exceptionStart.getTime()) / 1000 / 60 / 60; // Conversión de milisegundos a horas
-      totalExtraHours += hours;
-    }
-    return totalExtraHours
   }
 
   async excelReport(query: any) {

@@ -14,13 +14,16 @@ import { AbsenceModel } from '@app/repositories/mongoose/models/absence.model'
 import { AppErrorResponse } from '@app/models/app.response'
 /* utils */
 import { consumeSequence } from '@app/utils/sequence'
-import { customLog } from '@app/utils/util.util'
+import { arrayToObject, customLog } from '@app/utils/util.util'
 import { parse as parseDate } from '@app/utils/date.util';
 import { readCsv } from '@app/utils/file.util';
+import overtimeService from './overtime.service'
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 10;
   private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
+  private readonly daysTranslationMap: { [key: string]: string } = { 'monday': 'lunes', 'tuesday': 'martes', 'wednesday': 'miércoles', 'thursday': 'jueves', 'friday': 'viernes', 'saturday': 'sábado', 'sunday': 'domingo' };
+  private readonly MIN_OVERTIME_MINUTES = 60;
 
   async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
@@ -67,12 +70,11 @@ class AttendanceService {
 
   async create(body: CreateAttendanceBody, session: ClientSession): Promise<CreateAttendanceResponse> {
     const { employeeId, checkInTime: checkInTimeBody, checkOutTime: checkOutTimeBody } = body;
-    /* solución de formateado de fecha */
-    const parsedCheckInTime = parseDate(checkInTimeBody)
-    const parsedCheckOutTime = checkOutTimeBody ? parseDate(checkOutTimeBody) : null
 
-    // const checkInTime = new Date(checkInTimeBody).toISOString
-    const day = parsedCheckInTime.format("YYYY-MM-DD")
+    const checkInTime = moment(checkInTimeBody)
+    const checkOutTime = checkOutTimeBody ? moment(checkOutTimeBody) : null
+
+    const day = checkInTime.clone().format("YYYY-MM-DD")
 
     const employee = await EmployeeModel.findOne({
       $or: [
@@ -91,7 +93,7 @@ class AttendanceService {
     const existingAbsence = await AbsenceModel.findOne({ active: true, employeeId: employee.id, date: { $regex: `^${day}` } });
     if (existingAbsence) throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${day}` })
 
-    const dayOfWeek = parsedCheckInTime.format("dddd").toLowerCase()
+    const dayOfWeek = checkInTime.format("dddd").toLowerCase()
     const scheduleForDay = employee.schedule[dayOfWeek as keyof IEmployeSchedule];
 
     const scheduleException = await ScheduleExceptionModel.findOne({
@@ -114,37 +116,96 @@ class AttendanceService {
       ]
     });
 
-    if (!scheduleForDay && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${day}` })
+    console.log('checkInTime', checkInTime.format("YYYY-MM-DD HH:mm:SS"), 'dayOfWeek', dayOfWeek, 'scheduleForDay', scheduleForDay)
+    console.log('checkOutTime', checkOutTime?.format("YYYY-MM-DD HH:mm:SS"))
+    if ((!scheduleForDay || !scheduleForDay.start) && scheduleException == null) throw new AppErrorResponse({ statusCode: 400, name: `${employeeName} no trabaja el día ${day} (${this.daysTranslationMap[dayOfWeek]})` })
 
     const scheduleForDayStart = scheduleForDay?.start ?? Object.values(employee.schedule).find(x => x?.start != null).start
-    // const scheduleStartTime = new Date(checkInDate + 'T' + scheduleForDayStart + ':00');
-    // const checkInDateTime = new Date(checkInTime);
-    // const differenceInMinutes = (checkInDateTime.getTime() - scheduleStartTime.getTime()) / 60_000;
-    const scheduleStartTime = new Date(day + 'T' + scheduleForDayStart + ':00');
-    const checkInDateTime = new Date(checkInTimeBody);
-    const differenceInMinutes = (checkInDateTime.getTime() - scheduleStartTime.getTime()) / 60_000;
+    const scheduleForDayEnd = scheduleForDay?.end ?? Object.values(employee.schedule).find(x => x?.end != null).end
 
-    console.log(scheduleStartTime, checkInDateTime)
-    console.log(checkInDateTime.getTime(), scheduleStartTime.getTime(), checkInDateTime.getTime() - scheduleStartTime.getTime())
-    console.log('differenceInMinutes', differenceInMinutes)
+    const scheduleStartTime = moment(`${day}T${scheduleForDayStart}:00`);
+    const scheduleEndTime = moment(`${day}T${scheduleForDayEnd}:00`);
+    const checkInDateTime = moment(checkInTimeBody);
+    const delayMinutes = checkInDateTime.diff(scheduleStartTime, 'minutes');
 
-    const isLate = differenceInMinutes > this.MAX_TIME_DELAY;
+    // Calcular overtime si se proporciona un tiempo de salida (checkOutTime)
+    let overtimeMinutes = 0;
+    if (checkOutTime) {
+      overtimeMinutes = checkOutTime.diff(scheduleEndTime, 'minutes');
+      overtimeMinutes = overtimeMinutes > 0 ? overtimeMinutes : 0;
+    }
+
+    console.log('delayMinutes', delayMinutes);
+    console.log('overtimeMinutes:', overtimeMinutes); 
+
+    const isLate = delayMinutes > this.MAX_TIME_DELAY;
 
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
     const record = new AttendanceModel({
       id,
       employeeId: employee.id,
       employeeName,
-      checkInTime: parsedCheckInTime.format("YYYY-MM-DD HH:MM:SS"),
-      checkOutTime: parsedCheckOutTime?.format("YYYY-MM-DD HH:MM:SS"),
+      checkInTime: checkInTime.format("YYYY-MM-DD HH:mm:SS"),
+      checkOutTime: checkOutTime?.format("YYYY-MM-DD HH:mm:SS"),
+      date: day,
       isLate
     });
-
     customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)}) el día ${day}`);
     await record.save({ session });
 
+    if (overtimeMinutes >= this.MIN_OVERTIME_MINUTES) {
+      try {
+        await overtimeService.create({
+          employeeId: employee.id,
+          startTime: scheduleEndTime.format('YYYY-MM-DD HH:mm:ss'),
+          hours: overtimeMinutes / 60
+        }, session)
+      } catch (error) {}
+    }
+
+
     return { id: record.id };
   }
+
+  // async createMany(body: CreateAttendanceBody[] | CreateAttendanceBody) {
+  //   if (!Array.isArray(body)) body = [body]
+  //   const attendancesFromBody = body
+
+  //   const employeeIds = attendancesFromBody.map((x) => x.employeeId)
+  //   const employees = await EmployeeModel.find({
+  //     active: true,
+  //     $or: [
+  //       { id: { $in: employeeIds } },
+  //       { biometricId: { $in: employeeIds } }
+  //     ],
+  //     status: EEmployeStatus.ACTIVE
+  //   });
+  //   const employeesMap = arrayToObject(employees, 'id')
+
+  //   const uniqueDays = [...new Set(attendancesFromBody.map((x) => x.checkInTime))];
+  //   const existingAttendances = await AttendanceModel.find({ active: true, employeeId: { $in: employeeIds }, date: { $in: uniqueDays } })
+  //   const existingAbsences = await AbsenceModel.find({ active: true, employeeId: { $in: employeeIds }, date: { $in: uniqueDays } })
+  //   // const scheduleException = await ScheduleExceptionModel.findOne({
+  //   //   active: true,
+  //   //   employeeId: { $in: employeeIds },
+  //   //   name: { $nin: this.notWorkableScheduleExceptions },
+  //   //   $or: [
+  //   //     {
+  //   //       $and: [
+  //   //         { startDate: { $regex: `^(${uniqueDays.join('|')})` } },
+  //   //         { allDay: true },
+  //   //       ]
+  //   //     },
+  //   //     {
+  //   //       $and: [
+  //   //         { startDate: { $lte: day } },
+  //   //         { endDate: { $gt: day } }
+  //   //       ]
+  //   //     }
+  //   //   ]
+  //   // });
+
+  // }
 
   async update(body: any, session: ClientSession): Promise<any> {
     const record = await AttendanceModel.findOne({ id: body.id })
@@ -226,56 +287,113 @@ class AttendanceService {
   }
 
   async importFromCsv(file: any) {
-    if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' })
+    if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' });
 
-    let reformattedRows = await readCsv(file)
-    reformattedRows = groupCheckInCheckOut(reformattedRows)
-
-    function groupCheckInCheckOut(rows: { employeeId: string, checkInTime: string }[]) {
-      const groupedRows: Record<string, { checkInTime: string, checkOutTime?: string }> = {};
-
-      rows.forEach(row => {
-        const employeeId = row.employeeId;
-        const checkInTime = row.checkInTime;
-        const date = checkInTime.split(' ')[0]
-        const key = `${employeeId}-${date}`;
-
-        if (!groupedRows[key]) groupedRows[key] = { checkInTime };
-        else if (!groupedRows[key].checkOutTime) groupedRows[key].checkOutTime = checkInTime;
-      });
-
-      const reformattedRows = Object.keys(groupedRows).map(key => {
-        const { checkInTime, checkOutTime } = groupedRows[key];
-        return {
-          employeeId: key.split('-')[0],
-          checkInTime,
-          checkOutTime: checkOutTime || null
-        };
-      });
-      return reformattedRows;
-    }
-
-
+    const csvRows: { employeeId: string, time: string }[] = await readCsv(file);
+    const employeeIds = csvRows.map((x) => x.employeeId);
     let detail: any = []
-    let createdAttendances = 0
+    
+    // Obtener empleados activos y su horario
+    const employees = await EmployeeModel.find({
+      active: true,
+      $or: [
+        { id: { $in: employeeIds } },
+        { biometricId: { $in: employeeIds } }
+      ],
+      status: EEmployeStatus.ACTIVE
+    }).select({ id: 1, biometricId: 1, schedule: 1 });
+  
+    const MAX_TIME_BEFORE_SHIFT_START = 30; // minutos antes del turno
+    const MIN_TIME_AFTER_CHECKIN = 60;
+    const MAX_TIME_TO_CLOSE_ATTENDANCE = 1380;
+  
+    const attendances: CreateAttendanceBody[] | any [] = [];
+    const tempCheckinsMap: { [key: string]: { index: number, employeeId: string, checkInTime: string} } = {}; 
+  
+    for (const [index, row] of csvRows.entries()) {
+      const { employeeId, time } = row;
+      const dayOfWeek = moment(time).format("dddd").toLowerCase(); 
 
-    for (const [index, row] of reformattedRows.entries()) {
+      const employee = employees.find((x) => x.id === String(employeeId) || x.biometricId === String(employeeId))
+      if (!employee) { detail.push({ row: index + 2, skipped: 'No se encontró el empleado', payload: JSON.stringify(row) }); continue }
+
+      const schedule = employee?.schedule[dayOfWeek as keyof IEmployeSchedule];
+      if (!schedule || !schedule.start) { detail.push({ row: index + 2, skipped: 'No se encontró el horario para ese dia', payload: JSON.stringify(row) }); continue };
+      console.log(employeeId, time)
+      console.log(dayOfWeek, schedule)
+  
+      const checkTime = moment(time)
+      const shiftStartTime = checkTime.clone().set({
+        hour: Number(schedule.start.split(":")[0]),
+        minute: Number(schedule.start.split(":")[1]),
+        second: 0
+      });
+  
+      const isBeforeShiftStart = moment(checkTime).isBefore(shiftStartTime.clone().subtract(MAX_TIME_BEFORE_SHIFT_START, 'minutes'));
+      console.log('shiftStartTime', shiftStartTime, 'checkTime', checkTime, 'isBeforeShiftStart', isBeforeShiftStart)
+
+      if (isBeforeShiftStart) {
+        const lastAttendance = tempCheckinsMap[employeeId];
+        // Si no hay una asistencia abierta, ignorar linea
+        if (!lastAttendance) { detail.push({ row: index + 2, skipped: 'Se registró asistencia demasiado antes de la hora de entrada', payload: JSON.stringify(row) }); continue }
+        // Si hay una asistencia sin cerrar, cerrarla
+        attendances.push({ ...lastAttendance, checkOutTime: checkTime.format("YYYY-MM-DD HH:mm:ss") })
+        delete tempCheckinsMap[employeeId]
+        continue;
+      }
+
+      if (!tempCheckinsMap[employeeId]) {
+        // No hay asistencia temporal, crear nueva
+        tempCheckinsMap[employeeId] = { index, employeeId, checkInTime: checkTime.format("YYYY-MM-DD HH:mm:ss") };
+      } else { 
+        const checkInTime = moment(tempCheckinsMap[employeeId].checkInTime)
+        const timeDiffInMinutes = moment(checkTime).diff(checkInTime, 'minutes');
+        const canCheckout = timeDiffInMinutes >= MIN_TIME_AFTER_CHECKIN;
+        console.log('checkinTime', checkInTime, 'checkTime', checkTime, 'canCheckout', canCheckout)
+
+        // Ignorar linea si es un checkout demasiado pronto
+        if (!canCheckout) { 
+          detail.push({ row: index + 2, skipped: 'Se intentó hacer checkout demasiado pronto', payload: JSON.stringify(row) });
+          continue
+        }
+
+        if (timeDiffInMinutes > MAX_TIME_TO_CLOSE_ATTENDANCE) {
+          attendances.push({ ...tempCheckinsMap[employeeId], checkOutTime: undefined });
+          tempCheckinsMap[employeeId] = { index, employeeId, checkInTime: checkTime.format("YYYY-MM-DD HH:mm:ss") };
+          continue
+        }      
+        // Si existe una asistencia temporal, cerrarla
+        attendances.push({ ...tempCheckinsMap[employeeId], checkOutTime: checkTime.format("YYYY-MM-DD HH:mm:ss") })
+        delete tempCheckinsMap[employeeId];
+      }
+    }
+  
+    // console.log(attendances)
+    // return attendances
+
+    for (const row of attendances) {
       let session = await AppMongooseRepo.startSession()
       session.startTransaction()
       try {
         const attendance = await this.create(row, session);
-        detail.push({ row: index + 1, result: attendance.id })
-        createdAttendances++
+        detail.push({ row: row.index + 2, result: attendance.id, payload: JSON.stringify(row) })
         await session.commitTransaction()
         await session.endSession()
       }
       catch (error: any) {
+        console.log(error)
         await session.abortTransaction()
-        detail.push({ row: index + 1, error: error.name })
+        detail.push({ row: row.index + 2, error: error.name, payload: JSON.stringify(row) })
       }
     }
-
-    return { totalRows: reformattedRows.length, detail, createdAttendances }
+    // console.log(JSON.stringify({ totalRows: attendances.length, detail, createdAttendances }, null, 4))
+    return {
+      totalRows: csvRows.length,
+      detail,
+      errors: detail.filter((x: any) => x.error != null).length,
+      skipped: detail.filter((x: any) => x.skipped != null).length,
+      createdAttendances: detail.filter((x: any) => x.result != null).length
+    }
 
   }
 

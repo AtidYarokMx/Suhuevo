@@ -40,6 +40,7 @@ import fileRoutes from '@routes/file.routes';
 
 /* cronjobs */
 import { dailyAbsencesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
+import overtimeRoutes from '@routes/overtime.routes';
 
 // import csurf from 'csurf'
 
@@ -93,6 +94,7 @@ export class AppServer {
     this.app.use('/api/payroll', payrollRoutes)
     this.app.use('/api/holiday', holidayRoutes)
     this.app.use('/api/bonus', bonusRoutes)
+    this.app.use('/api/overtime', overtimeRoutes)
     this.app.use('/api/file', fileRoutes)
   }
 
