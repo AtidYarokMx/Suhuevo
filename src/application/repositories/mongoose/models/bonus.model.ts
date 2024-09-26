@@ -10,6 +10,7 @@ export const BonusSchema = new Schema<IBonus>({
   name: { type: String, required: true, trim: true },
   value: { type: Number, required: true },
   taxable: { type: Boolean, required: true, default: true },
+  enabled: { type: Boolean, default: true },
   type: { type: String, enum: BonusType, required: true, default: BonusType.AMOUNT },
   /* html identifiers for front */
   inputId: { type: String, required: true },

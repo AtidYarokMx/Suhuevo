@@ -41,7 +41,7 @@ class EmployeeService {
     const allowedFields: (keyof IEmployee)[] = ['id', 'name', 'departmentId', 'jobId', 'mxCurp', 'mxRfc', 'mxNss', 'status']
 
     const filter: any = { active: true }
-    const selection: any = size === 'small' ? {} : { active: 0, _id: 0, __v: 0 }
+    const selection: any = size === 'small' ? {} : { active: 0, __v: 0 }
 
     for (const field in queryFields) {
       if (!(allowedFields as any[]).includes(field.replace(/[~<>]/, ''))) {

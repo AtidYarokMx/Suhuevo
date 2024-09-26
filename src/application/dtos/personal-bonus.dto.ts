@@ -6,7 +6,9 @@ export type IPersonalBonus = {
   value: number
   taxable: boolean
   type: PersonalBonusType
-  enabled: boolean
+  entityType: PersonalBonusEntityType
+  entityId: Types.ObjectId
+  enabled?: boolean
   /* html identifiers for front */
   inputId: string
   inputName: string
@@ -23,6 +25,11 @@ export enum PersonalBonusType {
   PERCENT = "percentage"
 }
 
+export enum PersonalBonusEntityType {
+  GENERAL = "bonus",
+  PERSONAL = "catalog-personal-bonus"
+}
+
 /* endpoint dtos */
 export type ICreatePersonalBonus = {
   _id?: Types.ObjectId
@@ -30,6 +37,8 @@ export type ICreatePersonalBonus = {
   value: number
   taxable: boolean
   type: PersonalBonusType
+  entityType: PersonalBonusEntityType
+  entityId: Types.ObjectId
   enabled?: boolean
   /* html identifiers for front */
   inputId: string

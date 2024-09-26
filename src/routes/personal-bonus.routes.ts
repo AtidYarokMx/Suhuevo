@@ -16,6 +16,7 @@ class PersonalBonusRoutes extends ServerRouter {
 
   config(): void {
     this.router.get('/', adminMiddleware, this.controller.get as RequestHandler)
+    this.router.get('/:id', adminMiddleware, this.controller.getByEmployee as RequestHandler)
     this.router.put('/', adminMiddleware, this.controller.bulk as RequestHandler)
   }
 }

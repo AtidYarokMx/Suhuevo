@@ -20,6 +20,17 @@ class PersonalBonusController {
     }
   }
 
+  public async getByEmployee(req: Request, res: Response) {
+    const id = req.params.id
+    try {
+      const response = await personalBonusService.getByEmployee(id)
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
   public async bulk(req: Request, res: Response) {
     const body = req.body as ICreatePersonalBonus[]
     const session = await AppMongooseRepo.startSession()

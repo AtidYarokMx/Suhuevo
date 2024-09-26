@@ -6,6 +6,7 @@ export type IBonus = {
   value: number
   taxable: boolean
   type: BonusType
+  enabled?: boolean
   /* html identifiers for front */
   inputId: string
   inputName: string
@@ -27,6 +28,7 @@ export type ICreateBonus = {
   value: number
   taxable: boolean
   type: BonusType
+  enabled?: boolean
   /* html identifiers for front */
   inputId: string
   inputName: string

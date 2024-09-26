@@ -2,7 +2,7 @@ import { Schema, model } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
-import { PersonalBonusType, IPersonalBonus } from '@app/dtos/personal-bonus.dto'
+import { PersonalBonusType, IPersonalBonus, PersonalBonusEntityType } from '@app/dtos/personal-bonus.dto'
 
 
 export const PersonalBonusSchema = new Schema<IPersonalBonus>({
@@ -11,6 +11,8 @@ export const PersonalBonusSchema = new Schema<IPersonalBonus>({
   value: { type: Number, required: true },
   taxable: { type: Boolean, required: true, default: true },
   type: { type: String, enum: PersonalBonusType, required: true, default: PersonalBonusType.AMOUNT },
+  entityType: { type: String, enum: PersonalBonusEntityType, required: true },
+  entityId: { type: Schema.Types.ObjectId, required: true, refPath: "entityType" },
   /* html identifiers for front */
   inputId: { type: String, required: true },
   inputName: { type: String, required: true },

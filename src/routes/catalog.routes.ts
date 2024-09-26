@@ -16,6 +16,7 @@ class CatalogRoutes extends ServerRouter {
 
   config(): void {
     this.router.get('/personal-bonus', adminMiddleware, this.controller.getPersonalBonus as RequestHandler)
+    this.router.put('/personal-bonus', adminMiddleware, this.controller.bulkPersonalBonus as RequestHandler)
     this.router.post('/personal-bonus', adminMiddleware, this.controller.createPersonalBonus as RequestHandler)
   }
 }
