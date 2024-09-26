@@ -22,21 +22,21 @@ import { tempDocsDir } from '@app/constants/file.constants'
 import { ServerLogger } from '@app/handlers/loggers/server.logger'
 
 /* routes */
-import userRoutes from './routes/user.routes'
-import selectRoutes from '@routes/select.routes'
-import authRoutes from './routes/auth.routes'
-import serverRoutes from '@routes/server.routes'
-import employeeRoutes from '@routes/employee.routes';
-import deparmentRoutes from '@routes/deparment.routes';
-import jobRoutes from '@routes/job.routes';
-import scheduleRoutes from '@routes/schedule.routes';
+import personalBonusRoutes from '@routes/personal-bonus.routes';
 import attendanceRoutes from '@routes/attendance.routes';
+import deparmentRoutes from '@routes/deparment.routes';
+import employeeRoutes from '@routes/employee.routes';
+import scheduleRoutes from '@routes/schedule.routes';
 import downloadRoutes from '@routes/download.routes';
 import absenceRoutes from '@routes/absence.routes';
 import payrollRoutes from '@routes/payroll.routes';
 import holidayRoutes from '@routes/holiday.routes';
+import catalogRoutes from '@routes/catalog.routes';
+import serverRoutes from '@routes/server.routes'
 import bonusRoutes from '@routes/bonus.routes';
 import fileRoutes from '@routes/file.routes';
+import authRoutes from '@routes/auth.routes'
+import jobRoutes from '@routes/job.routes';
 
 /* cronjobs */
 import { dailyAbsencesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
@@ -82,20 +82,22 @@ export class AppServer {
 
   routes(): void {
     this.app.use('/favicon.ico', express.static(path.join(__dirname, '../images/favicon.ico')))
-    this.app.use('/docs', downloadRoutes)
-    this.app.use('/api/server', serverRoutes)
-    this.app.use('/api/auth', authRoutes)
-    this.app.use('/api/employee', employeeRoutes)
+    this.app.use('/api/personal-bonus', personalBonusRoutes)
     this.app.use('/api/department', deparmentRoutes)
-    this.app.use('/api/job', jobRoutes)
-    this.app.use('/api/schedule', scheduleRoutes)
     this.app.use('/api/attendance', attendanceRoutes)
+    this.app.use('/api/employee', employeeRoutes)
+    this.app.use('/api/schedule', scheduleRoutes)
+    this.app.use('/api/overtime', overtimeRoutes)
     this.app.use('/api/absence', absenceRoutes)
     this.app.use('/api/payroll', payrollRoutes)
+    this.app.use('/api/catalog', catalogRoutes)
     this.app.use('/api/holiday', holidayRoutes)
+    this.app.use('/api/server', serverRoutes)
     this.app.use('/api/bonus', bonusRoutes)
-    this.app.use('/api/overtime', overtimeRoutes)
+    this.app.use('/docs', downloadRoutes)
+    this.app.use('/api/auth', authRoutes)
     this.app.use('/api/file', fileRoutes)
+    this.app.use('/api/job', jobRoutes)
   }
 
   crons(): void {
