@@ -80,6 +80,15 @@ export function arrayToObject (array: any, keyField: string): any {
   return result
 }
 
+export function groupBy<T>(records: T[], key: keyof T): { [key: string]: T[] } {
+  return records.reduce((acc: { [key: string]: T[] }, record: T) => {
+    const groupKey = String(record[key]); 
+    acc[groupKey] = acc[groupKey] || [];
+    acc[groupKey].push(record);
+    return acc;
+  }, {});
+}
+
 export function getBaseSchedule(jobScheme: any, timeEntry: string, timeDeparture: string): IEmployeSchedule {
   if (String(jobScheme) === '5') {
     return mondayToFridaySchedule(timeEntry, timeDeparture)

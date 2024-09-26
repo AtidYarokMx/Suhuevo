@@ -60,20 +60,20 @@ class AttendanceController {
     }
   }
 
-  public async startCalculations(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {
-    const session = await AppMongooseRepo.startSession()
-    try {
-      session.startTransaction()
-      const response = await attendanceService.startCalculations(session)
-      await session.commitTransaction()
-      await session.endSession()
-      return res.status(200).json(response)
-    } catch (error) {
-      await session.abortTransaction()
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
-    }
-  }
+  // public async startCalculations(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {
+  //   const session = await AppMongooseRepo.startSession()
+  //   try {
+  //     session.startTransaction()
+  //     const response = await attendanceService.startCalculations(session)
+  //     await session.commitTransaction()
+  //     await session.endSession()
+  //     return res.status(200).json(response)
+  //   } catch (error) {
+  //     await session.abortTransaction()
+  //     const { statusCode, error: err } = appErrorResponseHandler(error)
+  //     return res.status(statusCode).json(err)
+  //   }
+  // }
 
   public async importFromCsv(req: Request, res: Response): Promise<any> {
     const file = req.file
