@@ -149,7 +149,7 @@ class PayrollService {
       const otherPayments = holidayBonus
       const totalBonuses = attendanceBonus + punctualityBonus + pantryBonus + holidayBonus;
       // Calcular el neto a pagar
-      const netPay = salary + extraHoursPayment + otherPayments;
+      const netPay = salary + extraHoursPayment + otherPayments + attendanceBonus + punctualityBonus;
 
       lines.push({
         rowIndex: index + 1,
