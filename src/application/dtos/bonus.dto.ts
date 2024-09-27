@@ -25,7 +25,7 @@ export enum BonusType {
   PERCENT = "percentage"
 }
 
-export type AppBonus = Model<IBonus, Record<string, unknown>, Record<string, unknown>, IAppBonusVirtuals>
+export type AppBonus = Model<IBonus, {}, {}, IAppBonusVirtuals>
 
 /* endpoint dtos */
 export type ICreateBonus = {

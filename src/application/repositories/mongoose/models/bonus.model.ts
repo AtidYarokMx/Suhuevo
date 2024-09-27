@@ -5,7 +5,7 @@ import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { BonusType, IBonus, AppBonus, IAppBonusVirtuals } from '@app/dtos/bonus.dto'
 
 
-export const BonusSchema = new Schema<IBonus, AppBonus, Record<string, unknown>, Record<string, unknown>, IAppBonusVirtuals>({
+export const BonusSchema = new Schema<IBonus, AppBonus, {}, {}, IAppBonusVirtuals>({
   /* required fields */
   name: { type: String, required: true, trim: true },
   value: { type: Number, required: true },

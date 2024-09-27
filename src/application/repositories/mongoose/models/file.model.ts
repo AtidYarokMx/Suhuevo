@@ -5,7 +5,7 @@ import { DbLogger } from '@app/handlers/loggers/db.logger'
 import type { IAppFile, AppFile, IAppFileVirtuals } from '@app/dtos/file.dto'
 
 
-export const AppFileSchema = new Schema<IAppFile, AppFile, Record<string, unknown>, Record<string, unknown>, IAppFileVirtuals>({
+export const AppFileSchema = new Schema<IAppFile, AppFile, {}, {}, IAppFileVirtuals>({
   /* required fields */
   filename: { type: String, required: true },
   mimetype: { type: String, required: true },
