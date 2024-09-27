@@ -11,6 +11,7 @@ export const PersonalBonusSchema = new Schema<IPersonalBonus>({
   value: { type: Number, required: true },
   taxable: { type: Boolean, required: true, default: true },
   type: { type: String, enum: PersonalBonusType, required: true, default: PersonalBonusType.AMOUNT },
+  enabled: { type: Boolean, default: true },
   entityType: { type: String, enum: PersonalBonusEntityType, required: true },
   entityId: { type: Schema.Types.ObjectId, required: true, refPath: "entityType" },
   /* html identifiers for front */

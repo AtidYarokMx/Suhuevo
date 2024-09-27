@@ -1,4 +1,4 @@
-import type { Types } from "@app/repositories/mongoose"
+import type { Model, Types } from "@app/repositories/mongoose"
 
 /* model dtos */
 export type ICatalogPersonalBonus = {
@@ -16,10 +16,16 @@ export type ICatalogPersonalBonus = {
   createdAt: Date
 }
 
+export type ICatalogPersonalBonusVirtuals = {
+  entityType: "catalog-personal-bonus"
+}
+
 export enum CatalogPersonalBonusType {
   AMOUNT = "amount",
   PERCENT = "percentage"
 }
+
+export type AppCatalogPersonalBonus = Model<ICatalogPersonalBonus, Record<string, unknown>, Record<string, unknown>, ICatalogPersonalBonusVirtuals>
 
 /* endpoint dtos */
 export type ICreateCatalogPersonalBonus = {

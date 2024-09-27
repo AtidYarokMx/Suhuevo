@@ -32,11 +32,12 @@ class PersonalBonusController {
   }
 
   public async bulk(req: Request, res: Response) {
+    const id = req.params.id
     const body = req.body as ICreatePersonalBonus[]
     const session = await AppMongooseRepo.startSession()
     try {
       session.startTransaction()
-      const response = await personalBonusService.bulk(body, session)
+      const response = await personalBonusService.bulk(body, id, session)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)

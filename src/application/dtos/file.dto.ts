@@ -14,7 +14,7 @@ export type IAppFileVirtuals = {
   fullpath: string
 }
 
-export type AppFile = Model<IAppFile, {}, {}, IAppFileVirtuals>
+export type AppFile = Model<IAppFile, Record<string, unknown>, Record<string, unknown>, IAppFileVirtuals>
 
 /* endpoint types */
 export type UploadSingleResponse = {

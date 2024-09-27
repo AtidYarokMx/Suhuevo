@@ -2,10 +2,10 @@ import { Schema, model } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
-import { CatalogPersonalBonusType, ICatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
+import { AppCatalogPersonalBonus, CatalogPersonalBonusType, ICatalogPersonalBonus, ICatalogPersonalBonusVirtuals } from '@app/dtos/catalog-personal-bonus.dto'
 
 
-export const CatalogPersonalBonusSchema = new Schema<ICatalogPersonalBonus>({
+export const CatalogPersonalBonusSchema = new Schema<ICatalogPersonalBonus, AppCatalogPersonalBonus, Record<string, unknown>, Record<string, unknown>, ICatalogPersonalBonusVirtuals>({
   /* required fields */
   name: { type: String, required: true, trim: true },
   value: { type: Number, required: true },
@@ -19,6 +19,14 @@ export const CatalogPersonalBonusSchema = new Schema<ICatalogPersonalBonus>({
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },
   createdAt: { type: Date, default: () => Date.now(), immutable: true }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+})
+
+/* virtual fields */
+CatalogPersonalBonusSchema.virtual("entityType").get(function () {
+  return "catalog-personal-bonus"
 })
 
 /* pre (middlewares) */
@@ -37,4 +45,4 @@ CatalogPersonalBonusSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const CatalogPersonalBonusModel = model<ICatalogPersonalBonus>('catalog-personal-bonus', CatalogPersonalBonusSchema)
+export const CatalogPersonalBonusModel = model<ICatalogPersonalBonus, AppCatalogPersonalBonus>('catalog-personal-bonus', CatalogPersonalBonusSchema)

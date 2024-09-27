@@ -1,4 +1,4 @@
-import type { Types } from "@app/repositories/mongoose"
+import type { Model, Types } from "@app/repositories/mongoose"
 
 /* model dtos */
 export type IBonus = {
@@ -16,10 +16,16 @@ export type IBonus = {
   createdAt: Date
 }
 
+export type IAppBonusVirtuals = {
+  entityType: "bonus"
+}
+
 export enum BonusType {
   AMOUNT = "amount",
   PERCENT = "percentage"
 }
+
+export type AppBonus = Model<IBonus, Record<string, unknown>, Record<string, unknown>, IAppBonusVirtuals>
 
 /* endpoint dtos */
 export type ICreateBonus = {

@@ -2,10 +2,10 @@ import { Schema, model } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
-import { BonusType, IBonus } from '@app/dtos/bonus.dto'
+import { BonusType, IBonus, AppBonus, IAppBonusVirtuals } from '@app/dtos/bonus.dto'
 
 
-export const BonusSchema = new Schema<IBonus>({
+export const BonusSchema = new Schema<IBonus, AppBonus, Record<string, unknown>, Record<string, unknown>, IAppBonusVirtuals>({
   /* required fields */
   name: { type: String, required: true, trim: true },
   value: { type: Number, required: true },
@@ -19,6 +19,14 @@ export const BonusSchema = new Schema<IBonus>({
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },
   createdAt: { type: Date, default: () => Date.now(), immutable: true }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+})
+
+/* virtual fields */
+BonusSchema.virtual("entityType").get(function () {
+  return "bonus"
 })
 
 /* pre (middlewares) */
@@ -37,4 +45,4 @@ BonusSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const BonusModel = model<IBonus>('bonus', BonusSchema)
+export const BonusModel = model<IBonus, AppBonus>('bonus', BonusSchema)
