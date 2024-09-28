@@ -5,7 +5,7 @@ import { type ClientSession } from 'mongoose'
 import { AppMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from '@app/dtos/attendance.dto'
-import { EEmployeStatus, IEmployeSchedule } from '@app/dtos/employee.dto'
+import { EEmployeeAttendanceScheme, EEmployeStatus, IEmployeSchedule } from '@app/dtos/employee.dto'
 /* models */
 import { ScheduleExceptionModel } from '@app/repositories/mongoose/models/schedule-exception.model'
 import { AttendanceModel } from '@app/repositories/mongoose/models/attendance.model'
@@ -225,66 +225,52 @@ class AttendanceService {
     return { id: record.id }
   }
 
-  // async startCalculations(session: ClientSession) {
-  //   const startDate = moment("9/11/2024 00:00:00", "M/D/YYYY H:m:s")
-  //   const endDate = moment("9/17/2024 23:59:59", "M/D/YYYY H:m:s")
+  // -------------------------------------------------------------------------------------------------
 
-  //   const attendances = await AttendanceModel.aggregate<IAttendance & {
-  //     checkInDate: Date
-  //     checkOutDate: Date
-  //   }>([
-  //     {
-  //       $addFields: {
-  //         checkInDate: {
-  //           $dateFromString: {
-  //             dateString: "$checkInTime", // Convertir checkInTime de string a Date
-  //             format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
-  //           }
-  //         },
-  //         checkOutDate: {
-  //           $dateFromString: {
-  //             dateString: "$checkOutTime", // Convertir checkInTime de string a Date
-  //             format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
-  //           }
-  //         },
-  //       }
-  //     },
-  //     {
-  //       $match: {
-  //         checkInDate: {
-  //           $gte: startDate.toDate(),
-  //           $lte: endDate.toDate()
-  //         }
-  //       }
-  //     }
-  //   ])
+  async generateAutomaticDailyAttendances (body: any): Promise<any> {
+    const date = body.date
+    if (!date || !moment(date, true).isValid()) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
 
-  //   for await (const attendance of attendances) {
-  //     if (attendance.checkOutDate == null) {
-  //       const idSequence = await consumeSequence("absences", session)
-  //       const id = String(idSequence).padStart(8, '0')
-  //       await AbsenceModel.create({
-  //         id,
-  //         employeeId: attendance.employeeId,
-  //         employeeName: attendance.employeeName,
-  //         date: attendance.checkInDate,
-  //         isJustified: false,
-  //         reason: "No se hizo el check out",
-  //         isPaid: false,
-  //       })
-  //     }
-  //   }
+    const day = moment(date).format('YYYY-MM-DD');
 
-  //   // await Promise.all([
-  //   //   attendances.forEach(async (attendance) => {
+    const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE, attendanceScheme: EEmployeeAttendanceScheme.AUTOMATIC });
 
-  //   //   })
-  //   // ])
+    const detail: any[] = []
 
-  //   // console.log(attendances)
+    for (const employee of employees) {
+      const schedule = employee.schedule
+      const dayOfWeek = moment(date).format("dddd").toLowerCase()
+      const scheduleForDay = (schedule as any)?.[dayOfWeek];
 
-  //   return null
-  // }
+      const attendance: CreateAttendanceBody = {
+        employeeId: employee.id,
+        checkInTime: day + ' ' + scheduleForDay.start + ':00',
+        checkOutTime: day + ' ' + scheduleForDay.end + ':00'
+      }
+
+      let session = await AppMongooseRepo.startSession()
+      session.startTransaction()
+      try {
+        const record = await this.create(attendance, session);
+        detail.push({ result: record.id, payload: JSON.stringify(attendance) })
+        await session.commitTransaction()
+        await session.endSession()
+      }
+      catch (error: any) {
+        console.log(error)
+        await session.abortTransaction()
+        detail.push({ error: error.name, payload: JSON.stringify(attendance) })
+      }
+    }
+
+    customLog(detail)
+    
+    return {
+      detail,
+      errors: detail.filter((x: any) => x.error != null).length,
+      success: detail.filter((x: any) => x.result != null).length
+    }
+  }
 
   async importFromCsv(file: any) {
     if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' });
@@ -380,7 +366,7 @@ class AttendanceService {
         detail.push({ row: row.index + 2, error: error.name, payload: JSON.stringify(row) })
       }
     }
-    // console.log(JSON.stringify({ totalRows: attendances.length, detail, createdAttendances }, null, 4))
+
     return {
       totalRows: csvRows.length,
       detail,

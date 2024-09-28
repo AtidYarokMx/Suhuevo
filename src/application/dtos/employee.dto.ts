@@ -32,6 +32,7 @@ export interface IEmployee {
   emergencyPhone?: string
 
   jobScheme: string
+  attendanceScheme: EEmployeeAttendanceScheme
 
   userId: string
 
@@ -65,6 +66,11 @@ export interface IEmployeSchedule {
 export enum EEmployeStatus {
   ACTIVE = 'activo',
   INACTIVE = 'inactivo'
+}
+
+export enum EEmployeeAttendanceScheme {
+  CLOCK_IN_OUT = "clock_in_out",
+  AUTOMATIC = "automatic"
 }
 
 export interface IEmployeeMethods {

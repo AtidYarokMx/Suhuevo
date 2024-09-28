@@ -15,7 +15,6 @@ import { AppErrorResponse } from '@app/models/app.response'
 import { consumeSequence } from '@app/utils/sequence'
 import { customLog, getBaseSchedule } from '@app/utils/util.util'
 /* consts */
-import { convertToBusinessHours } from '@app/constants/schedule.constants'
 import { docsDir, tempDocsDir } from '@app/constants/file.constants'
 import { Types } from '@app/repositories/mongoose'
 /* dtos */
@@ -64,9 +63,8 @@ class EmployeeService {
       }
     }
 
-    const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' }).populate(["ineFront", "ineBack", "contract"]).exec()
-    if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
-    // console.log(await this.populateResults(records))
+    const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' }).populate(['ineFront', 'ineBack', 'contract']).exec()
+    if (records.length === 0) return []
     return await this.populateResults(records)
   }
 
@@ -102,32 +100,33 @@ class EmployeeService {
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el empleado' })
 
     for (const field of this.allowedUpdateFields) {
-      if (typeof body[field] !== "undefined" && body[field] !== "") {
-        if (field === "ineFront" || field === "ineBack" || field === "contract") {
-          const id = body[field]
-          if (Types.ObjectId.isValid(id)) {
-            const tempFile = await AppTemporalFileModel.findById(id)
-            if (tempFile != null) {
-              const file = new AppFileModel({
-                idUser: tempFile.idUser,
-                filename: tempFile.filename,
-                mimetype: tempFile.mimetype,
-                path: "/docs/",
-                size: tempFile.size,
-              })
-              fs.renameSync(`${path.join(tempDocsDir, tempFile.filename)}`, `${path.join(docsDir, file.filename)}`)
-              const savedFile = await file.save({ session })
-              record[field] = savedFile._id
-            }
-          }
-        } else {
-          (record as any)[field] = body[field]
-        }
+      if (!(typeof body[field] !== 'undefined' && body[field] !== '')) continue 
+
+      if (!['ineFront', 'ineBack', 'contract'].includes(field)) {
+        (record as any)[field] = body[field]
+        continue
       }
+      
+      const id = body[field]
+      if (!Types.ObjectId.isValid(id)) continue
+
+      const tempFile = await AppTemporalFileModel.findById(id)
+      if (tempFile == null) continue
+
+      const file = new AppFileModel({
+        idUser: tempFile.idUser,
+        filename: tempFile.filename,
+        mimetype: tempFile.mimetype,
+        path: '/docs/',
+        size: tempFile.size,
+      })
+      fs.renameSync(`${path.join(tempDocsDir, tempFile.filename)}`, `${path.join(docsDir, file.filename)}`)
+      const savedFile = await file.save({ session });
+      (record as any)[field] = savedFile._id
     }
 
     const savedRecord = await record.save({ validateBeforeSave: true, session })
-    const populated = await savedRecord.populate(["ineFront", "ineBack", "contract"])
+    const populated = await savedRecord.populate(['ineFront', 'ineBack', 'contract'])
     return { ...populated.toJSON() }
   }
 
@@ -150,10 +149,6 @@ class EmployeeService {
       record.ineFront = record.ineFront?.fullpath ?? null
       record.ineBack = record.ineBack?.fullpath ?? null
       record.contract = record.contract?.fullpath ?? null
-      // record.workDays = Object.values(record.schedule).filter(value => value !== null).length;
-      // record.businessHours = convertToBusinessHours(record.schedule)
-
-      // console.log(record.name, record.businessHours)
     }
 
     return populatedArray

@@ -39,7 +39,7 @@ import authRoutes from '@routes/auth.routes'
 import jobRoutes from '@routes/job.routes';
 
 /* cronjobs */
-import { dailyAbsencesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
+import { dailyAbsencesCronJob, dailyAutomaticAttendancesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
 import overtimeRoutes from '@routes/overtime.routes';
 
 // import csurf from 'csurf'
@@ -102,6 +102,7 @@ export class AppServer {
   }
 
   crons(): void {
+    dailyAutomaticAttendancesCronJob.start()
     dailyAbsencesCronJob.start()
     dailyPayrollCronJob.start()
   }

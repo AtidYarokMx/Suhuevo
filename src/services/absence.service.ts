@@ -79,6 +79,8 @@ class AbsenceService {
     return { id: record.id }
   }
 
+  // -------------------------------------------------------------------------------------------------
+
   async generateDailyAbsences (body: any, session: ClientSession): Promise<any> {
     const date = body.date
     if (!date || !moment(date, true).isValid()) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });

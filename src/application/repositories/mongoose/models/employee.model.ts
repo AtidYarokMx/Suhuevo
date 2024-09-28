@@ -1,6 +1,6 @@
 import { Schema, model } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
-import { EEmployeStatus, AppEmployeeModel, IEmployee, IEmployeeMethods, IEmployeeVirtuals } from '@app/dtos/employee.dto'
+import { EEmployeStatus, AppEmployeeModel, IEmployee, IEmployeeMethods, IEmployeeVirtuals, EEmployeeAttendanceScheme } from '@app/dtos/employee.dto'
 
 
 export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeMethods, {}, IEmployeeVirtuals>({
@@ -44,6 +44,7 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
   emergencyPhone: { type: String, trim: true },
 
   jobScheme: { type: String, trim: true },
+  attendanceScheme: { type: String, enum: EEmployeeAttendanceScheme, default: EEmployeeAttendanceScheme.CLOCK_IN_OUT },
 
   userId: { type: String },
 
@@ -63,9 +64,6 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
 
 /* methods */
 EmployeeSchema.method('fullname', function fullname() {
-  /* solución alterna */
-  // const nameParts = [this.name, this.lastName, this.secondLastName].filter(Boolean);
-  // return nameParts.join(' ');
   return `${this.name ?? ''} ${this.lastName ?? ''} ${this.secondLastName ?? ''}`.trim()
 })
 

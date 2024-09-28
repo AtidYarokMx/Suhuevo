@@ -48,7 +48,7 @@ class DepartmentService {
     }
 
     const records = await DepartmentModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
-    if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
+    if (records.length === 0) return []
 
     // Delete later
     const recordsCopy = JSON.parse(JSON.stringify(records))

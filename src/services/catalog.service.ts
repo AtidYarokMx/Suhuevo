@@ -2,8 +2,6 @@
 import { AnyBulkWriteOperation, type ClientSession } from 'mongoose'
 /* models */
 import { CatalogPersonalBonusModel } from '@app/repositories/mongoose/models/catalog-personal-bonus.model'
-/* model response */
-import { AppErrorResponse } from '@app/models/app.response'
 /* dtos */
 import { ICatalogPersonalBonus, ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
 

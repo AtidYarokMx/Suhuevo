@@ -50,7 +50,7 @@ class OvertimeService {
     }
 
     const records = await OvertimeModel.find(filter).select(selection).limit(limit).sort({ createdAt: 'desc' })
-    if (records.length === 0) return [] // throw new AppErrorResponse({ name: 'No se encontraron registros', statusCode: 404 })
+    if (records.length === 0) return []
     return records
   }
 
