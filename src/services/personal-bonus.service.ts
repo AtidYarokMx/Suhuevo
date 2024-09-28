@@ -35,8 +35,8 @@ class PersonalBonusService {
     const generalBonusNotIn = await BonusModel.find({ _id: { $nin: excludedBonusIds }, active: true }).exec()
     const catalogBonusNotIn = await CatalogPersonalBonusModel.find({ _id: { $nin: excludedCatalogBonusIds }, active: true }).exec()
 
-    const assignedBonus = await PersonalBonusModel.find({ idEmployee, active: true, entityType: "bonus" }).populate({ path: "entityId", match: { _id: { $in: excludedBonusIds } } }).exec()
-    const assignedCatalogBonus = await PersonalBonusModel.find({ idEmployee, active: true, entityType: "catalog-personal-bonus" }).populate({ path: "entityId", match: { _id: { $in: excludedCatalogBonusIds } } }).exec()
+    const assignedBonus = await PersonalBonusModel.find({ idEmployee, active: true, entityType: "bonus" }).populate({ path: "entityId", match: { _id: { $in: excludedBonusIds }, active: true } }).exec()
+    const assignedCatalogBonus = await PersonalBonusModel.find({ idEmployee, active: true, entityType: "catalog-personal-bonus" }).populate({ path: "entityId", match: { _id: { $in: excludedCatalogBonusIds }, active: true } }).exec()
 
     return { assigned: [...assignedBonus, ...assignedCatalogBonus], notAssigned: [...generalBonusNotIn, ...catalogBonusNotIn] }
   }
