@@ -1,7 +1,8 @@
 import { EEmployeStatus, IEmployee } from "@app/dtos/employee.dto";
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";
-import { formatDate, formatDateToYYMMDD, getNextTuesday, groupBy, sumField } from "@app/utils/util.util";
+import { formatDate, formatDateToYYMMDD, getNextTuesday, sumField } from "@app/utils/util.util";
+import { getLastTuesday, getLastWednesday } from '../application/utils/util.util';
 import * as ExcelJS from 'exceljs'
 import { consumeSequence } from "@app/utils/sequence";
 import { ClientSession } from "mongoose";
@@ -16,6 +17,7 @@ import { OvertimeModel } from "@app/repositories/mongoose/models/overtime.model"
 import moment from "moment";
 import { BonusModel } from "@app/repositories/mongoose/models/bonus.model";
 import { BonusType, IBonus } from "@app/dtos/bonus.dto";
+import { IScheduleException } from "@app/dtos/schedule-exception.dto";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -101,12 +103,44 @@ class PayrollService {
     const attendances = await AttendanceModel.find({ active: true, checkInTime: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() }});
     const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: weekStartDate, $lte: weekCutoffDate },});
     const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: weekStartDate, $lte: weekCutoffDate },});
+
+    // const overtimeRecords = await ScheduleExceptionModel.find({
+    //   active: true, name: 'Horas Extra',
+    //   $or: [
+    //     { startDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
+    //     { endDate: { $gte: weekStartDate.toISOString(), $lte: weekCutoffDate.toISOString() } },
+    //     { $and: [
+    //         { startDate: { $lte: weekStartDate.toISOString() } },
+    //         { endDate: { $gte: weekCutoffDate.toISOString() } }
+    //       ]
+    //     }
+    //   ]
+    // })
     const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate} })
 
-    const attendancesByEmployee = groupBy(attendances, 'employeeId')
-    const absencesByEmployee = groupBy(absences, 'employeeId')
-    const paidAbsencesByEmployee = groupBy(paidAbsences, 'employeeId')
-    const overtimeRecordsByEmployee = groupBy(overtimeRecords, 'employeeId')
+    const attendancesByEmployee = attendances.reduce((acc: any, attendance: IAttendance) => {
+      acc[attendance.employeeId] = acc[attendance.employeeId] || [];
+      acc[attendance.employeeId].push(attendance);
+      return acc;
+    }, {});
+    
+    const absencesByEmployee = absences.reduce((acc: any, absence: IAbsence) => {
+      acc[absence.employeeId] = acc[absence.employeeId] || [];
+      acc[absence.employeeId].push(absence);
+      return acc;
+    }, {});
+    
+    const paidAbsencesByEmployee = paidAbsences.reduce((acc: any, absence: IAbsence) => {
+      acc[absence.employeeId] = acc[absence.employeeId] || [];
+      acc[absence.employeeId].push(absence);
+      return acc;
+    }, {});
+
+    const overtimeRecordsByEmployee = overtimeRecords.reduce((acc: any, record: any) => {
+      acc[record.employeeId] = acc[record.employeeId] || [];
+      acc[record.employeeId].push(record);
+      return acc;
+    }, {});
 
     const fiveDaysSchemeBase = bigMath.chain(7).divide(5).done()
     const sixDaysSchemeBase = bigMath.chain(7).divide(6).done()
@@ -132,8 +166,8 @@ class PayrollService {
       const totalDays = daysWorked + Number(paidRestDays)
       const salary = dailySalary * (totalDays)
 
-      const extraHours = Math.floor(sumField(employeeOvertimeRecords, 'hours'))
-      const extraHoursPayment = extraHours * amountBonusOvertime // ((dailySalary / 8) * 2) // xd
+      const extraHours = Math.floor(sumField(employeeOverTimeRecords, 'hours'))
+      const extraHoursPayment = extraHours * ((dailySalary / 8) * 2)
 
       // Contar retardos
       const tardies = employeeAttendances.filter((attendance: IAttendance) => attendance.isLate);

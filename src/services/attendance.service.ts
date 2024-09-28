@@ -319,8 +319,6 @@ class AttendanceService {
 
       const schedule = employee?.schedule[dayOfWeek as keyof IEmployeSchedule];
       if (!schedule || !schedule.start) { detail.push({ row: index + 2, skipped: 'No se encontró el horario para ese dia', payload: JSON.stringify(row) }); continue };
-      // console.log(employeeId, time)
-      // console.log(dayOfWeek, schedule)
   
       const checkTime = moment(time)
       const shiftStartTime = checkTime.clone().set({
@@ -330,7 +328,6 @@ class AttendanceService {
       });
   
       const isBeforeShiftStart = moment(checkTime).isBefore(shiftStartTime.clone().subtract(MAX_TIME_BEFORE_SHIFT_START, 'minutes'));
-      // console.log('shiftStartTime', shiftStartTime, 'checkTime', checkTime, 'isBeforeShiftStart', isBeforeShiftStart)
 
       if (isBeforeShiftStart) {
         const lastAttendance = tempCheckinsMap[employeeId];
