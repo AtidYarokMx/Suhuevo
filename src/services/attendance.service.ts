@@ -225,66 +225,66 @@ class AttendanceService {
     return { id: record.id }
   }
 
-  async startCalculations(session: ClientSession) {
-    const startDate = moment("9/11/2024 00:00:00", "M/D/YYYY H:m:s")
-    const endDate = moment("9/17/2024 23:59:59", "M/D/YYYY H:m:s")
+  // async startCalculations(session: ClientSession) {
+  //   const startDate = moment("9/11/2024 00:00:00", "M/D/YYYY H:m:s")
+  //   const endDate = moment("9/17/2024 23:59:59", "M/D/YYYY H:m:s")
 
-    const attendances = await AttendanceModel.aggregate<IAttendance & {
-      checkInDate: Date
-      checkOutDate: Date
-    }>([
-      {
-        $addFields: {
-          checkInDate: {
-            $dateFromString: {
-              dateString: "$checkInTime", // Convertir checkInTime de string a Date
-              format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
-            }
-          },
-          checkOutDate: {
-            $dateFromString: {
-              dateString: "$checkOutTime", // Convertir checkInTime de string a Date
-              format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
-            }
-          },
-        }
-      },
-      {
-        $match: {
-          checkInDate: {
-            $gte: startDate.toDate(),
-            $lte: endDate.toDate()
-          }
-        }
-      }
-    ])
+  //   const attendances = await AttendanceModel.aggregate<IAttendance & {
+  //     checkInDate: Date
+  //     checkOutDate: Date
+  //   }>([
+  //     {
+  //       $addFields: {
+  //         checkInDate: {
+  //           $dateFromString: {
+  //             dateString: "$checkInTime", // Convertir checkInTime de string a Date
+  //             format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
+  //           }
+  //         },
+  //         checkOutDate: {
+  //           $dateFromString: {
+  //             dateString: "$checkOutTime", // Convertir checkInTime de string a Date
+  //             format: "%Y-%m-%d %H:%M:%S" // Asegúrate de usar el formato adecuado que coincide con el almacenado en la DB
+  //           }
+  //         },
+  //       }
+  //     },
+  //     {
+  //       $match: {
+  //         checkInDate: {
+  //           $gte: startDate.toDate(),
+  //           $lte: endDate.toDate()
+  //         }
+  //       }
+  //     }
+  //   ])
 
-    for await (const attendance of attendances) {
-      if (attendance.checkOutDate == null) {
-        const idSequence = await consumeSequence("absences", session)
-        const id = String(idSequence).padStart(8, '0')
-        await AbsenceModel.create({
-          id,
-          employeeId: attendance.employeeId,
-          employeeName: attendance.employeeName,
-          date: attendance.checkInDate,
-          isJustified: false,
-          reason: "No se hizo el check out",
-          isPaid: false,
-        })
-      }
-    }
+  //   for await (const attendance of attendances) {
+  //     if (attendance.checkOutDate == null) {
+  //       const idSequence = await consumeSequence("absences", session)
+  //       const id = String(idSequence).padStart(8, '0')
+  //       await AbsenceModel.create({
+  //         id,
+  //         employeeId: attendance.employeeId,
+  //         employeeName: attendance.employeeName,
+  //         date: attendance.checkInDate,
+  //         isJustified: false,
+  //         reason: "No se hizo el check out",
+  //         isPaid: false,
+  //       })
+  //     }
+  //   }
 
-    // await Promise.all([
-    //   attendances.forEach(async (attendance) => {
+  //   // await Promise.all([
+  //   //   attendances.forEach(async (attendance) => {
 
-    //   })
-    // ])
+  //   //   })
+  //   // ])
 
-    // console.log(attendances)
+  //   // console.log(attendances)
 
-    return null
-  }
+  //   return null
+  // }
 
   async importFromCsv(file: any) {
     if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' });
@@ -319,8 +319,6 @@ class AttendanceService {
 
       const schedule = employee?.schedule[dayOfWeek as keyof IEmployeSchedule];
       if (!schedule || !schedule.start) { detail.push({ row: index + 2, skipped: 'No se encontró el horario para ese dia', payload: JSON.stringify(row) }); continue };
-      console.log(employeeId, time)
-      console.log(dayOfWeek, schedule)
   
       const checkTime = moment(time)
       const shiftStartTime = checkTime.clone().set({
@@ -330,7 +328,6 @@ class AttendanceService {
       });
   
       const isBeforeShiftStart = moment(checkTime).isBefore(shiftStartTime.clone().subtract(MAX_TIME_BEFORE_SHIFT_START, 'minutes'));
-      console.log('shiftStartTime', shiftStartTime, 'checkTime', checkTime, 'isBeforeShiftStart', isBeforeShiftStart)
 
       if (isBeforeShiftStart) {
         const lastAttendance = tempCheckinsMap[employeeId];
@@ -368,9 +365,6 @@ class AttendanceService {
       }
     }
   
-    // console.log(attendances)
-    // return attendances
-
     for (const row of attendances) {
       let session = await AppMongooseRepo.startSession()
       session.startTransaction()

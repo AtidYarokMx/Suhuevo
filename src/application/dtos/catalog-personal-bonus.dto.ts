@@ -1,12 +1,12 @@
 import type { Model, Types } from "@app/repositories/mongoose"
 
 /* model dtos */
-export type IBonus = {
+export type ICatalogPersonalBonus = {
   name: string
   value: number
   taxable: boolean
-  type: BonusType
-  enabled?: boolean
+  type: CatalogPersonalBonusType
+  enabled: boolean
   /* html identifiers for front */
   inputId: string
   inputName: string
@@ -16,24 +16,24 @@ export type IBonus = {
   createdAt: Date
 }
 
-export type IAppBonusVirtuals = {
-  entityType: "bonus"
+export type ICatalogPersonalBonusVirtuals = {
+  entityType: "catalog-personal-bonus"
 }
 
-export enum BonusType {
+export enum CatalogPersonalBonusType {
   AMOUNT = "amount",
   PERCENT = "percentage"
 }
 
-export type AppBonus = Model<IBonus, {}, {}, IAppBonusVirtuals>
+export type AppCatalogPersonalBonus = Model<ICatalogPersonalBonus, Record<string, unknown>, Record<string, unknown>, ICatalogPersonalBonusVirtuals>
 
 /* endpoint dtos */
-export type ICreateBonus = {
+export type ICreateCatalogPersonalBonus = {
   _id?: Types.ObjectId
   name: string
   value: number
   taxable: boolean
-  type: BonusType
+  type: CatalogPersonalBonusType
   enabled?: boolean
   /* html identifiers for front */
   inputId: string

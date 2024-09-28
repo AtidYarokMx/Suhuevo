@@ -1,14 +1,14 @@
 import { Model, Types } from "@app/repositories/mongoose";
 
 /* model types */
-export type IAppFile = {
+export type IAppFile = Omit<Express.Multer.File, "buffer" | "stream" | "fieldname" | "originalname" | "destination"> & {
   _id?: Types.ObjectId
   /* populated */
   idUser: Types.ObjectId
   /* defaults */
   updatedAt: Date
   createdAt: Date
-} & Omit<Express.Multer.File, "buffer" | "stream" | "fieldname" | "originalname" | "destination">
+}
 
 export type IAppFileVirtuals = {
   fullpath: string

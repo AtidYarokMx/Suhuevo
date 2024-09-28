@@ -3,7 +3,7 @@ import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { EEmployeStatus, AppEmployeeModel, IEmployee, IEmployeeMethods, IEmployeeVirtuals } from '@app/dtos/employee.dto'
 
 
-export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeMethods, Record<string, unknown>, IEmployeeVirtuals>({
+export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeMethods, {}, IEmployeeVirtuals>({
   /* required fields */
   id: { type: String, required: true, trim: true, unique: true },
   status: { type: String, enum: EEmployeStatus, default: EEmployeStatus.ACTIVE, required: true },
