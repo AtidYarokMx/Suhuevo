@@ -57,7 +57,10 @@ class AuthService {
       from: appMailSender,
       to: user.email,
       subject: 'Reestablecer contraseña',
-      text: `Olvidaste tu contraseña mi estimado (esto es una prueba, ignorar), entra a este link parguela ${appFrontUpdatePasswordUri}/${uuid}`
+      templateName: "reset-password",
+      templateData: {
+        linkUrl: `${appFrontUpdatePasswordUri}/${uuid}`
+      }
     })
     return { message: "Correo enviado con éxito" }
   }
