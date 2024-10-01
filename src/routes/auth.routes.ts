@@ -15,6 +15,7 @@ class AuthRoutes extends ServerRouter {
     // this.router.post('/create', authController.createUser as RequestHandler)
     this.router.post('/login', authController.login as RequestHandler)
     this.router.post('/reset-password', authController.resetPassword as RequestHandler)
+    this.router.post('/update-password', authController.updatePassword as RequestHandler)
   }
 }
 

@@ -6,12 +6,12 @@ import { ResetModel } from '@app/repositories/mongoose/models/reset.model'
 /* response models */
 import { AppErrorResponse } from '@app/models/app.response'
 /* utils */
-import { comparePassword, generateUserToken } from '@app/utils/auth.util'
+import { comparePassword, generatePasswordHash, generateUserToken } from '@app/utils/auth.util'
 /* dtos */
-import { IResetPasswordBody } from '@app/dtos/reset-pass.dto'
+import { IResetPasswordBody, IUpdatePasswordBody } from '@app/dtos/reset-pass.dto'
 import { ClientSession } from 'mongoose'
 import { appMailTransporter } from '@app/repositories/nodemailer'
-import { appMailSender } from '@app/constants/mail.constants'
+import { appFrontUpdatePasswordUri, appMailSender } from '@app/constants/mail.constants'
 
 class AuthService {
   async login(body: any, locals: any, session: any): Promise<any> {
@@ -51,14 +51,26 @@ class AuthService {
   async resetPassword(body: IResetPasswordBody, session: ClientSession) {
     const user = await UserModel.findOne({ email: body.email }, null, { session })
     if (user == null) throw new AppErrorResponse({ statusCode: 404, name: 'Usuario no encontrado' })
-    await ResetModel.create([{ uuid: uuidv4(), user: user._id }], { session })
+    const uuid = uuidv4()
+    await ResetModel.create([{ uuid, user: user._id }], { session })
     await appMailTransporter.sendMail({
       from: appMailSender,
       to: user.email,
       subject: 'Reestablecer contraseña',
-      text: "Olvidaste tu contraseña mi estimado (esto es una prueba, ignorar)"
+      text: `Olvidaste tu contraseña mi estimado (esto es una prueba, ignorar), entra a este link parguela ${appFrontUpdatePasswordUri}/${uuid}`
     })
     return { message: "Correo enviado con éxito" }
+  }
+
+  async updatePassword(body: IUpdatePasswordBody, session: ClientSession) {
+    if (body.newPassword !== body.confirmNewPassword) throw new AppErrorResponse({ statusCode: 404, name: 'Las contraseñas no coinciden' })
+    const code = await ResetModel.findOne({ uuid: body.uuid, active: true }, null, { session }).populate("user").exec()
+    if (code == null) throw new AppErrorResponse({ statusCode: 404, name: 'El código no existe o ha expirado' })
+    const password = generatePasswordHash(body.newPassword)
+    await UserModel.updateOne({ _id: code.user._id }, { password }, { session }).exec()
+    code.active = false
+    const updated = await code.save()
+    return updated.toJSON()
   }
 }
 
