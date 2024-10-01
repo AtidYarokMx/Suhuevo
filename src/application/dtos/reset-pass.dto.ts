@@ -16,3 +16,9 @@ export type TResetModel = Model<IResetPass, Record<string, unknown>>
 export type IResetPasswordBody = {
   email: string
 }
+
+export type IUpdatePasswordBody = {
+  uuid: string
+  newPassword: string
+  confirmNewPassword: string
+}
