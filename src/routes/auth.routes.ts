@@ -6,14 +6,15 @@ import { authController } from '@controllers/auth.controller'
 // import { maxLoginAttempts } from '@app/middlewares/rate-limit.middleware'
 
 class AuthRoutes extends ServerRouter {
-  constructor () {
+  constructor() {
     super()
     this.config()
   }
 
-  config (): void {
+  config(): void {
     // this.router.post('/create', authController.createUser as RequestHandler)
     this.router.post('/login', authController.login as RequestHandler)
+    this.router.post('/reset-password', authController.resetPassword as RequestHandler)
   }
 }
 
