@@ -6,7 +6,6 @@ export const appMailTransporter = nodemailer.createTransport({
   host,
   port,
   secure, // true for 465, false for other ports
-  // requireTLS: true,
   auth: {
     user, // generated ethereal user
     pass // generated ethereal password

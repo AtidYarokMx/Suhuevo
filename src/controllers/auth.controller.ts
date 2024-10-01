@@ -3,6 +3,7 @@ import { AppMongooseRepo } from '@app/repositories/mongoose'
 import authService from '../services/auth.service'
 import type { AppControllerResponse } from '@app/models/app.response'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
+import { IResetPasswordBody } from '@app/dtos/reset-pass.dto'
 
 class AuthController {
   // public async createUser (req: Request, res: Response): Promise<AppControllerResponse> {
@@ -28,7 +29,7 @@ class AuthController {
   //   }
   // }
 
-  public async login (req: Request, res: Response): Promise<AppControllerResponse> {
+  public async login(req: Request, res: Response): Promise<AppControllerResponse> {
     const body = req.body
     const locals = res.locals
     const session = await AppMongooseRepo.startSession()
@@ -66,6 +67,24 @@ class AuthController {
   //     return res.status(statusCode).json(err)
   //   }
   // }
+
+  public async resetPassword(req: Request, res: Response): Promise<AppControllerResponse> {
+    const body = req.body as IResetPasswordBody
+    const session = await AppMongooseRepo.startSession()
+
+    try {
+      session.startTransaction()
+      const response = await authService.resetPassword(body, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      console.log(error)
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
 }
 
 export const authController: AuthController = new AuthController()
