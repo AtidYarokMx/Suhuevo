@@ -21,6 +21,7 @@ export interface IEmployee {
   jobId: string
   hireDate?: string
   schedule: IEmployeSchedule
+  bankName?: string
   bankAccountNumber?: string
   dailySalary: number
 

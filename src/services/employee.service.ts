@@ -22,7 +22,7 @@ import { AppUpdateBody, IEmployee } from '@app/dtos/employee.dto'
 
 
 class EmployeeService {
-  private allowedUpdateFields = ['status', 'biometricId', 'name', 'lastName', 'secondLastName', 'email', 'phone', 'address', 'birthdate', 'bloodType', 'departmentId', 'jobId', 'hireDate', 'bankAccountNumber', 'dailySalary', 'schedule', 'mxCurp', 'mxRfc', 'mxNss', 'emergencyContact', 'emergencyPhone', 'jobScheme', 'ineFront', 'ineBack', 'contract'] as (keyof AppUpdateBody)[]
+  private allowedUpdateFields = ['status', 'biometricId', 'name', 'lastName', 'secondLastName', 'email', 'phone', 'address', 'birthdate', 'bloodType', 'departmentId', 'jobId', 'hireDate', 'bankAccountNumber', 'dailySalary', 'schedule', 'mxCurp', 'mxRfc', 'mxNss', 'emergencyContact', 'emergencyPhone', 'jobScheme', 'ineFront', 'ineBack', 'contract', 'bankName', 'attendanceScheme'] as (keyof AppUpdateBody)[]
 
   /* methods */
   async get(query: any): Promise<any> {
@@ -100,13 +100,13 @@ class EmployeeService {
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el empleado' })
 
     for (const field of this.allowedUpdateFields) {
-      if (!(typeof body[field] !== 'undefined' && body[field] !== '')) continue 
+      if (!(typeof body[field] !== 'undefined' && body[field] !== '')) continue
 
       if (!['ineFront', 'ineBack', 'contract'].includes(field)) {
         (record as any)[field] = body[field]
         continue
       }
-      
+
       const id = body[field]
       if (!Types.ObjectId.isValid(id)) continue
 

@@ -33,6 +33,7 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
       sunday: { start: String, end: String }
     }
   },
+  bankName: { type: String },
   bankAccountNumber: { type: String },
   dailySalary: { type: Number },
 
