@@ -34,6 +34,7 @@ export interface IEmployee {
 
   jobScheme: string
   attendanceScheme: EEmployeeAttendanceScheme
+  minOvertimeMinutes: number
 
   userId: string
 

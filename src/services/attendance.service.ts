@@ -20,10 +20,10 @@ import { readCsv } from '@app/utils/file.util';
 import overtimeService from './overtime.service'
 
 class AttendanceService {
-  private readonly MAX_TIME_DELAY = 10;
+  private readonly MAX_TIME_DELAY = 15;
   private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
   private readonly daysTranslationMap: { [key: string]: string } = { 'monday': 'lunes', 'tuesday': 'martes', 'wednesday': 'miércoles', 'thursday': 'jueves', 'friday': 'viernes', 'saturday': 'sábado', 'sunday': 'domingo' };
-  private readonly MIN_OVERTIME_MINUTES = 60;
+  // private readonly MIN_OVERTIME_MINUTES = 60;
 
   async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
@@ -153,7 +153,7 @@ class AttendanceService {
     customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)}) el día ${day}`);
     await record.save({ session });
 
-    if (overtimeMinutes >= this.MIN_OVERTIME_MINUTES) {
+    if ((overtimeMinutes >= employee.minOvertimeMinutes) && (employee.minOvertimeMinutes > 0)) {
       try {
         await overtimeService.create({
           employeeId: employee.id,
@@ -227,6 +227,7 @@ class AttendanceService {
 
   // -------------------------------------------------------------------------------------------------
 
+  // TODO implemente bulk write
   async generateAutomaticDailyAttendances (body: any): Promise<any> {
     const date = body.date
     if (!date || !moment(date, true).isValid()) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });

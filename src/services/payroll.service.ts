@@ -154,7 +154,7 @@ class PayrollService {
       const salary = dailySalary * (totalDays)
 
       // Horas extra
-      const extraHours = Math.floor(sumField(employeeOvertimeRecords, 'hours'))
+      const extraHours = Number(sumField(employeeOvertimeRecords, 'hours').toFixed(2))
       const extraHoursPayment = extraHours * (employeeBonusOvertime?.value ?? 0) // ((dailySalary / 8) * 2)
 
       // Bono de asistencia

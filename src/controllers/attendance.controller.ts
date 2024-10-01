@@ -86,6 +86,17 @@ class AttendanceController {
       return res.status(statusCode).json(err)
     }
   }
+
+  public async generateAutomaticDailyAttendances (req: Request, res: Response): Promise<any> {
+    const body: any = req.body
+    try {
+      const response = await attendanceService.generateAutomaticDailyAttendances(body)
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
 }
 
 export const attendanceController: AttendanceController = new AttendanceController()

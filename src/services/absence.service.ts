@@ -81,6 +81,7 @@ class AbsenceService {
 
   // -------------------------------------------------------------------------------------------------
 
+  // TODO implement bulk write
   async generateDailyAbsences (body: any, session: ClientSession): Promise<any> {
     const date = body.date
     if (!date || !moment(date, true).isValid()) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
