@@ -35,7 +35,7 @@ import catalogRoutes from '@routes/catalog.routes';
 import serverRoutes from '@routes/server.routes'
 import bonusRoutes from '@routes/bonus.routes';
 import fileRoutes from '@routes/file.routes';
-import authRoutes from '@routes/auth.routes'
+import authRoutes from '@routes/auth.routes';
 import jobRoutes from '@routes/job.routes';
 
 /* cronjobs */
