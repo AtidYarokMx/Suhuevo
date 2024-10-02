@@ -22,7 +22,7 @@ import { AppUpdateBody, IEmployee } from '@app/dtos/employee.dto'
 
 
 class EmployeeService {
-  private allowedUpdateFields = ['status', 'biometricId', 'name', 'lastName', 'secondLastName', 'email', 'phone', 'address', 'birthdate', 'bloodType', 'departmentId', 'jobId', 'hireDate', 'bankAccountNumber', 'dailySalary', 'schedule', 'mxCurp', 'mxRfc', 'mxNss', 'emergencyContact', 'emergencyPhone', 'jobScheme', 'ineFront', 'ineBack', 'contract', 'bankName', 'attendanceScheme'] as (keyof AppUpdateBody)[]
+  private allowedUpdateFields = ['status', 'biometricId', 'name', 'lastName', 'secondLastName', 'email', 'phone', 'address', 'birthdate', 'bloodType', 'departmentId', 'jobId', 'hireDate', 'bankAccountNumber', 'dailySalary', 'schedule', 'mxCurp', 'mxRfc', 'mxNss', 'emergencyContact', 'emergencyPhone', 'jobScheme', 'ineFront', 'ineBack', 'contract', 'bankName', 'attendanceScheme', 'minOvertimeMinutes'] as (keyof AppUpdateBody)[]
 
   /* methods */
   async get(query: any): Promise<any> {
@@ -124,6 +124,8 @@ class EmployeeService {
       const savedFile = await file.save({ session });
       (record as any)[field] = savedFile._id
     }
+
+    if (body.schedule != null && typeof body.schedule === 'string') record.schedule = JSON.parse(body.schedule)
 
     const savedRecord = await record.save({ validateBeforeSave: true, session })
     const populated = await savedRecord.populate(['ineFront', 'ineBack', 'contract'])

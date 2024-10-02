@@ -83,6 +83,7 @@ export class AppServer {
 
   routes(): void {
     this.app.use('/favicon.ico', express.static(path.join(__dirname, '../images/favicon.ico')))
+    this.app.use('/public', express.static(path.join(__dirname, '../public')))
     this.app.use('/api/personal-bonus', personalBonusRoutes)
     this.app.use('/api/department', deparmentRoutes)
     this.app.use('/api/attendance', attendanceRoutes)

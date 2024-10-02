@@ -1,6 +1,7 @@
 // import { ProductModel } from '@app/repositories/mongoose/models/product.model'
 import { absenceController } from '@controllers/absence.controller'
 import { ServerRouter } from './models/route'
+import { attendanceController } from '@controllers/attendance.controller'
 class ServerRoutes extends ServerRouter {
   constructor () {
     super()
@@ -15,6 +16,7 @@ class ServerRoutes extends ServerRouter {
     })
 
     this.router.post('/cronjob/generate-absences', absenceController.generateDailyAbsences)
+    this.router.post('/cronjob/generate-automatic-attendances', attendanceController.generateAutomaticDailyAttendances)
   }
 
   async action (): Promise<any> {

@@ -11,7 +11,7 @@ import { comparePassword, generatePasswordHash, generateUserToken } from '@app/u
 import { IResetPasswordBody, IUpdatePasswordBody } from '@app/dtos/reset-pass.dto'
 import { ClientSession } from 'mongoose'
 import { appMailTransporter } from '@app/repositories/nodemailer'
-import { appFrontUpdatePasswordUri, appMailSender } from '@app/constants/mail.constants'
+import { appBaseUri, appFrontUpdatePasswordUri, appMailSender } from '@app/constants/mail.constants'
 
 class AuthService {
   async login(body: any, locals: any, session: any): Promise<any> {
@@ -57,7 +57,12 @@ class AuthService {
       from: appMailSender,
       to: user.email,
       subject: 'Reestablecer contraseña',
-      text: `Olvidaste tu contraseña mi estimado (esto es una prueba, ignorar), entra a este link parguela ${appFrontUpdatePasswordUri}/${uuid}`
+      templateName: "reset-password",
+      templateData: {
+        userName: user.name,
+        linkUrl: `${appFrontUpdatePasswordUri}/${uuid}`,
+        logoUrl: `${appBaseUri}:60102/public/logo_1.png`,
+      }
     })
     return { message: "Correo enviado con éxito" }
   }
