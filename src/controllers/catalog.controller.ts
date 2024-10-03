@@ -8,8 +8,10 @@ import catalogService from '@services/catalog.service'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 /* dtos */
 import { ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
+import { ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dto'
 
 class CatalogController {
+  /* personal bonus */
   public async getPersonalBonus(req: Request, res: Response) {
     try {
       const response = await catalogService.getPersonalBonus()
@@ -42,6 +44,49 @@ class CatalogController {
     try {
       session.startTransaction()
       const response = await catalogService.bulkPersonalBonus(body, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  /* rule */
+  public async getRules(req: Request, res: Response) {
+    try {
+      const response = await catalogService.getRules()
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async createCatalogRule(req: Request, res: Response) {
+    const body = req.body as ICreateCatalogRuleBody
+    const session = await AppMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const response = await catalogService.createCatalogRule(body, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async bulkCatalogRule(req: Request, res: Response) {
+    const body = req.body as ICreateCatalogRuleBody[]
+    const session = await AppMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const response = await catalogService.bulkCatalogRule(body, session)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)

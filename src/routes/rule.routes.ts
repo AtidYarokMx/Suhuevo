@@ -15,7 +15,11 @@ class BonusRoutes extends ServerRouter {
   }
 
   config(): void {
+    this.router.get('/', adminMiddleware, this.controller.get as RequestHandler)
+    this.router.get('/:id', adminMiddleware, this.controller.getByEmployee as RequestHandler)
     this.router.post('/', adminMiddleware, this.controller.create as RequestHandler)
+    this.router.put('/assign/:id', adminMiddleware, this.controller.assign as RequestHandler)
+    this.router.delete('/:idRule/unassign/:idEmployee', adminMiddleware, this.controller.unassign as RequestHandler)
   }
 }
 
