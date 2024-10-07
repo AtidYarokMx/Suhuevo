@@ -35,6 +35,7 @@ import catalogRoutes from '@routes/catalog.routes';
 import serverRoutes from '@routes/server.routes'
 import bonusRoutes from '@routes/bonus.routes';
 import fileRoutes from '@routes/file.routes';
+import ruleRoutes from '@routes/rule.routes';
 import authRoutes from '@routes/auth.routes';
 import jobRoutes from '@routes/job.routes';
 
@@ -98,6 +99,7 @@ export class AppServer {
     this.app.use('/api/bonus', bonusRoutes)
     this.app.use('/docs', downloadRoutes)
     this.app.use('/api/auth', authRoutes)
+    this.app.use('/api/rule', ruleRoutes)
     this.app.use('/api/file', fileRoutes)
     this.app.use('/api/job', jobRoutes)
   }

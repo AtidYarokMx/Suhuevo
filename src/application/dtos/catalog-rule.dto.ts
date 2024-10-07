@@ -1,6 +1,6 @@
 import type { Types } from '@app/repositories/mongoose'
 
-export type IRule = {
+export type ICatalogRule = {
   _id: Types.ObjectId
   name: string
   description: string
@@ -9,9 +9,6 @@ export type IRule = {
   priority?: number
   taxable?: boolean
   enabled?: boolean
-  /* populated */
-  entityId: Types.ObjectId
-  idEmployee: Types.ObjectId
   /* defaults */
   active: boolean
   updatedAt: Date
@@ -28,9 +25,6 @@ export type ICreateBody = {
   priority?: number
   taxable?: boolean
   enabled?: boolean
-  /* populated */
-  entityId: Types.ObjectId
-  idEmployee: Types.ObjectId
   /* defaults */
   active?: boolean
 }
@@ -40,9 +34,6 @@ export type IUpdateBody = {
   taxable?: boolean
   enabled?: boolean
   priority?: number
-  /* populated */
-  entityId: Types.ObjectId
-  idEmployee: Types.ObjectId
   /* defaults */
   active?: boolean
 }
