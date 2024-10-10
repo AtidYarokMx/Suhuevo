@@ -208,7 +208,7 @@ class PayrollService {
 
     if (body.preview != null) return { lines, startDate: weekStartDate, cutoffDate: weekCutoffDate }
 
-    let record = await PayrollModel.findOne({ active: true, startDate: weekStartDate });
+    let record = await PayrollModel.findOne({ active: true, startDate: formattedWeekStartDate });
     if (record) {
       record.lines = lines;
       record.name = `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
