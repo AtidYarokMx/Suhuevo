@@ -93,8 +93,8 @@ class PayrollService {
 
     const weekCutoffDate = getNextTuesday(weekStartDate); // (último martes despues del inicio de semana)
 
-    const formattedWeekStartDate = moment(weekStartDate).format('YYYY-MM-DD HH:mm:ss')
-    const formattedWeekCutoffDate = moment(weekCutoffDate).format('YYYY-MM-DD HH:mm:ss')
+    const formattedWeekStartDate = moment(weekStartDate).format('YYYY-MM-DD')
+    const formattedWeekCutoffDate = moment(weekCutoffDate).format('YYYY-MM-DD')
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
     const lines = [];
@@ -211,7 +211,6 @@ class PayrollService {
     let record = await PayrollModel.findOne({ active: true, startDate: weekStartDate });
     if (record) {
       record.lines = lines;
-      record.cutoffDate = weekCutoffDate;
       record.name = `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
     }
     else {
@@ -219,8 +218,8 @@ class PayrollService {
         id: 'PR' + String(await consumeSequence('payrolls', session)).padStart(8, '0'),
         name: `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
         lines,
-        startDate: weekStartDate,
-        cutoffDate: weekCutoffDate,
+        startDate: formattedWeekStartDate,
+        cutoffDate: formattedWeekCutoffDate,
       });
     }
 
