@@ -110,8 +110,8 @@ class PayrollService {
     const paidAbsencesByEmployee = groupBy(paidAbsences, 'employeeId')
     const overtimeRecordsByEmployee = groupBy(overtimeRecords, 'employeeId')
 
-    const fiveDaysSchemeBase = bigMath.chain(7).divide(5).done()
-    const sixDaysSchemeBase = bigMath.chain(7).divide(6).done()
+    const fiveDaysSchemeBase = bigMath.chain(2).divide(5).done()
+    const sixDaysSchemeBase = bigMath.chain(1).divide(6).done()
 
     // General Bonus
     const bonusOvertime = (await BonusModel.findOne({ active: true, inputId: 'horas_extra', enabled: true }))
