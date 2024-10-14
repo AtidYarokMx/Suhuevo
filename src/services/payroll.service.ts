@@ -311,7 +311,7 @@ class PayrollService {
         { header: 'Salario Diario', key: 'dailySalary', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: 'Dias Trabajados', key: 'daysWorked', width: 11, style: { numFmt: '@' } },
         { header: 'Parte Proporcional Sab y Dom', key: 'paidRestDays', width: 20, style: { numFmt: '@' } },
-        { header: 'Dias a Pargar', key: 'totalDays', width: 10, style: { numFmt: '@' } },
+        { header: 'Dias a Pagar', key: 'totalDays', width: 10, style: { numFmt: '@' } },
         { header: 'Sueldo del Periodo', key: 'salary', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: 'Horas Tiempo Extra', key: 'extraHours', width: 10, style: { numFmt: '@' } },
         { header: 'Valor Tiempo Extra', key: 'extraHoursPayment', width: 10, style: { numFmt: '"$"#,##0.00' } },
