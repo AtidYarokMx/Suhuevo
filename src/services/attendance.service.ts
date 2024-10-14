@@ -135,9 +135,6 @@ class AttendanceService {
       overtimeMinutes = overtimeMinutes > 0 ? overtimeMinutes : 0;
     }
 
-    console.log('delayMinutes', delayMinutes);
-    console.log('overtimeMinutes:', overtimeMinutes); 
-
     const isLate = delayMinutes > this.MAX_TIME_DELAY;
 
     const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0')
@@ -158,7 +155,7 @@ class AttendanceService {
         await overtimeService.create({
           employeeId: employee.id,
           startTime: scheduleEndTime.format('YYYY-MM-DD HH:mm:ss'),
-          hours: overtimeMinutes / 60
+          hours: Math.floor(overtimeMinutes / 60)
         }, session)
       } catch (error) {}
     }
@@ -277,6 +274,8 @@ class AttendanceService {
     if (file == null) throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' });
 
     const csvRows: { employeeId: string, time: string }[] = await readCsv(file);
+    csvRows.sort((a, b) => a.time.localeCompare(b.time));
+    csvRows.sort((a, b) => a.employeeId.localeCompare(b.employeeId));
     const employeeIds = csvRows.map((x) => x.employeeId);
     let detail: any = []
     
