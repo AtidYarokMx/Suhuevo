@@ -47,6 +47,7 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
   jobScheme: { type: String, trim: true },
   attendanceScheme: { type: String, enum: EEmployeeAttendanceScheme, default: EEmployeeAttendanceScheme.CLOCK_IN_OUT },
   minOvertimeMinutes: { type: Number, default: 60 },
+  overtimeAllowed: { type: Boolean, default: true },
 
   userId: { type: String },
 

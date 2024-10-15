@@ -84,7 +84,6 @@ class PayrollService {
     weekStartDate = new Date(weekStartDate);
     // Se le suman las horas UTC del servidor ya que por defecto viene como las 00:00 UTC 0, para que sea interpretado como las 00:00 UTC-6
     weekStartDate = new Date(weekStartDate.getTime() + (weekStartDate.getTimezoneOffset() * 60000));
-    console.log(weekStartDate, weekStartDate.getDay(), this.daysOfWeekInSpanish[weekStartDate.getDay()])
 
     if (weekStartDate.getDay() !== this.weekStartDay) {
       const dayName = this.daysOfWeekInSpanish[this.weekStartDay];
@@ -93,14 +92,19 @@ class PayrollService {
 
     const weekCutoffDate = getNextTuesday(weekStartDate); // (último martes despues del inicio de semana)
 
+    console.log(weekStartDate, weekStartDate.getDay(), this.daysOfWeekInSpanish[weekStartDate.getDay()])
+    console.log(weekCutoffDate, weekCutoffDate.getDay(), this.daysOfWeekInSpanish[weekCutoffDate.getDay()])
+
     const formattedWeekStartDate = moment(weekStartDate).format('YYYY-MM-DD')
     const formattedWeekCutoffDate = moment(weekCutoffDate).format('YYYY-MM-DD')
+
+    console.log(formattedWeekStartDate, formattedWeekCutoffDate)
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
     const lines = [];
     
     // Obtener las asistencias, faltas y tiempo extra entre las fechas de corte e inicio de semana
-    const attendances = await AttendanceModel.find({ active: true, checkInTime: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }});
+    const attendances = await AttendanceModel.find({ active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }});
     const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate },});
     const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate },});
     const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate} })
@@ -127,6 +131,8 @@ class PayrollService {
 
     // Other custom personal bonus
     const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true })
+
+    console.log(attendancesByEmployee['000012'])
 
     for (const [index, employee] of employees.entries()) {
       const dailySalary = employee.dailySalary
