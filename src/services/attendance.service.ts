@@ -150,7 +150,7 @@ class AttendanceService {
     customLog(`Creando asistencia ${String(record.id)} (${String(record.employeeId)}) el día ${day}`);
     await record.save({ session });
 
-    if ((overtimeMinutes >= employee.minOvertimeMinutes) && (employee.minOvertimeMinutes > 0)) {
+    if (employee.overtimeAllowed && (overtimeMinutes >= employee.minOvertimeMinutes) && (employee.minOvertimeMinutes > 0)) {
       try {
         await overtimeService.create({
           employeeId: employee.id,
