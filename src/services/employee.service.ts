@@ -108,7 +108,7 @@ class EmployeeService {
       }
 
       const id = body[field]
-      if (!Types.ObjectId.isValid(id)) continue
+      if (!Types.ObjectId.isValid(id as any)) continue
 
       const tempFile = await AppTemporalFileModel.findById(id)
       if (tempFile == null) continue
