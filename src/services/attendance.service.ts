@@ -426,7 +426,7 @@ class AttendanceService {
       status: EEmployeStatus.ACTIVE
     }).select({ id: 1, biometricId: 1, schedule: 1, name: 1, lastName: 1 });
   
-    const MAX_TIME_BEFORE_SHIFT_START = 60; // minutos antes del turno
+    const MAX_TIME_BEFORE_SHIFT_START = 119; // minutos antes del turno
     const MIN_TIME_AFTER_CHECKIN = 60;
     const MAX_TIME_TO_CLOSE_ATTENDANCE = 1320;
   
@@ -499,6 +499,10 @@ class AttendanceService {
         attendances.push({ ...tempCheckinsMap[employeeId], checkOutTime: checkTime.format("YYYY-MM-DD HH:mm:ss") })
         delete tempCheckinsMap[employeeId];
       }
+    }
+
+    for (const [employeeId, checkin] of Object.entries(tempCheckinsMap)) {
+      attendances.push({ ...checkin, checkOutTime: undefined });
     }
   
     let session = await AppMongooseRepo.startSession();
