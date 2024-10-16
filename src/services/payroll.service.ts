@@ -1,7 +1,7 @@
 import { EEmployeStatus, IEmployee } from "@app/dtos/employee.dto";
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";
-import { formatDate, formatDateToYYMMDD, getNextTuesday, groupBy, sumField } from "@app/utils/util.util";
+import { arrayToObject, formatDate, formatDateToYYMMDD, getNextTuesday, groupBy, sumField } from "@app/utils/util.util";
 import * as ExcelJS from 'exceljs'
 import { consumeSequence } from "@app/utils/sequence";
 import { ClientSession } from "mongoose";
@@ -18,6 +18,8 @@ import { BonusModel } from "@app/repositories/mongoose/models/bonus.model";
 import { BonusType, IBonus } from "@app/dtos/bonus.dto";
 import { PersonalBonusModel } from "@app/repositories/mongoose/models/personal-bonus.model";
 import { IPersonalBonus } from "@app/dtos/personal-bonus.dto";
+import departmentService from "./department.service";
+import jobService from "./job.service";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -132,8 +134,6 @@ class PayrollService {
     // Other custom personal bonus
     const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true })
 
-    console.log(attendancesByEmployee['000012'])
-
     for (const [index, employee] of employees.entries()) {
       const dailySalary = employee.dailySalary
       const jobScheme = employee.jobScheme
@@ -185,7 +185,6 @@ class PayrollService {
         employeeName: employee.fullname(),
         jobId: employee.jobId,
         jobName: employee.job?.name ?? null,
-        jobPosition: employee.jobId,
         departmentId: employee.departmentId,
         departmentName: employee.department?.name ?? null,
 
@@ -217,12 +216,12 @@ class PayrollService {
     let record = await PayrollModel.findOne({ active: true, startDate: formattedWeekStartDate });
     if (record) {
       record.lines = lines;
-      record.name = `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
+      record.name = `Nomina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
     }
     else {
       record = new PayrollModel({
         id: 'PR' + String(await consumeSequence('payrolls', session)).padStart(8, '0'),
-        name: `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
+        name: `Nomina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
         lines,
         startDate: formattedWeekStartDate,
         cutoffDate: formattedWeekCutoffDate,
@@ -245,15 +244,22 @@ class PayrollService {
     if (payrollId == null) throw new AppErrorResponse({ statusCode: 400, name: 'El id es requerido' });
 
     const payroll = await PayrollModel.findOne({ active: true, id: payrollId })
-    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el pago de nómina' });
+    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el pago de nomina' });
 
     const employeeIds = payroll.lines.map(x => x.employeeId)
     const employees = await employeeService.get({ ids: employeeIds })
+
+    const departmentIds = [...new Set(payroll.lines.map(x => x.departmentId))];
+    const departments = await departmentService.get({ ids: departmentIds })
+
+    const jobIds = [...new Set(payroll.lines.map(x => x.jobId))];
+    const jobs = await jobService.get({ ids: jobIds })
 
     const rowsArray = payroll.lines.map((line: any) => {
       const employee: IEmployee = employees[line.employeeId]
       return {
         date: payroll.cutoffDate,
+        jobName: jobs[line.jobId]?.name ?? '',
         mxCurp: employee.mxCurp,
         mxNss: employee.mxNss,
         employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`,
@@ -277,37 +283,53 @@ class PayrollService {
         netPay: line.netPay,
         taxPay: line.taxPay,
 
-        jobScheme: line.jobScheme
+        jobScheme: line.jobScheme,
+
+        departmentId: line.departmentId,
       }
     })
 
-    const rowsArrayScheme5 = rowsArray.filter((row: any) => row.jobScheme === '5').map(({ jobScheme, ...rest }) => rest);
-    const rowArrayScheme6 = rowsArray.filter((row: any) => row.jobScheme === '6').map(({ jobScheme, ...rest }) => rest);
+    const rowsByDepartment = rowsArray.reduce((acc: any, row: any) => {
+      const departmentId = row.departmentId;
+      const departmentName = departments[departmentId]?.name
+      if (departmentName) {
+        if (!acc[departmentName]) {
+          acc[departmentName] = [];
+        }
+        acc[departmentName].push(row);
+      } else {
+        if (!acc['Sin Departamento']) {
+          acc['Sin Departamento'] = [];
+        }
+        acc['Sin Departamento'].push(row);
+      }
+      return acc;
+    }, {});
 
     // ------------------- Construir archivo excel ----------------------------------------------------
     const workbook = new ExcelJS.Workbook()
 
-    for (const item of [{ sheetName: '5', rowArray: rowsArrayScheme5 }, { sheetName: '6', rowArray: rowArrayScheme6 }]) {
-      const rowArray = item.rowArray
-      const worksheet = workbook.addWorksheet(`CALCULO DE NOMINA ${item.sheetName} DIAS`, {
+    const borderStyle: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'aaaaaa' } },
+      left: { style: 'thin', color: { argb: 'aaaaaa' } },
+      bottom: { style: 'thin', color: { argb: 'aaaaaa' } },
+      right: { style: 'thin', color: { argb: 'aaaaaa' } }
+    }
+
+    const headerStyle: ExcelJS.FillPattern = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'dce6f1' }
+    }
+
+    for (const [departmentName, rowArray] of Object.entries(rowsByDepartment)) {
+      const worksheet = workbook.addWorksheet(departmentName, {
         views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
-      })
-
-      const borderStyle: Partial<ExcelJS.Borders> = {
-        top: { style: 'thin', color: { argb: 'aaaaaa' } },
-        left: { style: 'thin', color: { argb: 'aaaaaa' } },
-        bottom: { style: 'thin', color: { argb: 'aaaaaa' } },
-        right: { style: 'thin', color: { argb: 'aaaaaa' } }
-      }
-
-      const headerStyle: ExcelJS.FillPattern = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'dce6f1' }
-      }
+      });
 
       worksheet.columns = [
         { header: 'Nomina', key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
+        { header: 'Puesto', key: 'jobName', width: 15, style: { numFmt: '@' } },
         { header: 'CURP', key: 'mxCurp', width: 20, style: { numFmt: '@' } },
         { header: 'Numero seguro social', key: 'mxNss', width: 20, style: { numFmt: '@' } },
         { header: 'Nombre del empleado', key: 'employeeName', width: 30, style: { numFmt: '@' } },
@@ -329,6 +351,7 @@ class PayrollService {
         { header: 'Otros bonos', key: 'customBonusesTotal', width: 15, style: { numFmt: '"$"#,##0.00' } },
         // { header: '', key: 'tardies', width: 10, style: { numFmt: '@' } },
         { header: 'Base Gravable', key: 'taxPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Total a pagar', key: 'netPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
       ]
 
       // Headers 1
@@ -336,23 +359,33 @@ class PayrollService {
       headerRow.eachCell((cell: any) => { cell.fill = headerStyle })
       headerRow.eachCell((cell: any) => { cell.border = borderStyle })
       headerRow.eachCell((cell: any) => { cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true } })
-      headerRow.font = { bold: true }
+      headerRow.font = { bold: true };
 
-      rowArray.forEach((doc: any, index: any) => {
-        const row = worksheet.addRow(Object.values(doc))
-        row.eachCell({ includeEmpty: true }, (cell: any) => { cell.border = borderStyle })
-      })
+      // Solo agregar las propiedades que coinciden con las columnas definidas
+      (rowArray as any).forEach((row: any) => {
+        const filteredRow = worksheet.columns.reduce((acc: any, col: any) => {
+          if (col.key in row) {
+            acc[col.key] = row[col.key];
+          }
+          return acc;
+        }, {});
+    
+        worksheet.addRow(filteredRow);
+      });
 
       const totalsRow = worksheet.addRow([
         'Totales', '', '', '', '', '', '', '', '',
-        { formula: `SUM(J2:J${worksheet.rowCount})` }, // Total salary
-        { formula: `SUM(K2:K${worksheet.rowCount})` }, // Total extraHours 
-        { formula: `SUM(L2:L${worksheet.rowCount})` }, // Total extraHoursPayment
-        { formula: `SUM(M2:M${worksheet.rowCount})` }, // Total punctualityBonus
-        { formula: `SUM(N2:N${worksheet.rowCount})` }, // Total attendanceBonus
-        { formula: `SUM(O2:O${worksheet.rowCount})` }, // Total pantryBonus
-        { formula: `SUM(P2:P${worksheet.rowCount})` }, // Total others
-        { formula: `SUM(Q2:Q${worksheet.rowCount})` }, // Total netPay
+        { formula: `SUM(J2:J${worksheet.rowCount})` }, // Total daysWorked
+        { formula: `SUM(K2:K${worksheet.rowCount})` }, // Total salary 
+        { formula: `SUM(L2:L${worksheet.rowCount})` }, // Total extraHours
+        { formula: `SUM(M2:M${worksheet.rowCount})` }, // Total extraHoursPayment
+        { formula: `SUM(N2:N${worksheet.rowCount})` }, // Total punctualityBonus
+        { formula: `SUM(O2:O${worksheet.rowCount})` }, // Total attendanceBonus
+        { formula: `SUM(P2:P${worksheet.rowCount})` }, // Total groceryBonus
+        { formula: `SUM(Q2:Q${worksheet.rowCount})` }, // Total holidayBonus
+        { formula: `SUM(R2:R${worksheet.rowCount})` }, // Total customBonusesTotal
+        { formula: `SUM(S2:S${worksheet.rowCount})` }, // Total taxPay
+        { formula: `SUM(T2:T${worksheet.rowCount})` }, // Total netPay
       ]);
 
       totalsRow.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
@@ -366,6 +399,45 @@ class PayrollService {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
       });
     }
+
+    // Pestaña de resumen
+    const summaryData = Object.keys(rowsByDepartment).map(departmentName => {
+      const rows = rowsByDepartment[departmentName];
+      const totalEmployees = rows.length;
+      const totalAmount = rows.reduce((sum: number, row: any) => sum + row.netPay, 0);
+      return { departmentName, totalEmployees, totalAmount };
+    });
+    
+    const summarySheet = workbook.addWorksheet('Resumen');
+    summarySheet.columns = [
+      { header: 'Departamento', key: 'departmentName', width: 20 },
+      { header: 'Empleados', key: 'totalEmployees', width: 15 },
+      { header: 'Cantidad a Pagar', key: 'totalAmount', width: 20, style: { numFmt: '"$"#,##0.00' } },
+    ];
+
+    const headerRow = summarySheet.getRow(1)
+    headerRow.eachCell((cell: any) => { cell.fill = headerStyle })
+    headerRow.eachCell((cell: any) => { cell.border = borderStyle })
+    headerRow.eachCell((cell: any) => { cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true } })
+    headerRow.font = { bold: true };
+
+    summaryData.forEach((row: any) => {
+      summarySheet.addRow(row);
+    });
+
+    summarySheet.addRow({
+      departmentName: 'TOTAL =',
+      totalEmployees: { formula: `SUM(B2:B${summarySheet.rowCount})` },
+      totalAmount: { formula: `SUM(C2:C${summarySheet.rowCount})` }
+    }).font = { bold: true };
+
+    const totalRow = summarySheet.lastRow;
+    totalRow?.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' },
+        bottom: { style: 'double' },
+      };
+    });
 
     const excelBuffer = await workbook.xlsx.writeBuffer()
     return { file: excelBuffer, fileName: `${payroll.name}.xlsx` }
