@@ -9,8 +9,8 @@ export const PayrollSchema = new Schema<IPayroll>({
 
   lines: { type: [Object] },
 
-  startDate: { type: Date },
-  cutoffDate: { type: Date },
+  startDate: { type: String },
+  cutoffDate: { type: String },
 
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },

@@ -35,6 +35,7 @@ export interface IEmployee {
   jobScheme: string
   attendanceScheme: EEmployeeAttendanceScheme
   minOvertimeMinutes: number
+  overtimeAllowed: boolean
 
   userId: string
 

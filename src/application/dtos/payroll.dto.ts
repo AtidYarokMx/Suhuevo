@@ -4,8 +4,8 @@ export interface IPayroll {
 
   lines: any[]
 
-  startDate: Date
-  cutoffDate: Date
+  startDate: string
+  cutoffDate: string
 
   /* defaults */
   active: boolean
