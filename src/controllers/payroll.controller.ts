@@ -2,6 +2,8 @@ import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 import { AppMongooseRepo } from '@app/repositories/mongoose'
 import payrollService from '../services/payroll.service'
+/* dtos */
+import { schemaGenerateWeeklyPayroll } from '@app/dtos/payroll.dto'
 
 class PayrollController {
 
@@ -49,7 +51,7 @@ class PayrollController {
   //   }
   // }
 
-  public async search (req: Request, res: Response): Promise<any> {
+  public async search(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await payrollService.search(query)
@@ -77,7 +79,24 @@ class PayrollController {
   //   }
   // }
 
-  public async executeWeeklyPayroll (req: Request, res: Response): Promise<any> {
+  public async generateWeeklyPayroll(req: Request, res: Response): Promise<any> {
+    const body = req.body
+    const session = await AppMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      schemaGenerateWeeklyPayroll.parse(body)
+      const response = await payrollService.generateWeeklyPayroll(body, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async executeWeeklyPayroll(req: Request, res: Response): Promise<any> {
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()
     try {
@@ -93,7 +112,7 @@ class PayrollController {
     }
   }
 
-  public async excelReport (req: Request, res: Response): Promise<any> {
+  public async excelReport(req: Request, res: Response): Promise<any> {
     try {
       const query = req.query
       const result = await payrollService.excelReport(query)
@@ -113,4 +132,4 @@ class PayrollController {
 }
 
 export const payrollController
-: PayrollController = new PayrollController()
+  : PayrollController = new PayrollController()

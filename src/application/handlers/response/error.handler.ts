@@ -1,6 +1,7 @@
 import { AppErrorResponse, AppResponse } from '@app/models/app.response'
 import { TokenExpiredError } from 'jsonwebtoken'
 import { MongooseError } from 'mongoose'
+import { ZodError } from 'zod'
 
 export interface IErrorHandlerResponse {
   statusCode: number
@@ -25,6 +26,10 @@ export function appErrorResponseHandler(error: unknown | any): IErrorHandlerResp
     result.code = error.code ?? null
     console.log(result)
     return { statusCode: error.statusCode, error: result }
+  }
+
+  if (error instanceof ZodError) {
+    return { statusCode: 500, error: error.format() }
   }
 
   if (error instanceof TokenExpiredError) {

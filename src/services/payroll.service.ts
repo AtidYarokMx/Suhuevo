@@ -1,25 +1,33 @@
-import { EEmployeStatus, IEmployee } from "@app/dtos/employee.dto";
+/* lib */
+import moment from "moment";
+import * as ExcelJS from 'exceljs'
+/* app models */
+import { AppErrorResponse } from "@app/models/app.response";
+/* models */
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";
-import { arrayToObject, formatDate, formatDateToYYMMDD, getNextTuesday, groupBy, sumField } from "@app/utils/util.util";
-import * as ExcelJS from 'exceljs'
-import { consumeSequence } from "@app/utils/sequence";
-import { ClientSession } from "mongoose";
 import { PayrollModel } from "@app/repositories/mongoose/models/payroll.model";
-import { AppErrorResponse } from "@app/models/app.response";
-import employeeService from "./employee.service";
-import { IPayroll } from "@app/dtos/payroll.dto";
 import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
-import { IAttendance } from "@app/dtos/attendance.dto";
-import { bigMath } from "@app/utils/math.util";
 import { OvertimeModel } from "@app/repositories/mongoose/models/overtime.model";
-import moment from "moment";
-import { BonusModel } from "@app/repositories/mongoose/models/bonus.model";
-import { BonusType, IBonus } from "@app/dtos/bonus.dto";
 import { PersonalBonusModel } from "@app/repositories/mongoose/models/personal-bonus.model";
-import { IPersonalBonus } from "@app/dtos/personal-bonus.dto";
+/* services */
+import employeeService from "./employee.service";
 import departmentService from "./department.service";
 import jobService from "./job.service";
+/* utils */
+import { bigMath } from "@app/utils/math.util";
+import { formatParse, getNextDay } from "@app/utils/date.util";
+import { consumeSequence } from "@app/utils/sequence";
+import { formatDate, getNextTuesday, groupBy, sumField } from "@app/utils/util.util";
+import { asyncGroupBy } from "@app/utils/array.util";
+/* dtos */
+import { IPayroll, SchemaGenerateWeeklyPayroll } from "@app/dtos/payroll.dto";
+import { BonusType, IBonus } from "@app/dtos/bonus.dto";
+import { IPersonalBonus, PersonalBonusEntityType } from "@app/dtos/personal-bonus.dto";
+import { EEmployeStatus, IEmployee } from "@app/dtos/employee.dto";
+import { BonusModel } from "@app/repositories/mongoose/models/bonus.model";
+/* types */
+import type { ClientSession } from "mongoose";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -77,10 +85,61 @@ class PayrollService {
     return populatedArray
   }
 
+  async generateWeeklyPayroll(body: SchemaGenerateWeeklyPayroll, session: ClientSession) {
+    // la fecha ya viene validada con que siempre venga en miércoles
+    // revisar los dtos la validación en caso de tener que modificarse
+    const weekStartDate = formatParse(body.weekStartDate) // parseo de fecha a momentjs
+    const weekCutOffDate = getNextDay(weekStartDate, 2) // obtiene el siguiente día de la semana con momentjs
+    // fechas formateadas a YYY-MM-DD en string
+    const formattedWeekStartDate = weekStartDate.format('YYYY-MM-DD')
+    const formattedWeekCutoffDate = weekCutOffDate.format('YYYY-MM-DD')
+    // Obtener las asistencias, faltas y tiempo extra entre las fechas de corte e inicio de semana
+    const attendances = await AttendanceModel.find({ active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
+    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
+    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
+    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } }, null, { session }).exec()
+    // promesas para agrupar por employeeId
+    const attendancesByEmployee = groupBy(attendances, 'employeeId')
+    const absencesByEmployee = groupBy(absences, 'employeeId')
+    const paidAbsencesByEmployee = groupBy(paidAbsences, 'employeeId')
+    const overtimeRecordsByEmployee = groupBy(overtimeRecords, 'employeeId')
+    // se calcula el proporcional de los esquemas de trabajo
+    const fiveDaysSchemeBase = bigMath.chain(2).divide(5).done() // 0.4
+    const sixDaysSchemeBase = bigMath.chain(1).divide(6).done() // 0.16666666666666666
+    // catálogos de bonus generales
+    const bonusOvertime = await BonusModel.findOne({ active: true, inputId: 'horas_extra', enabled: true }).exec()
+    const bonusAttendance = await BonusModel.findOne({ active: true, inputId: 'asistencia', enabled: true }).exec()
+    const bonusPunctuality = await BonusModel.findOne({ active: true, inputId: 'puntualidad', enabled: true }).exec()
+    const bonusGrocery = await BonusModel.findOne({ active: true, inputId: 'despensa', enabled: true }).exec()
+    // bonus personales que sobreescriben el bono general
+    const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusOvertime?._id, enabled: true })
+    const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: PersonalBonusEntityType.GENERAL, entityId: bonusAttendance?._id, enabled: true }).exec()
+    const personalBonusPunctuality = await PersonalBonusModel.find({ active: true, entityType: PersonalBonusEntityType.GENERAL, entityId: bonusPunctuality?._id, enabled: true }).exec()
+    const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: PersonalBonusEntityType.GENERAL, entityId: bonusGrocery?._id, enabled: true }).exec()
+    // other bonuses
+    const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true })
+    // listado de empleados
+    const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }, null, { session }).populate(["job", "department"]).exec();
+    const lines = await Promise.all(employees.map(async (employee, index) => {
+      const { dailySalary, jobScheme } = employee
+      // asistencias, ausencias, ausencias pagadas y retardos por cada empleado
+      const employeeAttendances = await AttendanceModel.find({ active: true, employeeId: employee.id, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
+      const employeeAbsences = await AbsenceModel.find({ active: true, employeeId: employee.id, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
+      const employeePaidAbsences = await AbsenceModel.find({ active: true, employeeId: employee.id, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
+      const employeeOvertimeRecords = await OvertimeModel.find({ active: true, employeeId: employee.id, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } }, null, { session }).exec()
+      // retardos (?)
+      const employeeTardies = employeeAttendances.filter((item) => item.isLate)
+      // días trabajados = asistencias + ausencias pagadas
+      const daysWorked = employeeAttendances.length + employeePaidAbsences.length
+      /* bonus */
+      console.log(employeeAttendances.length, employeePaidAbsences.length, daysWorked, employeeAbsences.length, employeeOvertimeRecords.length)
+    }))
+    console.log(lines)
+  }
   // -------------------------------------------------------------
 
   async executeWeeklyPayroll(body: any, session: ClientSession): Promise<any> {
-    let weekStartDate: any =  body.weekStartDate // '2024-09-11T06:00:00.000Z'
+    let weekStartDate: any = body.weekStartDate // '2024-09-11T06:00:00.000Z'
     if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime())) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
 
     weekStartDate = new Date(weekStartDate);
@@ -104,12 +163,12 @@ class PayrollService {
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
     const lines = [];
-    
+
     // Obtener las asistencias, faltas y tiempo extra entre las fechas de corte e inicio de semana
-    const attendances = await AttendanceModel.find({ active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }});
-    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate },});
-    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate },});
-    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate} })
+    const attendances = await AttendanceModel.find({ active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } });
+    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }, });
+    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }, });
+    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } })
 
     const attendancesByEmployee = groupBy(attendances, 'employeeId')
     const absencesByEmployee = groupBy(absences, 'employeeId')
@@ -152,12 +211,12 @@ class PayrollService {
       const employeeCustomBonuses = customPersonalBonus.filter((x) => x.idEmployee === employee._id)
 
       const restDaysMultiplier = jobScheme === '5' ? fiveDaysSchemeBase : sixDaysSchemeBase
-      
+
       // Salario base por los días trabajados
       const daysWorked = employeeAttendances.length + employeePaidAbsences.length // TODO update later
-      const paidRestDays = (daysWorked * restDaysMultiplier).toFixed(2);
-      const totalDays = daysWorked + Number(paidRestDays)
-      const salary = dailySalary * (totalDays)
+      const paidRestDays = bigMath.multiply(daysWorked, restDaysMultiplier)
+      const totalDays = daysWorked + paidRestDays
+      const salary = dailySalary * totalDays
 
       // Horas extra
       const extraHours = Number(sumField(employeeOvertimeRecords, 'hours').toFixed(2))
@@ -170,7 +229,7 @@ class PayrollService {
       // Bono de despensa
       const groceryBonus = this.evaluateBonus(employeeBonusGrocery, salary);
       // Bono por día festivo (triple pago)
-      const workedHolidays = employeeAttendances.filter(x => this.holidayList.includes(x.checkInTime.slice(0,10))).length;
+      const workedHolidays = employeeAttendances.filter(x => this.holidayList.includes(x.checkInTime.slice(0, 10))).length;
       const holidayBonus = workedHolidays * dailySalary * 2
       // Otros bonos
       const customBonusesAmounts = employeeCustomBonuses.map((x) => { return { amount: this.evaluateBonus(x, salary), taxable: x.taxable } })
@@ -369,7 +428,7 @@ class PayrollService {
           }
           return acc;
         }, {});
-    
+
         worksheet.addRow(filteredRow);
       });
 
@@ -407,7 +466,7 @@ class PayrollService {
       const totalAmount = rows.reduce((sum: number, row: any) => sum + row.netPay, 0);
       return { departmentName, totalEmployees, totalAmount };
     });
-    
+
     const summarySheet = workbook.addWorksheet('Resumen');
     summarySheet.columns = [
       { header: 'Departamento', key: 'departmentName', width: 20 },

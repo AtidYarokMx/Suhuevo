@@ -1,4 +1,4 @@
 import { AppServer } from "./app"
 
-const appServer: AppServer = new AppServer()
+export const appServer: AppServer = new AppServer()
 appServer.start()
