@@ -6,19 +6,18 @@ import { payrollController } from '@controllers/payroll.controller'
 class PayrollRoutes extends ServerRouter {
   controller = payrollController
 
-  constructor () {
+  constructor() {
     super()
     this.config()
   }
 
-  config (): void {
-    // this.router.get('/', [adminMiddleware], this.controller.get as RequestHandler)
-    // this.router.post('/create', [adminMiddleware], this.controller.create as RequestHandler)
-    // this.router.patch('/update', [adminMiddleware], this.controller.update as RequestHandler)
+  config(): void {
+    /* get */
     this.router.get('/search', [adminMiddleware], this.controller.search as RequestHandler)
-
-    this.router.post('/execute-payroll', [adminMiddleware], this.controller.executeWeeklyPayroll as RequestHandler)
     this.router.get('/export-excel', [adminMiddleware], this.controller.excelReport as RequestHandler)
+    /* post */
+    this.router.post('/generate-payroll', [adminMiddleware], this.controller.generateWeeklyPayroll as RequestHandler)
+    this.router.post('/execute-payroll', [adminMiddleware], this.controller.executeWeeklyPayroll as RequestHandler)
 
   }
 }

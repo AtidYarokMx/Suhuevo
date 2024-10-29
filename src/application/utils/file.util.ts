@@ -21,5 +21,5 @@ export async function readCsv(file: Express.Multer.File) {
 }
 
 export function getFileExtension(mimetype: string) {
-  return mime.extension(mimetype)
+  return mime.getExtension(mimetype)
 }

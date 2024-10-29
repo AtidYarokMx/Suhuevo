@@ -20,7 +20,7 @@ class AttendanceRoutes extends ServerRouter {
     this.router.get('/search', [adminMiddleware], this.controller.search as RequestHandler)
     // this.router.get('/csv', this.controller.startCalculations as RequestHandler)
 
-    this.router.post('/import-csv', [adminMiddleware, uploadFileMiddleware.single('file')], attendanceController.importFromCsv)
+    this.router.post('/import-csv', adminMiddleware, uploadFileMiddleware.single('file'), this.controller.importFromCsv as RequestHandler)
   }
 }
 

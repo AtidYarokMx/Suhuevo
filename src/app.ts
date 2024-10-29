@@ -122,4 +122,9 @@ export class AppServer {
       ServerLogger.info(`Server listening on \x1b[34mhttp://localhost:${this.app.get('port2')}\x1b[0m`)
     })
   }
+
+  close() {
+    this.server.close()
+    this.serverInsecure.close()
+  }
 }
