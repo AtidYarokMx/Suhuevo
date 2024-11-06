@@ -37,6 +37,8 @@ import bonusRoutes from '@routes/bonus.routes';
 import fileRoutes from '@routes/file.routes';
 import ruleRoutes from '@routes/rule.routes';
 import authRoutes from '@routes/auth.routes';
+import farmRoutes from '@routes/farm.routes';
+import shedRoutes from '@routes/shed.routes';
 import jobRoutes from '@routes/job.routes';
 
 /* cronjobs */
@@ -101,6 +103,8 @@ export class AppServer {
     this.app.use('/api/auth', authRoutes)
     this.app.use('/api/rule', ruleRoutes)
     this.app.use('/api/file', fileRoutes)
+    this.app.use('/api/farm', farmRoutes)
+    this.app.use('/api/shed', shedRoutes)
     this.app.use('/api/job', jobRoutes)
   }
 
