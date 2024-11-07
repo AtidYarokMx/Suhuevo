@@ -1,6 +1,7 @@
 import { z } from 'zod'
 /* types */
-import { Types } from "@app/repositories/mongoose"
+import { IShed } from "@app/dtos/shed.dto"
+import { Model, Types } from "@app/repositories/mongoose"
 
 export enum FarmStatus {
   ACTIVE = "active",
@@ -19,6 +20,12 @@ export type IFarm = {
   updatedAt: Date
   createdAt: Date
 }
+
+export type IFarmVirtuals = {
+  sheds: IShed[]
+}
+
+export type AppFarmModel = Model<IFarm, {}, {}, IFarmVirtuals>
 
 /* endpoint dtos */
 export const createFarm = z.object({
