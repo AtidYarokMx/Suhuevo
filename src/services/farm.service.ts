@@ -19,6 +19,16 @@ class FarmService {
     return farms
   }
 
+  async getOneWithSheds(_id: string) {
+    const farms = await FarmModel.findOne({ _id, active: true }).populate("sheds").exec()
+    return farms
+  }
+
+  async getAllWithSheds() {
+    const farms = await FarmModel.find({ active: true }).populate("sheds").exec()
+    return farms
+  }
+
   async create(body: createFarmBody, session: ClientSession) {
     const farm = new FarmModel({ ...body })
     const saved = await farm.save({ validateBeforeSave: true, session })

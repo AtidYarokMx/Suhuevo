@@ -4,10 +4,12 @@
 
 /* lib */
 import { Schema, model } from '@app/repositories/mongoose'
+/* handlers */
 import { UserLogger } from '@app/handlers/loggers/user.logger'
-import { type IFarm, FarmStatus } from '@app/dtos/farm.dto'
+/* types */
+import { type IFarm, type AppFarmModel, type IFarmVirtuals, FarmStatus } from '@app/dtos/farm.dto'
 
-export const FarmSchema = new Schema<IFarm>({
+export const FarmSchema = new Schema<IFarm, AppFarmModel, {}, {}, IFarmVirtuals>({
   name: { type: String, trim: true, required: true },
   description: { type: String, trim: true, required: true },
   /* enums */
@@ -16,6 +18,13 @@ export const FarmSchema = new Schema<IFarm>({
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true } })
+
+/* virtuals */
+FarmSchema.virtual("sheds", {
+  ref: "shed",
+  localField: "_id",
+  foreignField: "farm",
 })
 
 /* pre (middlewares) */
@@ -30,4 +39,4 @@ FarmSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const FarmModel = model<IFarm>("farm", FarmSchema)
+export const FarmModel = model<IFarm, AppFarmModel>("farm", FarmSchema)

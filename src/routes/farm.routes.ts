@@ -16,7 +16,9 @@ class FarmRoutes extends ServerRouter {
 
   config(): void {
     this.router.get('/', adminMiddleware, this.controller.getAll as RequestHandler)
+    this.router.get('/shed', adminMiddleware, this.controller.getAllWithSheds as RequestHandler)
     this.router.get('/:id', adminMiddleware, this.controller.getOne as RequestHandler)
+    this.router.get('/:id/shed', adminMiddleware, this.controller.getOneWithSheds as RequestHandler)
     this.router.post('/', adminMiddleware, this.controller.create as RequestHandler)
     this.router.put('/:id', adminMiddleware, this.controller.update as RequestHandler)
   }

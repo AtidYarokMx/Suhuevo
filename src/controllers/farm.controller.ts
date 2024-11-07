@@ -34,6 +34,28 @@ class FarmController {
     }
   }
 
+  public async getOneWithSheds(req: Request, res: Response) {
+    const id = req.params.id
+    try {
+      validateObjectId(id)
+      const response = await farmService.getOneWithSheds(id)
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async getAllWithSheds(req: Request, res: Response) {
+    try {
+      const response = await farmService.getAllWithSheds()
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
   public async create(req: Request, res: Response) {
     const body = req.body as createFarmBody
     const session = await AppMongooseRepo.startSession()
