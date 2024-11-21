@@ -23,6 +23,7 @@ import { ServerLogger } from '@app/handlers/loggers/server.logger'
 
 /* routes */
 import personalBonusRoutes from '@routes/personal-bonus.routes';
+import boxProductionRoutes from '@routes/box-production.routes';
 import attendanceRoutes from '@routes/attendance.routes';
 import deparmentRoutes from '@routes/deparment.routes';
 import employeeRoutes from '@routes/employee.routes';
@@ -90,6 +91,7 @@ export class AppServer {
     this.app.use('/api/personal-bonus', personalBonusRoutes)
     this.app.use('/api/department', deparmentRoutes)
     this.app.use('/api/attendance', attendanceRoutes)
+    this.app.use('/api/boxes', boxProductionRoutes)
     this.app.use('/api/employee', employeeRoutes)
     this.app.use('/api/schedule', scheduleRoutes)
     this.app.use('/api/overtime', overtimeRoutes)
