@@ -4,7 +4,7 @@ import { AppMongooseRepo } from '@app/repositories/mongoose'
 import employeeService from '../services/employee.service'
 
 class EmployeeController {
-  public async get (req: Request, res: Response): Promise<any> {
+  public async get(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await employeeService.get(query)
@@ -15,7 +15,7 @@ class EmployeeController {
     }
   }
 
-  public async create (req: Request, res: Response): Promise<any> {
+  public async create(req: Request, res: Response): Promise<any> {
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()
     try {
@@ -31,7 +31,7 @@ class EmployeeController {
     }
   }
 
-  public async update (req: Request, res: Response): Promise<any> {
+  public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
     const session = await AppMongooseRepo.startSession()
     try {
@@ -48,7 +48,7 @@ class EmployeeController {
     }
   }
 
-  public async search (req: Request, res: Response): Promise<any> {
+  public async search(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await employeeService.search(query)
