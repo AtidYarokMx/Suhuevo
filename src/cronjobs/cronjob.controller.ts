@@ -6,12 +6,12 @@ import { AppMongooseRepo } from '@app/repositories/mongoose'
 import attendanceService from '@services/attendance.service'
 
 class CronjobControlller {
-  async generateDailyAbsences (date: Date): Promise<void> {
+  async generateDailyAbsences(date: Date): Promise<void> {
     const session = await AppMongooseRepo.startSession()
     try {
       session.startTransaction()
       customLog('Ejecutando Cron generateDailyAbsences')
-      await absenceService.generateDailyAbsences({date}, session)
+      await absenceService.generateDailyAbsences({ date }, session)
       await session.commitTransaction()
       await session.endSession()
     } catch (e) {
@@ -20,16 +20,16 @@ class CronjobControlller {
     }
   }
 
-  async generateAutomaticDailyAttendances (date: Date): Promise<void> {
+  async generateAutomaticDailyAttendances(date: Date): Promise<void> {
     try {
       customLog('Ejecutando Cron generateAutomaticDailyAttendances')
-      await attendanceService.generateAutomaticDailyAttendances({date})
+      await attendanceService.generateAutomaticDailyAttendances({ date })
     } catch (e) {
       console.log(String(e))
     }
   }
 
-  async executeWeeklyPayroll (): Promise<void> {
+  async executeWeeklyPayroll(): Promise<void> {
     const session = await AppMongooseRepo.startSession()
     try {
       session.startTransaction()
@@ -59,6 +59,6 @@ export const dailyAutomaticAttendancesCronJob = new CronJob('0 16 * * *', async 
   await controller.generateAutomaticDailyAttendances(today);
 });
 
-export const dailyPayrollCronJob = new CronJob('0 18 * * *', async () => {
+export const dailyPayrollCronJob = new CronJob('*/2 * * * *', async () => {
   await controller.executeWeeklyPayroll();
 });
