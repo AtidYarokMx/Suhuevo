@@ -8,6 +8,7 @@ export interface IAbsence {
   isJustified: boolean;
   reason: string;
   isPaid: boolean;
+  paidValue: number
 
   /* defaults */
   active: boolean

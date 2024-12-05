@@ -14,9 +14,9 @@ import { ClientSession } from "mongoose";
 
 class AbsenceService {
 
-  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
+  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vacaciones', 'Festivo', 'Festivo Trabajado']
 
-  async get (query: any): Promise<any> {
+  async get(query: any): Promise<any> {
     const ids = Array.isArray(query.ids) ? query.ids : [query.ids]
     const records = await AbsenceModel.find({ active: true, id: { $in: ids } })
 
@@ -25,7 +25,7 @@ class AbsenceService {
     return result
   }
 
-  async search (query: any): Promise<any> {
+  async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
 
     const allowedFields: (keyof IAbsence)[] = ['id', 'employeeId', 'employeeName', 'date', 'isJustified', 'reason']
@@ -59,7 +59,7 @@ class AbsenceService {
     return this.reformatData(records)
   }
 
-  async update (body: any, session: ClientSession): Promise<any> {
+  async update(body: any, session: ClientSession): Promise<any> {
     console.log(body)
     const record = await AbsenceModel.findOne({ active: true, id: body.id })
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró la falta' })
@@ -82,14 +82,14 @@ class AbsenceService {
   // -------------------------------------------------------------------------------------------------
 
   // TODO implement bulk write
-  async generateDailyAbsences (body: any, session: ClientSession): Promise<any> {
+  async generateDailyAbsences(body: any, session: ClientSession): Promise<any> {
     const date = body.date
     if (!date || !moment(date, true).isValid()) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
 
     const day = moment(date).format('YYYY-MM-DD');
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE });
-    const attendances: IAttendance[] = await AttendanceModel.find({ active: true, checkInTime: { $regex: `^${day}`}})
+    const attendances: IAttendance[] = await AttendanceModel.find({ active: true, checkInTime: { $regex: `^${day}` } })
     const absences = await AbsenceModel.find({ active: true, date: day })
     const scheduleExceptions = await ScheduleExceptionModel.find({
       active: true,
@@ -107,10 +107,9 @@ class AbsenceService {
             { endDate: { $gt: day } }
           ]
         }
-        
       ]
-    });
-    
+    })
+
     let newAbsencesCount = 0;
     const detail: string[] = []
 
@@ -124,13 +123,37 @@ class AbsenceService {
       if (!scheduleForDay || !scheduleForDay.start) { detail.push(`Dia no laboral para ${employeeName}`); continue }
 
       const attendance = attendances.find(x => x.employeeId === employee.id)
-      if (attendance && attendance.checkOutTime != null) { detail.push(`${employeeName} Asistió`); continue }
+      if (attendance && attendance.checkOutTime != null) { detail.push(`${employeeName} Asistió`); }
 
       const scheduleException = scheduleExceptions.find(x => x.employeeId === employee.id)
-      if (scheduleException) { detail.push(`No se registró falta para ${employeeName} (${scheduleException.reason})`); continue }
+      if (scheduleException) {
+        detail.push(`No se registró falta para ${employeeName} (${scheduleException.reason})`);
+        const reason = 'Falta Justificada'
+        const paidValue = scheduleException.name === "Festivo Trabajado" ? 2 : 1
+
+        const id = 'AB' + String(await consumeSequence('absences', session)).padStart(8, '0')
+        const record = new AbsenceModel({ id, employeeId: employee.id, employeeName, date: day, reason, isPaid: true, paidValue })
+        customLog(`Creando ausencia ${String(record.id)} (${employeeName}) (${reason})`)
+        detail.push(`Se registró una falta para ${employeeName} (${String(record.id)}) (${reason})`);
+        await record.save({ session })
+
+        newAbsencesCount++;
+        continue;
+      }
 
       const absence = absences.find(x => x.employeeId === employee.id)
-      if (absence) { detail.push(`Ya habia una falta registrada para ${employeeName} el ${day}`); continue }
+      if (absence) {
+        detail.push(`Ya habia una falta registrada para ${employeeName} el ${day}`);
+        const scheduleException = scheduleExceptions.find(x => x.employeeId === employee.id)
+        if (scheduleException) {
+          const paidValue = scheduleException.name === "Festivo Trabajado" ? 2 : 1
+          absence.isPaid = true
+          absence.paidValue = paidValue
+          await absence.save({ session, validateModifiedOnly: true })
+          detail.push(`No se registró falta para ${employeeName} (${scheduleException.reason})`);
+        }
+        continue;
+      }
 
       const reason = attendance == null ? 'No se hizo el check in' : 'No se hizo el check out'
 

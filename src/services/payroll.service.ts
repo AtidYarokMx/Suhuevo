@@ -229,8 +229,12 @@ class PayrollService {
       // Bono de despensa
       const groceryBonus = this.evaluateBonus(employeeBonusGrocery, salary);
       // Bono por día festivo (triple pago)
-      const workedHolidays = employeeAttendances.filter(x => this.holidayList.includes(x.checkInTime.slice(0, 10))).length;
-      const holidayBonus = workedHolidays * dailySalary * 2
+      // const workedHolidays = employeeAttendances.filter(x => this.holidayList.includes(x.checkInTime.slice(0, 10))).length;
+      // const holidayBonus = workedHolidays * dailySalary * 2
+      // Bono por día festivo (triple pago) manualmente puesto por rh
+      const holidayBonus = employeeAbsences.reduce((prev, curr) => {
+        return prev += dailySalary * curr.paidValue
+      }, 0)
       // Otros bonos
       const customBonusesAmounts = employeeCustomBonuses.map((x) => { return { amount: this.evaluateBonus(x, salary), taxable: x.taxable } })
       const customBonusesTotal = sumField(customBonusesAmounts, 'amount')

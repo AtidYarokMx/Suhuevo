@@ -21,7 +21,7 @@ import overtimeService from './overtime.service'
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 15;
-  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones']
+  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones', 'Festivo', 'Festivo Trabajado']
   private readonly daysTranslationMap: { [key: string]: string } = { 'monday': 'lunes', 'tuesday': 'martes', 'wednesday': 'miércoles', 'thursday': 'jueves', 'friday': 'viernes', 'saturday': 'sábado', 'sunday': 'domingo' };
   // private readonly MIN_OVERTIME_MINUTES = 60;
 
