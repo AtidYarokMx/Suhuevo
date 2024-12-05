@@ -49,24 +49,24 @@ export const controller = new CronjobControlller()
 // export const appTiempoRetencion = new CronJob('*/5 * * * * *', controller.deleteSensitiveData)
 // export const dailyAbsencesCronJob = new CronJob('0 11 01 Jan,Apr,Jul,Oct *', controller.generateDailyAbsences)
 
-let test = true
+// let test = true
 
-export const dailyAbsencesCronJob = new CronJob('* * * * * *', async () => {
-  if (test) {
-    test = false
-    const today = new Date();
-    await controller.generateDailyAbsences(today);
-  }
+export const dailyAbsencesCronJob = new CronJob('* 16 * * *', async () => {
+  // if (test) {
+  // test = false
+  const today = new Date();
+  await controller.generateDailyAbsences(today);
+  // }
 });
 
 export const dailyAutomaticAttendancesCronJob = new CronJob('* 18 * * *', async () => {
-  if (test) {
-    test = false
-    const today = new Date();
-    await controller.generateAutomaticDailyAttendances(today);
-  }
+  // if (test) {
+  // test = false
+  const today = new Date();
+  await controller.generateAutomaticDailyAttendances(today);
+  // }
 });
 
-export const dailyPayrollCronJob = new CronJob('0 18 * * *', async () => {
+export const dailyPayrollCronJob = new CronJob('0 20 * * *', async () => {
   await controller.executeWeeklyPayroll();
 });
