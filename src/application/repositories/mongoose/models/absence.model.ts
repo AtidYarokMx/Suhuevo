@@ -14,6 +14,7 @@ export const AbsenceSchema = new Schema<IAbsence>({
   isJustified: { type: Boolean, default: false },
   reason: { type: String },
   isPaid: { type: Boolean, default: false },
+  paidValue: { type: Number, default: 1 },
 
   /* defaults */
   active: { type: Boolean, default: true },
