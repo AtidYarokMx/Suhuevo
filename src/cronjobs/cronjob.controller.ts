@@ -51,7 +51,7 @@ export const controller = new CronjobControlller()
 
 // let test = true
 
-export const dailyAbsencesCronJob = new CronJob('* 16 * * *', async () => {
+export const dailyAbsencesCronJob = new CronJob('0 0 16 * * *', async () => {
   // if (test) {
   // test = false
   const today = new Date();
@@ -59,7 +59,7 @@ export const dailyAbsencesCronJob = new CronJob('* 16 * * *', async () => {
   // }
 });
 
-export const dailyAutomaticAttendancesCronJob = new CronJob('* 18 * * *', async () => {
+export const dailyAutomaticAttendancesCronJob = new CronJob('0 0 18 * * *', async () => {
   // if (test) {
   // test = false
   const today = new Date();
@@ -67,6 +67,6 @@ export const dailyAutomaticAttendancesCronJob = new CronJob('* 18 * * *', async 
   // }
 });
 
-export const dailyPayrollCronJob = new CronJob('0 20 * * *', async () => {
+export const dailyPayrollCronJob = new CronJob('0 0 20 * * *', async () => {
   await controller.executeWeeklyPayroll();
 });

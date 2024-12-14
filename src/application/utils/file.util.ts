@@ -7,7 +7,9 @@ import { AttendanceCsvFields } from '@app/dtos/attendance.dto';
 export async function readCsv(file: Express.Multer.File) {
   const rows: { employeeId: string, time: string }[] = []
   await new Promise<void>((resolve, reject) => {
-    const stream = fs.createReadStream(file.path).pipe(csvParser())
+    const stream = fs.createReadStream(file.path)
+      .pipe(csvParser({ strict: true }))
+
     stream.on("data", (row: AttendanceCsvFields) => {
       rows.push({
         time: row['Time'],
