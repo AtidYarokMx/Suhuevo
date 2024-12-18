@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { Types } from '@app/repositories/mongoose'
 
 export function validateObjectId(id: string) {
-  const schema = z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
+  const schema = z.string({ message: "El formato del id es incorrecto" }).refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
   return schema.parse(id)
 }
 

@@ -16,7 +16,9 @@ class InventoryRoutes extends ServerRouter {
 
   config(): void {
     this.router.get('/', adminMiddleware, this.controller.getAll as RequestHandler)
+    this.router.get('/shed/:shed', adminMiddleware, this.controller.getAllFromShed as RequestHandler)
     this.router.get('/:id', adminMiddleware, this.controller.getOne as RequestHandler)
+    this.router.get('/:id/shed/:shed', adminMiddleware, this.controller.getOneFromShed as RequestHandler)
     this.router.post('/', adminMiddleware, this.controller.create as RequestHandler)
     this.router.patch('/:id', adminMiddleware, this.controller.update as RequestHandler)
   }

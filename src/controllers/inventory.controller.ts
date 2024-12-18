@@ -24,9 +24,34 @@ class InventoryController {
     }
   }
 
+  public async getOneFromShed(req: Request, res: Response) {
+    const id = req.params.id
+    const idShed = req.params.shed
+    try {
+      validateObjectId(idShed)
+      const response = await inventoryService.getOneFromShed(id, idShed)
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
   public async getAll(req: Request, res: Response) {
     try {
       const response = await inventoryService.getAll()
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async getAllFromShed(req: Request, res: Response) {
+    const idShed = req.params.shed
+    try {
+      validateObjectId(idShed)
+      const response = await inventoryService.getAllFromShed(idShed)
       return res.status(200).json(response)
     } catch (error) {
       const { statusCode, error: err } = appErrorResponseHandler(error)

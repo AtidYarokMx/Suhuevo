@@ -12,6 +12,16 @@ class InventoryService {
     return inventory
   }
 
+  async getOneFromShed(id: string, idShed: string) {
+    const inventory = await InventoryModel.findOne({ _id: id, shed: idShed, active: true }).populate("shed").exec()
+    return inventory
+  }
+
+  async getAllFromShed(shedId: string) {
+    const inventory = await InventoryModel.find({ active: true, shed: shedId }).populate("shed").exec()
+    return inventory
+  }
+
   async getAll() {
     const inventory = await InventoryModel.find({ active: true }).populate("shed").exec()
     return inventory
