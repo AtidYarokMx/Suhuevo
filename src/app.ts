@@ -26,6 +26,7 @@ import personalBonusRoutes from '@routes/personal-bonus.routes';
 import boxProductionRoutes from '@routes/box-production.routes';
 import attendanceRoutes from '@routes/attendance.routes';
 import deparmentRoutes from '@routes/deparment.routes';
+import inventoryRoutes from '@routes/inventory.routes';
 import employeeRoutes from '@routes/employee.routes';
 import scheduleRoutes from '@routes/schedule.routes';
 import downloadRoutes from '@routes/download.routes';
@@ -89,8 +90,9 @@ export class AppServer {
     this.app.use('/favicon.ico', express.static(path.join(__dirname, '../images/favicon.ico')))
     this.app.use('/public', express.static(path.join(__dirname, '../public')))
     this.app.use('/api/personal-bonus', personalBonusRoutes)
-    this.app.use('/api/department', deparmentRoutes)
     this.app.use('/api/attendance', attendanceRoutes)
+    this.app.use('/api/department', deparmentRoutes)
+    this.app.use('/api/inventory', inventoryRoutes)
     this.app.use('/api/boxes', boxProductionRoutes)
     this.app.use('/api/employee', employeeRoutes)
     this.app.use('/api/schedule', scheduleRoutes)
