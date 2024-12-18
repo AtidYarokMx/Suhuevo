@@ -85,6 +85,18 @@ class InventoryController {
       return res.status(statusCode).json(err)
     }
   }
+
+  public async reportFromShed(req: Request, res: Response) {
+    const shedId = req.params.shed
+    try {
+      validateObjectId(shedId)
+      const response = await inventoryService.reportFromShed(shedId)
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
 }
 
 export const inventoryController: InventoryController = new InventoryController()
