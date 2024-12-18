@@ -1,20 +1,40 @@
 /* lib */
 import { type ClientSession } from 'mongoose'
 /* models */
-import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { InventoryModel } from '@app/repositories/mongoose/models/inventory.model'
 /* dtos */
-// import { createShedBody, updateShedBody } from '@app/dtos/inve'
+import { updateInventoryBody, type createInventoryBody } from '@app/dtos/inventory.dto'
 
 
 class InventoryService {
   async getOne(_id: string) {
-    const sheds = await ShedModel.findOne({ _id, active: true }).populate("farm").exec()
-    return sheds
+    const inventory = await InventoryModel.findOne({ _id, active: true }).populate("shed").exec()
+    return inventory
+  }
+
+  async getOneFromShed(id: string, idShed: string) {
+    const inventory = await InventoryModel.findOne({ _id: id, shed: idShed, active: true }).populate("shed").exec()
+    return inventory
+  }
+
+  async getAllFromShed(shedId: string) {
+    const inventory = await InventoryModel.find({ active: true, shed: shedId }).populate("shed").exec()
+    return inventory
   }
 
   async getAll() {
-    const sheds = await ShedModel.find({ active: true }).populate("farm").exec()
-    return sheds
+    const inventory = await InventoryModel.find({ active: true }).populate("shed").exec()
+    return inventory
+  }
+
+  async create(body: createInventoryBody) {
+    const inventory = await InventoryModel.create({ ...body })
+    return inventory
+  }
+
+  async update(id: string, body: updateInventoryBody, session: ClientSession) {
+    const inventory = await InventoryModel.updateOne({ _id: id }, { ...body }, { session }).exec()
+    return inventory
   }
 }
 

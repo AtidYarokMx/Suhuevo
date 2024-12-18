@@ -158,7 +158,9 @@ class AttendanceService {
           startTime: scheduleEndTime.format('YYYY-MM-DD HH:mm:ss'),
           hours: Math.floor(overtimeMinutes / 60)
         }, session)
-      } catch (error) { }
+      } catch (error) {
+        console.error("error en create", error)
+      }
     }
 
 
@@ -254,48 +256,42 @@ class AttendanceService {
 
       const isLate = delayMinutes > this.MAX_TIME_DELAY;
 
-      try {
-        const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0');
+      const id = 'AT' + String(await consumeSequence('attendances', session)).padStart(8, '0');
 
-        if (checkOutTime !== null) {
-          bulkOps.push({
-            insertOne: {
-              document: {
-                id,
-                employeeId: employee.id,
-                employeeName,
-                checkInTime: checkInTime.format("YYYY-MM-DD HH:mm:SS"),
-                checkOutTime: checkOutTime.format("YYYY-MM-DD HH:mm:SS"),
-                date: day,
-                isLate
-              }
+      if (checkOutTime !== null) {
+        bulkOps.push({
+          insertOne: {
+            document: {
+              id,
+              employeeId: employee.id,
+              employeeName,
+              checkInTime: checkInTime.format("YYYY-MM-DD HH:mm:SS"),
+              checkOutTime: checkOutTime.format("YYYY-MM-DD HH:mm:SS"),
+              date: day,
+              isLate
             }
-          });
-        }
+          }
+        });
+      }
 
-        detail.push({ id, success: true, payload: JSON.stringify(body) });
+      detail.push({ id, success: true, payload: JSON.stringify(body) });
 
-        // Crear overtime si aplica
-        if (employee.overtimeAllowed && (overtimeMinutes >= employee.minOvertimeMinutes) && (employee.minOvertimeMinutes > 0)) {
+      // Crear overtime si aplica
+      if (employee.overtimeAllowed && (overtimeMinutes >= employee.minOvertimeMinutes) && (employee.minOvertimeMinutes > 0)) {
 
-          await overtimeService.create({
-            employeeId: employee.id,
-            startTime: scheduleEndTime.format('YYYY-MM-DD HH:mm:ss'),
-            hours: Math.floor(overtimeMinutes / 60)
-          }, session);
-        }
-      } catch (error) {
-        detail.push({ error: `Error al crear asistencia para ${employeeName} el día ${day}: ${error}` });
+        await overtimeService.create({
+          employeeId: employee.id,
+          startTime: scheduleEndTime.format('YYYY-MM-DD HH:mm:ss'),
+          hours: Math.floor(overtimeMinutes / 60)
+        }, session);
       }
     }
 
     // Realizar el bulkWrite solo si hay operaciones
     if (bulkOps.length > 0) {
-      try {
-        await AttendanceModel.bulkWrite(bulkOps, { session });
-      } catch (error) {
-        detail.push({ error: `Error en bulkWrite: ${error}` });
-      }
+      console.log("bulkOps", bulkOps)
+      await AttendanceModel.bulkWrite(bulkOps, { session });
+      console.log("ENDbulkOps")
     }
 
     return { detail };
@@ -367,7 +363,7 @@ class AttendanceService {
     }
   }
 
-  async importFromCsv(file: Express.Multer.File | undefined) {
+  async importFromCsv(file: Express.Multer.File | undefined, session: ClientSession) {
     if (typeof file === "undefined") throw new AppErrorResponse({ statusCode: 400, name: 'El archivo csv es requerido' });
 
     const csvRows = await readCsv(file);
@@ -474,19 +470,8 @@ class AttendanceService {
       attendances.push({ ...checkin, checkOutTime: undefined });
     }
 
-    let session = await AppMongooseRepo.startSession();
-    session.startTransaction();
     let result: any = {}
-    try {
-      result = await this.createBulk(attendances, session);
-      // customLog('Detalles del procesamiento:', result.detail);
-      await session.commitTransaction();
-      await session.endSession();
-    } catch (error) {
-      await session.abortTransaction();
-      console.error('Error al procesar las asistencias:', error);
-    }
-
+    result = await this.createBulk(attendances, session);
     detail = detail.concat(result?.detail ?? [])
 
     return {

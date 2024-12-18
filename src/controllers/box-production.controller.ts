@@ -4,13 +4,15 @@ import type { Request, Response } from 'express'
 import boxProductionService from '@services/box-production.service'
 /* handlers */
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
+/* param validations */
+import { validateBarcode } from '@app/utils/validate.util'
 
 class BoxProductionController {
   public async getOne(req: Request, res: Response) {
-    const id = req.params.id
+    const code = req.params.code
     try {
-      // validateObjectId(id)
-      const response = await boxProductionService.getAll()
+      const validatedCode = validateBarcode(code)
+      const response = await boxProductionService.getOne(validatedCode)
       return res.status(200).json(response)
     } catch (error) {
       const { statusCode, error: err } = appErrorResponseHandler(error)

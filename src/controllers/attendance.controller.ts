@@ -77,17 +77,22 @@ class AttendanceController {
 
   public async importFromCsv(req: Request, res: Response): Promise<any> {
     const file = req.file
+    const session = await AppMongooseRepo.startSession()
     try {
-      const response = await attendanceService.importFromCsv(file)
+      session.startTransaction()
+      const response = await attendanceService.importFromCsv(file, session)
+      await session.commitTransaction()
+      await session.endSession()
       return res.status(200).json(response)
     } catch (error) {
-
+      await session.abortTransaction()
+      await session.endSession()
       const { statusCode, error: err } = appErrorResponseHandler(error)
       return res.status(statusCode).json(err)
     }
   }
 
-  public async generateAutomaticDailyAttendances (req: Request, res: Response): Promise<any> {
+  public async generateAutomaticDailyAttendances(req: Request, res: Response): Promise<any> {
     const body: any = req.body
     try {
       const response = await attendanceService.generateAutomaticDailyAttendances(body)

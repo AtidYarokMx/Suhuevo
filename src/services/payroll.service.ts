@@ -179,16 +179,26 @@ class PayrollService {
     const sixDaysSchemeBase = bigMath.chain(1).divide(6).done()
 
     // General Bonus
-    const bonusOvertime = (await BonusModel.findOne({ active: true, inputId: 'horas_extra', enabled: true }))
+    const bonusOvertime = await BonusModel.findOne({ active: true, inputId: 'horas_extra', enabled: true })
     const bonusAttendance = await BonusModel.findOne({ active: true, inputId: 'asistencia', enabled: true })
     const bonusPunctuality = await BonusModel.findOne({ active: true, inputId: 'puntualidad', enabled: true })
     const bonusGrocery = await BonusModel.findOne({ active: true, inputId: 'despensa', enabled: true })
 
+    console.log('bonusOvertime', bonusOvertime)
+    console.log('bonusAttendance', bonusAttendance)
+    console.log('bonusPunctuality', bonusPunctuality)
+    console.log('bonusGrocery', bonusGrocery)
+
     // Personal bonus that overrides general bonus
-    const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusOvertime?._id, enabled: true })
-    const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusAttendance?._id, enabled: true })
-    const personalBonusPunctuality = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusPunctuality?._id, enabled: true })
-    const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusGrocery?._id, enabled: true })
+    const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusOvertime?._id, enabled: true }).exec()
+    const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusAttendance?._id, enabled: true }).exec()
+    const personalBonusPunctuality = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusPunctuality?._id, enabled: true }).exec()
+    const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusGrocery?._id, enabled: true }).exec()
+
+    console.log('personalBonusOvertime', personalBonusOvertime)
+    console.log('personalBonusAttendance', personalBonusAttendance)
+    console.log('personalBonusPunctuality', personalBonusPunctuality)
+    console.log('personalBonusGrocery', personalBonusGrocery)
 
     // Other custom personal bonus
     const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true })
@@ -217,17 +227,37 @@ class PayrollService {
       const paidRestDays = bigMath.multiply(daysWorked, restDaysMultiplier)
       const totalDays = daysWorked + paidRestDays
       const salary = dailySalary * totalDays
+      console.log('daysWorked', daysWorked, 'dailySalary', dailySalary, 'totalDays', totalDays, 'salary', salary)
 
-      // Horas extra
+      // variable para conteo en caso de ser gravable (taxable)
+      let taxableBonuses = 0
+
+      // Bonus de Horas extra
       const extraHours = Number(sumField(employeeOvertimeRecords, 'hours').toFixed(2))
       const extraHoursPayment = extraHours * (employeeBonusOvertime?.value ?? 0) // ((dailySalary / 8) * 2)
-
+      if (typeof employeeBonusOvertime?.taxable !== "undefined" && employeeBonusOvertime.taxable) {
+        taxableBonuses += extraHoursPayment
+      }
+      console.log('extraHoursPayment', extraHoursPayment)
       // Bono de asistencia
       const attendanceBonus = employeeAbsences.length > 0 ? 0 : this.evaluateBonus(employeeBonusAttendance, salary);
+      if (typeof employeeBonusAttendance?.taxable !== "undefined" && employeeBonusAttendance.taxable) {
+        taxableBonuses += attendanceBonus
+      }
+      console.log('attendanceBonus', attendanceBonus)
       // Bono de puntualidad
       const punctualityBonus = employeeTardies.length >= 2 ? 0 : this.evaluateBonus(employeeBonusPunctuality, salary);
+      if (typeof employeeBonusPunctuality?.taxable !== "undefined" && employeeBonusPunctuality.taxable) {
+        taxableBonuses += punctualityBonus
+      }
+      console.log('punctualityBonus', punctualityBonus)
       // Bono de despensa
       const groceryBonus = this.evaluateBonus(employeeBonusGrocery, salary);
+      if (typeof employeeBonusGrocery?.taxable !== "undefined" && employeeBonusGrocery.taxable) {
+        taxableBonuses += groceryBonus
+      }
+      console.log('groceryBonus', groceryBonus)
+      // console.log('groceryBonus', groceryBonus) // 145 example
       // Bono por día festivo (triple pago)
       // const workedHolidays = employeeAttendances.filter(x => this.holidayList.includes(x.checkInTime.slice(0, 10))).length;
       // const holidayBonus = workedHolidays * dailySalary * 2
@@ -235,12 +265,16 @@ class PayrollService {
       const holidayBonus = employeeAbsences.reduce((prev, curr) => {
         return prev += dailySalary * curr.paidValue
       }, 0)
+      console.log('holidayBonus', holidayBonus)
       // Otros bonos
       const customBonusesAmounts = employeeCustomBonuses.map((x) => { return { amount: this.evaluateBonus(x, salary), taxable: x.taxable } })
       const customBonusesTotal = sumField(customBonusesAmounts, 'amount')
       // Calcular el neto a pagar
-      const taxPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + sumField(customBonusesAmounts.filter((x) => x.taxable === true), 'amount')
-      const netPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + customBonusesTotal
+      console.log('salary', salary)
+      const taxPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses + sumField(customBonusesAmounts.filter((x) => x.taxable === true), 'amount')
+      console.log('taxPay', taxPay)
+      const netPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses + customBonusesTotal
+      console.log('netPay', netPay)
 
       lines.push({
         rowIndex: index + 1,
