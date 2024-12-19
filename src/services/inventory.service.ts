@@ -52,7 +52,14 @@ class InventoryService {
       {
         $project: {
           _id: 0,
-          month: "$_id.month",
+          month: {
+            $arrayElemAt: [
+              ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+              {
+                $subtract: ["$_id.month", 1]
+              }
+            ]
+          },
           year: "$_id.year",
           chicken: 1,
           water: 1,
