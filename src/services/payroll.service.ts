@@ -336,57 +336,64 @@ class PayrollService {
     return 0
   }
 
+  /**
+   * Generates an Excel report for the payroll.
+   *
+   * @param {any} query - The query object containing the payroll ID.
+   * @returns {Promise<{ file: Buffer, fileName: string }>} - The generated Excel file buffer and file name.
+   * @throws {AppErrorResponse} - Throws an error if the payroll ID is not provided or the payroll is not found.
+   */
   async excelReport(query: any) {
     const payrollId = query.id
-    if (payrollId == null) throw new AppErrorResponse({ statusCode: 400, name: 'El id es requerido' });
+    if (payrollId == null) throw new AppErrorResponse({ statusCode: 400, name: 'El id es requerido' }); // Validate payroll ID
 
-    const payroll = await PayrollModel.findOne({ active: true, id: payrollId })
-    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el pago de nomina' });
+    const payroll = await PayrollModel.findOne({ active: true, id: payrollId }) // Fetch payroll record
+    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el pago de nomina' }); // Check if payroll exists
 
-    const employeeIds = payroll.lines.map(x => x.employeeId)
-    const employees = await employeeService.get({ ids: employeeIds })
+    const employeeIds = payroll.lines.map(x => x.employeeId) // Extract employee IDs from payroll lines
+    const employees = await employeeService.get({ ids: employeeIds }) // Fetch employee details
 
-    const departmentIds = [...new Set(payroll.lines.map(x => x.departmentId))];
-    const departments = await departmentService.get({ ids: departmentIds })
+    const departmentIds = [...new Set(payroll.lines.map(x => x.departmentId))]; // Extract unique department IDs
+    const departments = await departmentService.get({ ids: departmentIds }) // Fetch department details
 
-    const jobIds = [...new Set(payroll.lines.map(x => x.jobId))];
-    const jobs = await jobService.get({ ids: jobIds })
+    const jobIds = [...new Set(payroll.lines.map(x => x.jobId))]; // Extract unique job IDs
+    const jobs = await jobService.get({ ids: jobIds }) // Fetch job details
 
-    const rowsArray = payroll.lines.map((line: any) => {
+    const rowsArray = payroll.lines.map((line: any) => { // Map payroll lines to rows array
       const employee: IEmployee = employees[line.employeeId]
       return {
-        date: payroll.cutoffDate,
-        jobName: jobs[line.jobId]?.name ?? '',
-        mxCurp: employee.mxCurp,
-        mxNss: employee.mxNss,
-        employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`,
+        date: payroll.cutoffDate, // Payroll cutoff date
+        jobName: jobs[line.jobId]?.name ?? '', // Job name
+        mxCurp: employee.mxCurp, // Employee CURP
+        mxNss: employee.mxNss, // Employee NSS
+        employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`, // Employee full name
 
-        sdi: '',
+        sdi: '', // SDI (empty for now)
 
-        dailySalary: line.dailySalary,
-        daysWorked: line.daysWorked,
-        paidRestDays: line.paidRestDays,
-        totalDays: line.totalDays,
-        salary: line.salary,
-        extraHours: line.extraHours,
-        extraHoursPayment: line.extraHoursPayment,
+        dailySalary: line.dailySalary, // Daily salary
+        daysWorked: line.daysWorked, // Days worked
+        paidRestDays: line.paidRestDays, // Paid rest days
+        totalDays: line.totalDays, // Total days
+        salary: line.salary, // Salary
+        extraHours: line.extraHours, // Extra hours
+        extraHoursPayment: line.extraHoursPayment, // Extra hours payment
 
-        punctualityBonus: line.punctualityBonus,
-        attendanceBonus: line.attendanceBonus,
-        groceryBonus: line.groceryBonus,
-        holidayBonus: line.holidayBonus,
-        customBonusesTotal: line.customBonusesTotal,
-        // tardies: line.tardies,
-        netPay: line.netPay,
-        taxPay: line.taxPay,
+        punctualityBonus: line.punctualityBonus, // Punctuality bonus
+        attendanceBonus: line.attendanceBonus, // Attendance bonus
+        groceryBonus: line.groceryBonus, // Grocery bonus
+        holidayBonus: line.holidayBonus, // Holiday bonus
+        customBonusesTotal: line.customBonusesTotal, // Custom bonuses total
+        // tardies: line.tardies, // Tardies (commented out)
+        netPay: line.netPay, // Net pay
+        taxPay: line.taxPay, // Taxable pay
 
-        jobScheme: line.jobScheme,
+        jobScheme: line.jobScheme, // Job scheme
 
-        departmentId: line.departmentId,
+        departmentId: line.departmentId, // Department ID
       }
     })
 
-    const rowsByDepartment = rowsArray.reduce((acc: any, row: any) => {
+    const rowsByDepartment = rowsArray.reduce((acc: any, row: any) => { // Group rows by department
       const departmentId = row.departmentId;
       const departmentName = departments[departmentId]?.name
       if (departmentName) {
@@ -404,27 +411,27 @@ class PayrollService {
     }, {});
 
     // ------------------- Construir archivo excel ----------------------------------------------------
-    const workbook = new ExcelJS.Workbook()
+    const workbook = new ExcelJS.Workbook() // Create a new workbook
 
-    const borderStyle: Partial<ExcelJS.Borders> = {
+    const borderStyle: Partial<ExcelJS.Borders> = { // Define border style
       top: { style: 'thin', color: { argb: 'aaaaaa' } },
       left: { style: 'thin', color: { argb: 'aaaaaa' } },
       bottom: { style: 'thin', color: { argb: 'aaaaaa' } },
       right: { style: 'thin', color: { argb: 'aaaaaa' } }
     }
 
-    const headerStyle: ExcelJS.FillPattern = {
+    const headerStyle: ExcelJS.FillPattern = { // Define header style
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'dce6f1' }
     }
 
-    for (const [departmentName, rowArray] of Object.entries(rowsByDepartment)) {
-      const worksheet = workbook.addWorksheet(departmentName, {
+    for (const [departmentName, rowArray] of Object.entries(rowsByDepartment)) { // Iterate over departments
+      const worksheet = workbook.addWorksheet(departmentName, { // Add worksheet for each department
         views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
       });
 
-      worksheet.columns = [
+      worksheet.columns = [ // Define worksheet columns
         { header: 'Nomina', key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
         { header: 'Puesto', key: 'jobName', width: 15, style: { numFmt: '@' } },
         { header: 'CURP', key: 'mxCurp', width: 20, style: { numFmt: '@' } },
@@ -452,14 +459,14 @@ class PayrollService {
       ]
 
       // Headers 1
-      const headerRow = worksheet.getRow(1)
-      headerRow.eachCell((cell: any) => { cell.fill = headerStyle })
-      headerRow.eachCell((cell: any) => { cell.border = borderStyle })
-      headerRow.eachCell((cell: any) => { cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true } })
-      headerRow.font = { bold: true };
+      const headerRow = worksheet.getRow(1) // Get header row
+      headerRow.eachCell((cell: any) => { cell.fill = headerStyle }) // Apply header style
+      headerRow.eachCell((cell: any) => { cell.border = borderStyle }) // Apply border style
+      headerRow.eachCell((cell: any) => { cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true } }) // Apply alignment
+      headerRow.font = { bold: true }; // Set font to bold
 
       // Solo agregar las propiedades que coinciden con las columnas definidas
-      (rowArray as any).forEach((row: any) => {
+      (rowArray as any).forEach((row: any) => { // Add rows to worksheet
         const filteredRow = worksheet.columns.reduce((acc: any, col: any) => {
           if (col.key in row) {
             acc[col.key] = row[col.key];
@@ -470,7 +477,7 @@ class PayrollService {
         worksheet.addRow(filteredRow);
       });
 
-      const totalsRow = worksheet.addRow([
+      const totalsRow = worksheet.addRow([ // Add totals row
         'Totales', '', '', '', '', '', '', '', '',
         { formula: `SUM(J2:J${worksheet.rowCount})` }, // Total daysWorked
         { formula: `SUM(K2:K${worksheet.rowCount})` }, // Total salary 
@@ -485,7 +492,7 @@ class PayrollService {
         { formula: `SUM(T2:T${worksheet.rowCount})` }, // Total netPay
       ]);
 
-      totalsRow.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
+      totalsRow.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => { // Apply styles to totals row
         cell.font = { bold: true };
         cell.border = {
           top: { style: 'thick', color: { argb: '000000' } },
@@ -498,46 +505,50 @@ class PayrollService {
     }
 
     // Pestaña de resumen
-    const summaryData = Object.keys(rowsByDepartment).map(departmentName => {
+    const summaryData = Object.keys(rowsByDepartment).map(departmentName => { // Create summary data
       const rows = rowsByDepartment[departmentName];
       const totalEmployees = rows.length;
       const totalAmount = rows.reduce((sum: number, row: any) => sum + row.netPay, 0);
       return { departmentName, totalEmployees, totalAmount };
     });
 
-    const summarySheet = workbook.addWorksheet('Resumen');
-    summarySheet.columns = [
+    const summarySheet = workbook.addWorksheet('Resumen'); // Add summary sheet
+    summarySheet.columns = [ // Define summary sheet columns
       { header: 'Departamento', key: 'departmentName', width: 20 },
       { header: 'Empleados', key: 'totalEmployees', width: 15 },
       { header: 'Cantidad a Pagar', key: 'totalAmount', width: 20, style: { numFmt: '"$"#,##0.00' } },
     ];
 
-    const headerRow = summarySheet.getRow(1)
-    headerRow.eachCell((cell: any) => { cell.fill = headerStyle })
-    headerRow.eachCell((cell: any) => { cell.border = borderStyle })
-    headerRow.eachCell((cell: any) => { cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true } })
-    headerRow.font = { bold: true };
+    const headerRow = summarySheet.getRow(1) // Get header row
 
-    summaryData.forEach((row: any) => {
+    headerRow.eachCell((cell: any) => { // Apply styles to header row
+      cell.fill = headerStyle
+      cell.border = borderStyle
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
+    })
+
+    headerRow.font = { bold: true }; // Set font to bold
+
+    summaryData.forEach((row: any) => { // Add rows to summary sheet
       summarySheet.addRow(row);
     });
 
-    summarySheet.addRow({
+    summarySheet.addRow({ // Add total row to summary sheet
       departmentName: 'TOTAL =',
       totalEmployees: { formula: `SUM(B2:B${summarySheet.rowCount})` },
       totalAmount: { formula: `SUM(C2:C${summarySheet.rowCount})` }
     }).font = { bold: true };
 
-    const totalRow = summarySheet.lastRow;
-    totalRow?.eachCell((cell) => {
+    const totalRow = summarySheet.lastRow; // Get last row
+    totalRow?.eachCell((cell) => { // Apply styles to total row
       cell.border = {
         top: { style: 'thin' },
         bottom: { style: 'double' },
       };
     });
 
-    const excelBuffer = await workbook.xlsx.writeBuffer()
-    return { file: excelBuffer, fileName: `${payroll.name}.xlsx` }
+    const excelBuffer = await workbook.xlsx.writeBuffer() // Write workbook to buffer
+    return { file: excelBuffer, fileName: `${payroll.name}.xlsx` } // Return file buffer and name
   }
 }
 
