@@ -13,3 +13,16 @@ export type IBoxProduction = {
   updatedAt: Date
   createdAt: Date
 }
+
+/* raw query */
+export type IBoxProductionSequelize = {
+  id: number
+  id_granja: number
+  id_caceta: number
+  codigo: string
+  peso: string
+  tipo: number
+  status: number
+  creacion: Date
+  actualizacion: Date
+}
