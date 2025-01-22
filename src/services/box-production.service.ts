@@ -22,14 +22,23 @@ class BoxProductionService {
   }
 
   async sendBoxesToSells(shed: string, codes: string[]) {
-    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>("SELECT * FROM produccion_cajas WHERE status = 1 AND codigo IN (:codes)", { type: QueryTypes.SELECT, replacements: { codes } })
+    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>("SELECT * FROM produccion_cajas WHERE status = 1 AND codigo IN (:codes)", {
+      type: QueryTypes.SELECT,
+      replacements: { codes }
+    })
 
-    const sequelizeToMongooseFields = boxes.map<Omit<ISalesInventory, "active" | "createdAt" | "updatedAt">>((box) => {
+    const sequelizeToMongooseFields = boxes.map((box) => {
       return {
-        type: box.tipo,
-        weight: parseFloat(box.peso),
-        code: box.codigo,
-        shed: new Types.ObjectId(shed),
+        updateOne: {
+          filter: { code: box.codigo },
+          update: {
+            shed: new Types.ObjectId(shed),
+            code: box.codigo,
+            weight: parseFloat(box.peso),
+            type: box.tipo,
+          },
+          upsert: true
+        }
       }
     })
 
