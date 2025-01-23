@@ -38,6 +38,46 @@ class InventoryService {
     return inventory
   }
 
+  async reportFromFarm(farmId: string) {
+    const inventory = await InventoryModel.aggregate([
+      { $match: { active: true } },
+      { $lookup: { from: "sheds", localField: "shed", foreignField: "_id", as: "shed" } },
+      { $unwind: { path: "$shed", preserveNullAndEmptyArrays: true } },
+      { $match: { "shed": { $ne: null } } },
+      { $lookup: { from: "farms", localField: "shed.farm", foreignField: "_id", as: "shed.farm" } },
+      { $unwind: { path: "$shed.farm", preserveNullAndEmptyArrays: true } },
+      { $match: { "shed.farm": { $ne: null } } },
+      { $match: { "shed.farm._id": new Types.ObjectId(farmId) } },
+      {
+        $group: {
+          _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+          chicken: { $sum: "$chicken" },
+          water: { $sum: "$water" },
+          food: { $sum: "$food" }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          month: {
+            $arrayElemAt: [
+              ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+              {
+                $subtract: ["$_id.month", 1]
+              }
+            ]
+          },
+          year: "$_id.year",
+          chicken: 1,
+          water: 1,
+          food: 1
+        }
+      }
+    ]).exec();
+
+    return inventory;
+  }
+
   async reportFromShed(shedId: string) {
     const inventory = await InventoryModel.aggregate([
       { $match: { shed: new Types.ObjectId(shedId), active: true } },

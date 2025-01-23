@@ -86,6 +86,18 @@ class InventoryController {
     }
   }
 
+  public async reportFromFarm(req: Request, res: Response) {
+    const farmId = req.params.farm
+    try {
+      validateObjectId(farmId)
+      const response = await inventoryService.reportFromFarm(farmId)
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
   public async reportFromShed(req: Request, res: Response) {
     const shedId = req.params.shed
     try {
