@@ -16,7 +16,7 @@ export const InventorySchema = new Schema<IInventory>({
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
-}, { discriminatorKey: "type" })
+})
 
 /* pre (middlewares) */
 InventorySchema.pre('save', async function (next) {

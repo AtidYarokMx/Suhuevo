@@ -25,7 +25,11 @@ class FarmService {
   }
 
   async getAllWithSheds() {
-    const farms = await FarmModel.find({ active: true }).populate("sheds").exec()
+    const farms = await FarmModel.find({ active: true }).populate({
+      path: "sheds",
+      match: { active: true },
+      populate: { path: "inventory", foreignField: "shed", localField: "_id" }
+    }).exec()
     return farms
   }
 

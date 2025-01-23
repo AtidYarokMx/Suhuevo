@@ -2,6 +2,7 @@
 import { type ClientSession } from 'mongoose'
 /* models */
 import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { InventoryModel } from '@app/repositories/mongoose/models/inventory.model'
 /* dtos */
 import { createShedBody, updateShedBody } from '@app/dtos/shed.dto'
 import { AppErrorResponse } from '@app/models/app.response'
@@ -18,9 +19,11 @@ class ShedService {
     return sheds
   }
 
-  async create(body: createShedBody, session: ClientSession) {
-    const shed = new ShedModel({ ...body })
+  async create({ initialChicken, ...shedBody }: createShedBody, session: ClientSession) {
+    const shed = new ShedModel({ ...shedBody })
+    const inventory = new InventoryModel({ initialChicken, shed: shed._id })
     const saved = await shed.save({ validateBeforeSave: true, session })
+    await inventory.save({ validateBeforeSave: true, session })
     return saved.toJSON()
   }
 

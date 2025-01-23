@@ -1,6 +1,7 @@
 import { z } from "zod"
 /* types */
-import { Types } from "@app/repositories/mongoose"
+import { Model, Types } from "@app/repositories/mongoose"
+import { IInventory } from "@app/dtos/inventory.dto"
 
 export enum ShedStatus {
   ACTIVE = "active",
@@ -25,10 +26,17 @@ export type IShed = {
   createdAt: Date
 }
 
+export type IShedVirtuals = {
+  inventory: IInventory[]
+}
+
+export type AppShedModel = Model<IShed, {}, {}, IShedVirtuals>
+
 /* endpoint dtos */
 export const createShed = z.object({
   name: z.string(),
   description: z.string(),
+  initialChicken: z.number().default(0),
   farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
 })
 
