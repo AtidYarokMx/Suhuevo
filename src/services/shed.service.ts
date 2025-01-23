@@ -10,12 +10,12 @@ import { AppErrorResponse } from '@app/models/app.response'
 
 class ShedService {
   async getOne(_id: string) {
-    const sheds = await ShedModel.findOne({ _id, active: true }).populate("farm").exec()
+    const sheds = await ShedModel.findOne({ _id, active: true }).populate(["farm", "inventory"]).exec()
     return sheds
   }
 
   async getAll() {
-    const sheds = await ShedModel.find({ active: true }).populate("farm").exec()
+    const sheds = await ShedModel.find({ active: true }).populate(["farm", "inventory"]).exec()
     return sheds
   }
 
