@@ -7,7 +7,8 @@ import { type IInventory } from '@app/dtos/inventory.dto'
 
 export const InventorySchema = new Schema<IInventory>({
   date: { type: Date, required: true },
-  chicken: { type: Number, required: true },
+  chicken: { type: Number, default: 0 },
+  mortality: { type: Number, default: 0 },
   water: { type: Number, required: true },
   food: { type: Number, required: true },
   /* relations */

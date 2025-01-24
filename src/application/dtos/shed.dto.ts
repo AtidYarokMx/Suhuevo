@@ -16,6 +16,7 @@ export type IShed = {
   description: string
   week: number
   period: number
+  initialChicken: number
   /* enums */
   status: ShedStatus
   /* relations */

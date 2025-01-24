@@ -12,6 +12,7 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   description: { type: String, trim: true, required: true },
   week: { type: Number, default: 1 },
   period: { type: Number, default: 1 },
+  initialChicken: { type: Number, required: true },
   /* enums */
   status: { type: String, enum: ShedStatus, default: ShedStatus.ACTIVE },
   /* relations */
