@@ -2,9 +2,11 @@
 import { type ClientSession } from 'mongoose'
 /* models */
 import { InventoryModel } from '@app/repositories/mongoose/models/inventory.model'
+import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
 /* dtos */
 import { updateInventoryBody, type createInventoryBody } from '@app/dtos/inventory.dto'
 import { Types } from '@app/repositories/mongoose'
+import { AppErrorResponse } from '@app/models/app.response'
 
 
 class InventoryService {
@@ -79,14 +81,41 @@ class InventoryService {
   }
 
   async reportFromShed(shedId: string) {
+    const shed = await ShedModel.findById(shedId, { initialChicken: true }).exec();
+
+    if (!shed)
+      throw new AppErrorResponse({
+        statusCode: 404,
+        message: "Shed not found",
+        name: "ShedNotFound",
+        description: "No se encontró ninguna caseta con el id proporcionado"
+      });
+
     const inventory = await InventoryModel.aggregate([
       { $match: { shed: new Types.ObjectId(shedId), active: true } },
       {
+        $addFields: {
+          initialChicken: shed.initialChicken
+        }
+      },
+      {
         $group: {
           _id: { month: { $month: "$date" }, year: { $year: "$date" } },
-          chicken: { $sum: "$chicken" },
+          chickenAdded: { $sum: "$chicken" },
+          mortality: { $sum: "$mortality" },
           water: { $sum: "$water" },
-          food: { $sum: "$food" }
+          food: { $sum: "$food" },
+          initialChicken: { $first: "$initialChicken" },
+        }
+      },
+      {
+        $addFields: {
+          totalChicken: {
+            $subtract: [
+              { $add: ["$initialChicken", "$chickenAdded"] },
+              "$mortality"
+            ]
+          }
         }
       },
       {
@@ -101,7 +130,9 @@ class InventoryService {
             ]
           },
           year: "$_id.year",
-          chicken: 1,
+          initialChicken: 1,
+          totalChicken: 1,
+          mortality: 1,
           water: 1,
           food: 1
         }
