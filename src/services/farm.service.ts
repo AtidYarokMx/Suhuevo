@@ -10,22 +10,38 @@ import { createFarmBody, updateFarmBody } from '@app/dtos/farm.dto'
 
 class FarmService {
   async getOne(_id: string) {
-    const farms = await FarmModel.findOne({ _id, active: true }).exec()
+    const farms = await FarmModel.findOne({ _id, active: true }).populate({
+      path: "sheds",
+      match: { active: true },
+      populate: { path: "inventory" }
+    }).exec()
     return farms
   }
 
   async getAll() {
-    const farms = await FarmModel.find({ active: true }).exec()
+    const farms = await FarmModel.find({ active: true }).populate({
+      path: "sheds",
+      match: { active: true },
+      populate: { path: "inventory" }
+    }).exec()
     return farms
   }
 
   async getOneWithSheds(_id: string) {
-    const farms = await FarmModel.findOne({ _id, active: true }).populate("sheds").exec()
+    const farms = await FarmModel.findOne({ _id, active: true }).populate({
+      path: "sheds",
+      match: { active: true },
+      populate: { path: "inventory" }
+    }).exec()
     return farms
   }
 
   async getAllWithSheds() {
-    const farms = await FarmModel.find({ active: true }).populate("sheds").exec()
+    const farms = await FarmModel.find({ active: true }).populate({
+      path: "sheds",
+      match: { active: true },
+      populate: { path: "inventory" }
+    }).exec()
     return farms
   }
 

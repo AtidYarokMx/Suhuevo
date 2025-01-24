@@ -2,6 +2,7 @@
 import { type ClientSession } from 'mongoose'
 /* models */
 import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { InventoryModel } from '@app/repositories/mongoose/models/inventory.model'
 /* dtos */
 import { createShedBody, updateShedBody } from '@app/dtos/shed.dto'
 import { AppErrorResponse } from '@app/models/app.response'
@@ -9,12 +10,12 @@ import { AppErrorResponse } from '@app/models/app.response'
 
 class ShedService {
   async getOne(_id: string) {
-    const sheds = await ShedModel.findOne({ _id, active: true }).populate("farm").exec()
+    const sheds = await ShedModel.findOne({ _id, active: true }).populate(["farm", "inventory"]).exec()
     return sheds
   }
 
   async getAll() {
-    const sheds = await ShedModel.find({ active: true }).populate("farm").exec()
+    const sheds = await ShedModel.find({ active: true }).populate(["farm", "inventory"]).exec()
     return sheds
   }
 

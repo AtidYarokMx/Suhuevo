@@ -17,6 +17,7 @@ class BoxProductionRoutes extends ServerRouter {
   config(): void {
     this.router.get('/', adminMiddleware, this.controller.getAll as RequestHandler)
     this.router.get('/:code', adminMiddleware, this.controller.getOne as RequestHandler)
+    this.router.post('/sells', adminMiddleware, this.controller.sendBoxesToSells as RequestHandler)
   }
 }
 

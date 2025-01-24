@@ -7,7 +7,8 @@ import { type IInventory } from '@app/dtos/inventory.dto'
 
 export const InventorySchema = new Schema<IInventory>({
   date: { type: Date, required: true },
-  chicken: { type: Number, required: true },
+  chicken: { type: Number, default: 0 },
+  mortality: { type: Number, default: 0 },
   water: { type: Number, required: true },
   food: { type: Number, required: true },
   /* relations */
@@ -16,7 +17,7 @@ export const InventorySchema = new Schema<IInventory>({
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
-}, { discriminatorKey: "type" })
+})
 
 /* pre (middlewares) */
 InventorySchema.pre('save', async function (next) {
