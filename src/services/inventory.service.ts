@@ -53,9 +53,21 @@ class InventoryService {
       {
         $group: {
           _id: { month: { $month: "$date" }, year: { $year: "$date" } },
-          chicken: { $sum: "$chicken" },
+          chickenAdded: { $sum: "$chicken" },
+          mortality: { $sum: "$mortality" },
           water: { $sum: "$water" },
-          food: { $sum: "$food" }
+          food: { $sum: "$food" },
+          initialChicken: { $first: "$shed.initialChicken" },
+        }
+      },
+      {
+        $addFields: {
+          totalChicken: {
+            $subtract: [
+              { $add: ["$initialChicken", "$chickenAdded"] },
+              "$mortality"
+            ]
+          }
         }
       },
       {
@@ -70,7 +82,9 @@ class InventoryService {
             ]
           },
           year: "$_id.year",
-          chicken: 1,
+          initialChicken: 1,
+          totalChicken: 1,
+          mortality: 1,
           water: 1,
           food: 1
         }
