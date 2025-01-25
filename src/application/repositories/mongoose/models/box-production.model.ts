@@ -11,8 +11,8 @@ import { IBoxProduction } from '@app/dtos/box-production.dto'
 
 export const BoxProductionSchema = new Schema<IBoxProduction>({
   id: { type: Number, unique: true, required: true },
-  farm: { type: Schema.Types.ObjectId, required: true, ref: "farm" },
-  shed: { type: Schema.Types.ObjectId, required: true, ref: "shed" },
+  farm: { type: Schema.Types.ObjectId, ref: "farm" },
+  shed: { type: Schema.Types.ObjectId, ref: "shed" },
   code: { type: String, required: true },
   weight: { type: Number, required: true },
   status: { type: Number, required: true },
@@ -21,7 +21,7 @@ export const BoxProductionSchema = new Schema<IBoxProduction>({
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
-}, { collection: "box_production" })
+}, { collection: "box-production" })
 
 /* pre (middlewares) */
 BoxProductionSchema.pre('save', async function (next) {
@@ -35,4 +35,4 @@ BoxProductionSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const BoxProductionModel = model<IBoxProduction>("box_production", BoxProductionSchema)
+export const BoxProductionModel = model<IBoxProduction>("box-production", BoxProductionSchema)
