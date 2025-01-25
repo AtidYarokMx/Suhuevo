@@ -23,6 +23,8 @@ class CatalogRoutes extends ServerRouter {
     this.router.get('/rule', adminMiddleware, this.controller.getRules as RequestHandler)
     this.router.put('/rule', adminMiddleware, this.controller.bulkCatalogRule as RequestHandler)
     this.router.post('/rule', adminMiddleware, this.controller.createCatalogRule as RequestHandler)
+    /* egg type catalog */
+    this.router.post('/egg', adminMiddleware, this.controller.createCatalogEggType as RequestHandler)
   }
 }
 

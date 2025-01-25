@@ -1,3 +1,5 @@
+/* lib */
+import { z } from 'zod'
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
@@ -9,6 +11,7 @@ import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 /* dtos */
 import { ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
 import { ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dto'
+import { createEggType } from '@app/dtos/egg.dto'
 
 class CatalogController {
   /* personal bonus */
@@ -87,6 +90,24 @@ class CatalogController {
     try {
       session.startTransaction()
       const response = await catalogService.bulkCatalogRule(body, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  /* catálogo de tipo de huevos */
+  public async createCatalogEggType(req: Request, res: Response) {
+    const body = req.body as z.infer<typeof createEggType>
+    const session = await AppMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const validatedBody = createEggType.parse(body)
+      const response = await catalogService.createCtalogEggType(validatedBody, session)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)

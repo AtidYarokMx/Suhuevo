@@ -1,4 +1,5 @@
 /* lib */
+import { z } from 'zod'
 import { AnyBulkWriteOperation, type ClientSession } from 'mongoose'
 /* models */
 import { CatalogPersonalBonusModel } from '@app/repositories/mongoose/models/catalog-personal-bonus.model'
@@ -6,6 +7,8 @@ import { CatalogRuleModel } from '@app/repositories/mongoose/models/catalog-rule
 /* dtos */
 import { ICatalogPersonalBonus, ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
 import { ICatalogRule, ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dto'
+import { createEggType } from '@app/dtos/egg.dto'
+import { CatalogEggModel } from '@app/repositories/mongoose/catalogs/egg.catalog'
 
 
 class CatalogService {
@@ -59,6 +62,13 @@ class CatalogService {
     }) as AnyBulkWriteOperation<ICatalogRule>[]
     const savedCatalogs = await CatalogRuleModel.bulkWrite(writes, { session })
     return savedCatalogs
+  }
+
+  /* create catalog egg type */
+  async createCtalogEggType(body: z.infer<typeof createEggType>, session: ClientSession) {
+    const catalog = new CatalogEggModel({ ...body, active: true })
+    const saved = await catalog.save({ session, validateBeforeSave: true })
+    return saved.toJSON()
   }
 }
 
