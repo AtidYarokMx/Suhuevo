@@ -2,7 +2,6 @@
 import { type ClientSession } from 'mongoose'
 /* models */
 import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
-import { InventoryModel } from '@app/repositories/mongoose/models/inventory.model'
 /* dtos */
 import { createShedBody, updateShedBody } from '@app/dtos/shed.dto'
 import { AppErrorResponse } from '@app/models/app.response'
@@ -15,8 +14,75 @@ class ShedService {
   }
 
   async getAll() {
-    const sheds = await ShedModel.find({ active: true }).populate(["farm", "inventory"]).exec()
-    return sheds
+    const inventory = await ShedModel.aggregate([
+      { $match: { active: true } },
+      {
+        $lookup: {
+          from: "inventories",
+          localField: "_id",
+          foreignField: "shed",
+          as: "inventoryItems"
+        }
+      },
+      { $unwind: { path: "$inventoryItems", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: "farms",
+          localField: "farm",
+          foreignField: "_id",
+          as: "farm"
+        }
+      },
+      { $unwind: { path: "$farm", preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: {
+            shed: "$_id",
+            month: {
+              $month: "$inventoryItems.date"
+            },
+            year: {
+              $year: "$inventoryItems.date"
+            }
+          },
+          mortality: { $sum: { $ifNull: ["$inventoryItems.mortality", 0] } },
+          water: { $sum: { $ifNull: ["$inventoryItems.water", 0] } },
+          food: { $sum: { $ifNull: ["$inventoryItems.food", 0] } },
+          initialChicken: { $first: "$initialChicken" },
+          original: { $push: "$$ROOT" }
+        }
+      },
+      {
+        $addFields: {
+          summary: {
+            food: "$food",
+            water: "$water",
+            mortality: "$mortality",
+            totalChicken: { $subtract: ["$initialChicken", "$mortality"] },
+          }
+        }
+      },
+      {
+        $project: {
+          summary: 1,
+          original: { $arrayElemAt: ["$original", 0] }
+        }
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ["$original", { summary: "$summary" }]
+          }
+        }
+      },
+      {
+        $project: {
+          original: 0,
+          inventoryItems: 0
+        }
+      }
+    ]).exec()
+    return inventory
   }
 
   async create(body: createShedBody, session: ClientSession) {
