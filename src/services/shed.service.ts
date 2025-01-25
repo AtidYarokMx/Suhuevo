@@ -14,7 +14,6 @@ class ShedService {
   }
 
   async getAll() {
-    const sheds = await ShedModel.find({ active: true }).populate(["farm", "inventory"]).exec()
     const inventory = await ShedModel.aggregate([
       { $match: { active: true } },
       {
