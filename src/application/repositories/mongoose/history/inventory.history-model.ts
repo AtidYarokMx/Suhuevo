@@ -1,5 +1,8 @@
 import { AppHistoryMongooseRepo } from '@app/repositories/mongoose'
-import { InventorySchema } from '@app/repositories/mongoose/models/inventory.model'
+/* schema */
+import { InventoryHistorySchema } from '@app/repositories/mongoose/schemas/inventory.schema'
+/* dtos */
 import { IInventory } from '@app/dtos/inventory.dto'
+import { ICommonHistoryFields } from '@app/dtos/common.dto'
 
-export const InventoryHistoryModel = AppHistoryMongooseRepo.model<IInventory>("inventory", InventorySchema)
+export const InventoryHistoryModel = AppHistoryMongooseRepo.model<ICommonHistoryFields<IInventory>>("inventory", InventoryHistorySchema)
