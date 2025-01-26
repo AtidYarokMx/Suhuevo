@@ -13,14 +13,14 @@ export const InventorySchema = new Schema<IInventory>({
   shed: { type: SchemaTypes.ObjectId, ref: "shed", required: true },
   /* defaults */
   active: { type: Boolean, default: true },
-  createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },
+  createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true, immutable: true },
   lastUpdateBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
 })
 
 export const InventoryHistorySchema = new Schema<ICommonHistoryFields<IInventory>>({
-  change: { type: InventorySchema, required: true },
+  change: { type: Object, required: true },
   updatedAt: { type: Date, default: () => Date.now(), immutable: true },
-  updatedBy: { type: SchemaTypes.ObjectId, required: true }
+  updatedBy: { type: SchemaTypes.ObjectId, ref: "user", required: true }
 })

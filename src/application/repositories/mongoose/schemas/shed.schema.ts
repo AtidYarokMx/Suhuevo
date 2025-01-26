@@ -15,14 +15,14 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   farm: { type: Schema.Types.ObjectId, ref: "farm", required: true },
   /* defaults */
   active: { type: Boolean, default: true },
-  createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },
+  createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true, immutable: true },
   lastUpdateBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
 }, { toJSON: { virtuals: true }, toObject: { virtuals: true } })
 
 export const ShedHistorySchema = new Schema<ICommonHistoryFields<IShed>>({
-  change: { type: ShedSchema, required: true },
+  change: { type: Object, required: true },
   updatedAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedBy: { type: SchemaTypes.ObjectId, required: true }
 })

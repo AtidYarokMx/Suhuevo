@@ -29,7 +29,7 @@ ShedSchema.pre('save', async function (next) {
 ShedSchema.post('save', async function (doc) {
   const history = new ShedHistoryModel({
     change: { ...doc },
-    updatedAt: doc.lastUpdateBy
+    updatedBy: doc.lastUpdateBy
   })
   await history.save()
 })
