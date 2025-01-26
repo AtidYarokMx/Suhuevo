@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { IAbsence } from '@app/dtos/absence.dto'
 
@@ -34,4 +34,4 @@ AbsenceSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const AbsenceModel = model<IAbsence>('absence', AbsenceSchema)
+export const AbsenceModel = AppMainMongooseRepo.model<IAbsence>('absence', AbsenceSchema)

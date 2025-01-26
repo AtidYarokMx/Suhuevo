@@ -4,17 +4,16 @@ import mongoose from 'mongoose'
 import { ServerLogger } from '@app/handlers/loggers/server.logger'
 
 mongoose.set('strictQuery', false)
-mongoose.connect(
-  process.env.MONGODB_URI ?? ''
-).catch((e) => {
-  ServerLogger.error(String(e))
-})
 
 /* client repo */
-export const AppMongooseRepo = mongoose.connection
+export const AppMainMongooseRepo = mongoose.createConnection(process.env.MONGODB_URI ?? '')
+export const AppHistoryMongooseRepo = mongoose.createConnection(process.env.MONGODB_URI_HISTORY ?? '')
 
-AppMongooseRepo.on('error', (e) => ServerLogger.error(String(e)))
-AppMongooseRepo.on('open', () => ServerLogger.info('db connection success!'))
+AppMainMongooseRepo.on('error', (e) => ServerLogger.error(String(e)))
+AppMainMongooseRepo.on('open', () => ServerLogger.info('main db connection success!'))
+
+AppHistoryMongooseRepo.on('error', (e) => ServerLogger.error(String(e)))
+AppHistoryMongooseRepo.on('open', () => ServerLogger.info('history db connection success!'))
 
 /* exports */
-export { Schema, model, Types, Model, SchemaTypes, Document } from 'mongoose'
+export { Schema, Types, Model, SchemaTypes, Document } from 'mongoose'

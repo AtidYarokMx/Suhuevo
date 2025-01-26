@@ -3,7 +3,7 @@
  */
 
 /* lib */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
@@ -39,4 +39,4 @@ FarmSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const FarmModel = model<IFarm, AppFarmModel>("farm", FarmSchema)
+export const FarmModel = AppMainMongooseRepo.model<IFarm, AppFarmModel>("farm", FarmSchema)

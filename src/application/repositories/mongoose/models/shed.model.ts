@@ -3,7 +3,7 @@
  */
 
 /* lib */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 import { AppShedModel, type IShed, IShedVirtuals, ShedStatus } from '@app/dtos/shed.dto'
 
@@ -43,4 +43,4 @@ ShedSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const ShedModel = model<IShed, AppShedModel>("shed", ShedSchema)
+export const ShedModel = AppMainMongooseRepo.model<IShed, AppShedModel>("shed", ShedSchema)

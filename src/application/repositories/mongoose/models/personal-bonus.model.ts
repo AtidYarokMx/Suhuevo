@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -30,6 +30,7 @@ PersonalBonusSchema.pre('save', async function (next) {
   this.updatedAt = new Date(Date.now())
   next()
 })
+
 PersonalBonusSchema.pre('updateOne', async function (next) {
   this.set({ updatedAt: new Date(Date.now()) })
   next()
@@ -41,4 +42,4 @@ PersonalBonusSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const PersonalBonusModel = model<IPersonalBonus>('personal-bonus', PersonalBonusSchema)
+export const PersonalBonusModel = AppMainMongooseRepo.model<IPersonalBonus>('personal-bonus', PersonalBonusSchema)

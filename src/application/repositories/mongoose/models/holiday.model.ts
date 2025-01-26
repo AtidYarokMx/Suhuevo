@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -45,4 +45,4 @@ HolidaySchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const HolidayModel = model<IHoliday>('holiday', HolidaySchema)
+export const HolidayModel = AppMainMongooseRepo.model<IHoliday>('holiday', HolidaySchema)

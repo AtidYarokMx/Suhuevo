@@ -1,6 +1,7 @@
 
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
+/* dtos */
 import { ISequence } from '@app/dtos/sequence.dto'
-import { Schema, model } from '@app/repositories/mongoose'
 
 export const SequenceSchema = new Schema<ISequence>({
   /* required fields */
@@ -20,4 +21,4 @@ SequenceSchema.pre('save', async function (next) {
 })
 
 /* model instance */
-export const SequenceModel = model<ISequence>('sequence', SequenceSchema)
+export const SequenceModel = AppMainMongooseRepo.model<ISequence>('sequence', SequenceSchema)

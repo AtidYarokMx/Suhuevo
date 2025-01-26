@@ -3,7 +3,7 @@
  */
 
 /* lib */
-import { Model, Schema, model } from '@app/repositories/mongoose'
+import { Model, Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* logger */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -39,4 +39,4 @@ CatalogEggSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const CatalogEggModel = model<IEggType>("catalog-egg", CatalogEggSchema)
+export const CatalogEggModel = AppMainMongooseRepo.model<IEggType>("catalog-egg", CatalogEggSchema)

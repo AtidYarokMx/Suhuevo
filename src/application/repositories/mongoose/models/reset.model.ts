@@ -1,5 +1,5 @@
 /* repo */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import { type IResetPass, type TResetModel } from '@app/dtos/reset-pass.dto'
 import { UserLogger } from '@app/handlers/loggers/user.logger'
@@ -24,4 +24,4 @@ ResetSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const ResetModel = model<IResetPass, TResetModel>('reset-pass', ResetSchema)
+export const ResetModel = AppMainMongooseRepo.model<IResetPass, TResetModel>('reset-pass', ResetSchema)

@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { EEmployeStatus, AppEmployeeModel, IEmployee, IEmployeeMethods, IEmployeeVirtuals, EEmployeeAttendanceScheme } from '@app/dtos/employee.dto'
 
@@ -96,4 +96,4 @@ EmployeeSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const EmployeeModel = model<IEmployee, AppEmployeeModel>('employee', EmployeeSchema)
+export const EmployeeModel = AppMainMongooseRepo.model<IEmployee, AppEmployeeModel>('employee', EmployeeSchema)

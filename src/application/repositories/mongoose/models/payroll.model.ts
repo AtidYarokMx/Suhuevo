@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { IPayroll } from '@app/dtos/payroll.dto'
 
@@ -29,4 +29,4 @@ PayrollSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const PayrollModel = model<IPayroll>('payroll', PayrollSchema)
+export const PayrollModel = AppMainMongooseRepo.model<IPayroll>('payroll', PayrollSchema)

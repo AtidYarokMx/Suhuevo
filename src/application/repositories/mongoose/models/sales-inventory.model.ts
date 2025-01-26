@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -28,4 +28,4 @@ SalesInventorySchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const SalesInventoryModel = model<ISalesInventory>('sales-inventory', SalesInventorySchema)
+export const SalesInventoryModel = AppMainMongooseRepo.model<ISalesInventory>('sales-inventory', SalesInventorySchema)

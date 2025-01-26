@@ -3,7 +3,7 @@
  */
 
 /* lib */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
@@ -35,4 +35,4 @@ BoxProductionSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const BoxProductionModel = model<IBoxProduction>("box-production", BoxProductionSchema)
+export const BoxProductionModel = AppMainMongooseRepo.model<IBoxProduction>("box-production", BoxProductionSchema)

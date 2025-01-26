@@ -1,5 +1,5 @@
 /* repo */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { SessionLogger } from '@app/handlers/loggers/session.logger'
 /* dtos */
@@ -57,4 +57,4 @@ SessionSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const SessionModel = model<ISession>('sessions', SessionSchema)
+export const SessionModel = AppMainMongooseRepo.model<ISession>('sessions', SessionSchema)

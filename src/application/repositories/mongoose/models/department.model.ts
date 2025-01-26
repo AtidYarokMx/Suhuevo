@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { IDepartment } from '@app/dtos/deparment.dto'
 
@@ -26,4 +26,4 @@ DepartmentSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const DepartmentModel = model<IDepartment>('department', DepartmentSchema)
+export const DepartmentModel = AppMainMongooseRepo.model<IDepartment>('department', DepartmentSchema)

@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { IAttendance } from '@app/dtos/attendance.dto'
 
@@ -16,7 +16,7 @@ export const AttendanceSchema = new Schema<IAttendance>({
   date: { type: String },
 
   isLate: { type: Boolean, default: false },
-  
+
   /* defaults */
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },
@@ -35,4 +35,4 @@ AttendanceSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const AttendanceModel = model<IAttendance>('attendance', AttendanceSchema)
+export const AttendanceModel = AppMainMongooseRepo.model<IAttendance>('attendance', AttendanceSchema)
