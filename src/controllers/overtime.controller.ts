@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import overtimeService from '@services/overtime.service'
 
 class OvertimeController {
@@ -18,7 +18,7 @@ class OvertimeController {
 
   public async create(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await overtimeService.create(body, session)
@@ -34,7 +34,7 @@ class OvertimeController {
 
   public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await overtimeService.update(body, session)

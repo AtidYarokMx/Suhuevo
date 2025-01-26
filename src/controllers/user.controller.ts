@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import userService from '../services/user.service'
 import type { AppControllerResponse } from '@app/models/app.response'
 import { appSuccessResponseHandler } from '@app/handlers/response/success.handler'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 
 class UserController {
-  public async getUser (req: Request, res: Response): Promise<AppControllerResponse> {
+  public async getUser(req: Request, res: Response): Promise<AppControllerResponse> {
     const id: string = req.body?.id
     try {
       const response = await userService.getUser(id)
@@ -18,7 +18,7 @@ class UserController {
     }
   }
 
-  public async getUsers (req: Request, res: Response): Promise<AppControllerResponse> {
+  public async getUsers(req: Request, res: Response): Promise<AppControllerResponse> {
     const ids = req.query.ids as string[]
     try {
       const response = await userService.getUsers(ids)
@@ -30,7 +30,7 @@ class UserController {
     }
   }
 
-  public async searchUser (req: Request, res: Response): Promise<AppControllerResponse> {
+  public async searchUser(req: Request, res: Response): Promise<AppControllerResponse> {
     const fieldName: string = req.body?.fieldName
     const value: string = req.body?.value
     const operator: string = req.body?.operator
@@ -45,9 +45,9 @@ class UserController {
     }
   }
 
-  public async create (req: Request, res: Response): Promise<AppControllerResponse> {
+  public async create(req: Request, res: Response): Promise<AppControllerResponse> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await userService.create(body, session)
@@ -62,9 +62,9 @@ class UserController {
     }
   }
 
-  public async updateUser (req: Request, res: Response): Promise<AppControllerResponse> {
+  public async updateUser(req: Request, res: Response): Promise<AppControllerResponse> {
     const body: any = req.body.user
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await userService.update(body, session)

@@ -1,11 +1,11 @@
 import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import absenceService from '../services/absence.service'
 
 class AbsenceController {
 
-  public async get (req: Request, res: Response): Promise<any> {
+  public async get(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await absenceService.get(query)
@@ -16,7 +16,7 @@ class AbsenceController {
     }
   }
 
-  public async search (req: Request, res: Response): Promise<any> {
+  public async search(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await absenceService.search(query)
@@ -27,9 +27,9 @@ class AbsenceController {
     }
   }
 
-  public async update (req: Request, res: Response): Promise<any> {
+  public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await absenceService.update(body, session)
@@ -44,9 +44,9 @@ class AbsenceController {
     }
   }
 
-  public async generateDailyAbsences (req: Request, res: Response): Promise<any> {
+  public async generateDailyAbsences(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await absenceService.generateDailyAbsences(body, session)

@@ -2,7 +2,7 @@ import { IAbsence } from "@app/dtos/absence.dto";
 import { IAttendance } from "@app/dtos/attendance.dto";
 import { EEmployeStatus } from "@app/dtos/employee.dto";
 import { AppErrorResponse } from "@app/models/app.response";
-import { AppMongooseRepo } from "@app/repositories/mongoose";
+import { AppMainMongooseRepo } from "@app/repositories/mongoose";
 import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";

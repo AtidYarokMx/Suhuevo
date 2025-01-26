@@ -3,7 +3,7 @@ import { z } from 'zod'
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import catalogService from '@services/catalog.service'
 /* handlers */
@@ -27,7 +27,7 @@ class CatalogController {
 
   public async createPersonalBonus(req: Request, res: Response) {
     const body = req.body as ICreateCatalogPersonalBonus
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await catalogService.createPersonalBonus(body, session)
@@ -43,7 +43,7 @@ class CatalogController {
 
   public async bulkPersonalBonus(req: Request, res: Response) {
     const body = req.body as ICreateCatalogPersonalBonus[]
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await catalogService.bulkPersonalBonus(body, session)
@@ -70,7 +70,7 @@ class CatalogController {
 
   public async createCatalogRule(req: Request, res: Response) {
     const body = req.body as ICreateCatalogRuleBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await catalogService.createCatalogRule(body, session)
@@ -86,7 +86,7 @@ class CatalogController {
 
   public async bulkCatalogRule(req: Request, res: Response) {
     const body = req.body as ICreateCatalogRuleBody[]
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await catalogService.bulkCatalogRule(body, session)
@@ -103,7 +103,7 @@ class CatalogController {
   /* catálogo de tipo de huevos */
   public async createCatalogEggType(req: Request, res: Response) {
     const body = req.body as z.infer<typeof createEggType>
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const validatedBody = createEggType.parse(body)

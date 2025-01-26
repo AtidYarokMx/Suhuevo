@@ -1,8 +1,9 @@
 import { z } from 'zod'
 /* types */
 import { Types } from "@app/repositories/mongoose"
+import { ICommonFields } from "@app/dtos/common.dto"
 
-export type IInventory = {
+export type IInventory = ICommonFields & {
   date: Date
   chicken: number
   mortality: number
@@ -10,10 +11,6 @@ export type IInventory = {
   food: number
   /* relations */
   shed: Types.ObjectId
-  /* defaults */
-  active: boolean
-  updatedAt: Date
-  createdAt: Date
 }
 
 /* endpoint dtos */

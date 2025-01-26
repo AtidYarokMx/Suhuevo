@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import employeeService from '../services/employee.service'
 
 class EmployeeController {
@@ -17,7 +17,7 @@ class EmployeeController {
 
   public async create(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await employeeService.create(body, session)
@@ -33,7 +33,7 @@ class EmployeeController {
 
   public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await employeeService.update(body, session)

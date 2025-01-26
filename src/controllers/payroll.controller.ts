@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import payrollService from '../services/payroll.service'
 /* dtos */
 import { schemaGenerateWeeklyPayroll } from '@app/dtos/payroll.dto'
@@ -20,7 +20,7 @@ class PayrollController {
 
   // public async create (req: Request, res: Response): Promise<any> {
   //   const body: any = req.body
-  //   const session = await AppMongooseRepo.startSession()
+  //   const session = await AppMainMongooseRepo.startSession()
   //   try {
   //     session.startTransaction()
   //     const response = await departmentService.create(body, session)
@@ -36,7 +36,7 @@ class PayrollController {
 
   // public async update (req: Request, res: Response): Promise<any> {
   //   const body: any = req.body
-  //   const session = await AppMongooseRepo.startSession()
+  //   const session = await AppMainMongooseRepo.startSession()
   //   try {
   //     session.startTransaction()
   //     const response = await departmentService.update(body, session)
@@ -65,7 +65,7 @@ class PayrollController {
 
   //   public async create (req: Request, res: Response): Promise<any> {
   //   const body: any = req.body
-  //   const session = await AppMongooseRepo.startSession()
+  //   const session = await AppMainMongooseRepo.startSession()
   //   try {
   //     session.startTransaction()
   //     const response = await payrollService.executeWeeklyPayroll(body, session)
@@ -81,7 +81,7 @@ class PayrollController {
 
   public async generateWeeklyPayroll(req: Request, res: Response): Promise<any> {
     const body = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       schemaGenerateWeeklyPayroll.parse(body)
@@ -98,7 +98,7 @@ class PayrollController {
 
   public async executeWeeklyPayroll(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await payrollService.executeWeeklyPayroll(body, session)

@@ -1,7 +1,7 @@
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import bonusService from '@services/bonus.service'
 /* handlers */
@@ -23,7 +23,7 @@ class BonusController {
 
   public async bulk(req: Request, res: Response) {
     const body = req.body as ICreateBonus[]
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await bonusService.bulk(body, session)

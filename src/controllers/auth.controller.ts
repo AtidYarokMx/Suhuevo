@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import authService from '../services/auth.service'
 import type { AppControllerResponse } from '@app/models/app.response'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
@@ -9,7 +9,7 @@ class AuthController {
   // public async createUser (req: Request, res: Response): Promise<AppControllerResponse> {
   //   const body = req.body
   //   const locals = res.locals
-  //   const session = await AppMongooseRepo.startSession()
+  //   const session = await AppMainMongooseRepo.startSession()
 
   //   try {
   //     session.startTransaction()
@@ -32,7 +32,7 @@ class AuthController {
   public async login(req: Request, res: Response): Promise<AppControllerResponse> {
     const body = req.body
     const locals = res.locals
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
 
     try {
       session.startTransaction()
@@ -70,7 +70,7 @@ class AuthController {
 
   public async resetPassword(req: Request, res: Response): Promise<AppControllerResponse> {
     const body = req.body as IResetPasswordBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
 
     try {
       session.startTransaction()
@@ -88,7 +88,7 @@ class AuthController {
 
   public async updatePassword(req: Request, res: Response): Promise<AppControllerResponse> {
     const body = req.body as IUpdatePasswordBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
 
     try {
       session.startTransaction()

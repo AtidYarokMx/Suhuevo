@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import attendanceService from '../services/attendance.service'
 
 class AttendanceController {
@@ -18,7 +18,7 @@ class AttendanceController {
 
   public async create(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await attendanceService.create(body, session)
@@ -34,7 +34,7 @@ class AttendanceController {
 
   public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await attendanceService.update(body, session)
@@ -61,7 +61,7 @@ class AttendanceController {
   }
 
   // public async startCalculations(req: Request, res: Response): Promise<Response<any, Record<string, any>>> {
-  //   const session = await AppMongooseRepo.startSession()
+  //   const session = await AppMainMongooseRepo.startSession()
   //   try {
   //     session.startTransaction()
   //     const response = await attendanceService.startCalculations(session)
@@ -77,7 +77,7 @@ class AttendanceController {
 
   public async importFromCsv(req: Request, res: Response): Promise<any> {
     const file = req.file
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await attendanceService.importFromCsv(file, session)

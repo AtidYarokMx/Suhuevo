@@ -2,7 +2,7 @@
 import moment from 'moment'
 /* repos & clients */
 import { type ClientSession } from 'mongoose'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from '@app/dtos/attendance.dto'
 import { EEmployeeAttendanceScheme, EEmployeStatus, IEmployeSchedule } from '@app/dtos/employee.dto'
@@ -339,7 +339,7 @@ class AttendanceService {
         checkOutTime: day + ' ' + scheduleForDay.end + ':00'
       }
 
-      let session = await AppMongooseRepo.startSession()
+      let session = await AppMainMongooseRepo.startSession()
       session.startTransaction()
       try {
         const record = await this.create(attendance, session);

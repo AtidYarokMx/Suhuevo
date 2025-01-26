@@ -2,6 +2,7 @@ import { z } from "zod"
 /* types */
 import { Model, Types } from "@app/repositories/mongoose"
 import { IInventory } from "@app/dtos/inventory.dto"
+import { ICommonFields } from "@app/dtos/common.dto"
 
 export enum ShedStatus {
   ACTIVE = "active",
@@ -9,7 +10,7 @@ export enum ShedStatus {
   INACTIVE = "inactive",
 }
 
-export type IShed = {
+export type IShed = ICommonFields & {
   _id: Types.ObjectId
   /* fields */
   name: string
@@ -21,10 +22,6 @@ export type IShed = {
   status: ShedStatus
   /* relations */
   farm: Types.ObjectId
-  /* defaults */
-  active: boolean
-  updatedAt: Date
-  createdAt: Date
 }
 
 export type IShedVirtuals = {

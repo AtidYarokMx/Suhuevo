@@ -1,7 +1,7 @@
 import request from 'supertest'
 import { appServer } from '../index'
 import { executePayrollPreviewExpectedResponse } from './mock/payroll.mock'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 
 describe("POST /api/payroll/execute-payroll", () => {
   it("status code is 200", async () => {
@@ -23,7 +23,7 @@ describe("POST /api/payroll/execute-payroll", () => {
   })
 
   afterAll(async () => {
-    await AppMongooseRepo.close()
+    await AppMainMongooseRepo.close()
     appServer.close()
   })
 })

@@ -1,7 +1,7 @@
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import holidayService from '@services/holiday.service'
 /* handlers */
@@ -14,7 +14,7 @@ class HolidayController {
   public async create(req: Request, res: Response): Promise<any> {
     const body = req.body as ICreateBody
     const locals = res.locals as AppLocals
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await holidayService.create(body, locals, session)
