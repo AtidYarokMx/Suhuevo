@@ -3,25 +3,13 @@
  */
 
 /* lib */
-import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
-import { UserLogger } from '@app/handlers/loggers/user.logger'
-import { AppShedModel, type IShed, IShedVirtuals, ShedStatus } from '@app/dtos/shed.dto'
-
-export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>({
-  name: { type: String, trim: true, required: true },
-  description: { type: String, trim: true, required: true },
-  week: { type: Number, default: 1 },
-  period: { type: Number, default: 1 },
-  initialChicken: { type: Number, required: true },
-  /* enums */
-  status: { type: String, enum: ShedStatus, default: ShedStatus.ACTIVE },
-  /* relations */
-  farm: { type: Schema.Types.ObjectId, ref: "farm", required: true },
-  /* defaults */
-  active: { type: Boolean, default: true },
-  createdAt: { type: Date, default: () => Date.now(), immutable: true },
-  updatedAt: { type: Date, default: () => Date.now() }
-}, { toJSON: { virtuals: true }, toObject: { virtuals: true } })
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
+/* history */
+import { ShedHistoryModel } from '@app/repositories/mongoose/history/shed.history-model'
+/* schema */
+import { ShedSchema } from '@app/repositories/mongoose/schemas/shed.schema'
+/* dtos */
+import type { AppShedModel, IShed } from '@app/dtos/shed.dto'
 
 /* virtuals */
 ShedSchema.virtual("inventory", {
@@ -38,8 +26,12 @@ ShedSchema.pre('save', async function (next) {
 })
 
 /* post (middlewares) */
-ShedSchema.post('save', function (doc) {
-  UserLogger.info(`[Shed][${String(doc._id)}] Updated/Created: ${JSON.stringify(doc.toJSON())}`)
+ShedSchema.post('save', async function (doc) {
+  const history = new ShedHistoryModel({
+    change: { ...doc },
+    updatedAt: doc.lastUpdateBy
+  })
+  await history.save()
 })
 
 /* model instance */

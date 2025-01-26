@@ -1,7 +1,7 @@
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import fileService from '@services/file.service'
 /* handlers */
@@ -13,7 +13,7 @@ class FileController {
   public async uploadSingle(req: Request, res: Response): Promise<any> {
     const body = req.file
     const locals = res.locals as AppLocals
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await fileService.uploadSingle(body, locals, session)

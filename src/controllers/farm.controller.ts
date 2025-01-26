@@ -1,7 +1,7 @@
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import farmService from '@services/farm.service'
 /* handlers */
@@ -58,7 +58,7 @@ class FarmController {
 
   public async create(req: Request, res: Response) {
     const body = req.body as createFarmBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       createFarm.parse(body)
@@ -76,7 +76,7 @@ class FarmController {
   public async update(req: Request, res: Response) {
     const id = req.params.id
     const body = req.body as updateFarmBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       validateObjectId(id)

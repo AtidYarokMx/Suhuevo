@@ -1,7 +1,7 @@
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import inventoryService from '@services/inventory.service'
 /* handlers */
@@ -74,7 +74,7 @@ class InventoryController {
   public async update(req: Request, res: Response) {
     const id = req.params.id
     const body = req.body as updateInventoryBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       validateObjectId(id)
       const parsedBody = createInventory.parse(body)

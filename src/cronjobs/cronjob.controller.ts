@@ -2,12 +2,12 @@ import { CronJob } from 'cron'
 import { customLog } from '@app/utils/util.util'
 import absenceService from '../services/absence.service'
 import payrollService from '../services/payroll.service'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import attendanceService from '@services/attendance.service'
 
 class CronjobControlller {
   async generateDailyAbsences(date: Date): Promise<void> {
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       customLog('Ejecutando Cron generateDailyAbsences')
@@ -30,7 +30,7 @@ class CronjobControlller {
   }
 
   async executeWeeklyPayroll(): Promise<void> {
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       customLog('Ejecutando Cron executeWeeklyPayroll')

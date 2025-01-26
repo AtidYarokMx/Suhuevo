@@ -1,7 +1,7 @@
 /* express */
 import type { Request, Response } from 'express'
 /* repos */
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* services */
 import shedService from '@services/shed.service'
 /* handlers */
@@ -36,7 +36,7 @@ class ShedController {
 
   public async create(req: Request, res: Response) {
     const body = req.body as createShedBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       createShed.parse(body)
@@ -54,7 +54,7 @@ class ShedController {
   public async update(req: Request, res: Response) {
     const id = req.params.id
     const body = req.body as updateShedBody
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       validateObjectId(id)

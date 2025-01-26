@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express'
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import scheduleExceptionService from '../services/schedule-exception.service'
 
 class ScheduleExceptionController {
-  public async get (req: Request, res: Response): Promise<any> {
+  public async get(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await scheduleExceptionService.get(query)
@@ -15,9 +15,9 @@ class ScheduleExceptionController {
     }
   }
 
-  public async create (req: Request, res: Response): Promise<any> {
+  public async create(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await scheduleExceptionService.create(body, session)
@@ -32,9 +32,9 @@ class ScheduleExceptionController {
     }
   }
 
-  public async update (req: Request, res: Response): Promise<any> {
+  public async update(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await scheduleExceptionService.update(body, session)
@@ -49,7 +49,7 @@ class ScheduleExceptionController {
     }
   }
 
-  public async search (req: Request, res: Response): Promise<any> {
+  public async search(req: Request, res: Response): Promise<any> {
     const query = req.query
     try {
       const response = await scheduleExceptionService.search(query)
@@ -61,9 +61,9 @@ class ScheduleExceptionController {
     }
   }
 
-  public async updateByEmployee (req: Request, res: Response): Promise<any> {
+  public async updateByEmployee(req: Request, res: Response): Promise<any> {
     const body: any = req.body
-    const session = await AppMongooseRepo.startSession()
+    const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       const response = await scheduleExceptionService.updateByEmployee(body, session)
