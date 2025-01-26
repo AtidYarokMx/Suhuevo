@@ -1,5 +1,5 @@
 /* repo */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import type { IRule } from '@app/dtos/rule.dto'
 /* loggers */
@@ -34,4 +34,4 @@ RuleSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const RuleModel = model<IRule>('rule', RuleSchema)
+export const RuleModel = AppMainMongooseRepo.model<IRule>('rule', RuleSchema)

@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -38,5 +38,5 @@ AppFileSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const AppTemporalFileModel = model<IAppFile, AppFile>('temporal-file', AppFileSchema)
-export const AppFileModel = model<IAppFile, AppFile>('file', AppFileSchema)
+export const AppTemporalFileModel = AppMainMongooseRepo.model<IAppFile, AppFile>('temporal-file', AppFileSchema)
+export const AppFileModel = AppMainMongooseRepo.model<IAppFile, AppFile>('file', AppFileSchema)

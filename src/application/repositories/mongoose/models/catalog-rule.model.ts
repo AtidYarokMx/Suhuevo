@@ -1,5 +1,5 @@
 /* repo */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import type { ICatalogRule } from '@app/dtos/catalog-rule.dto'
 /* loggers */
@@ -31,4 +31,4 @@ CatalogRuleSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const CatalogRuleModel = model<ICatalogRule>('catalog-rule', CatalogRuleSchema)
+export const CatalogRuleModel = AppMainMongooseRepo.model<ICatalogRule>('catalog-rule', CatalogRuleSchema)

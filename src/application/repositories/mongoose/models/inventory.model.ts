@@ -1,5 +1,5 @@
 /* lib */
-import { Schema, SchemaTypes, model } from '@app/repositories/mongoose'
+import { Schema, SchemaTypes, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
@@ -31,4 +31,4 @@ InventorySchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const InventoryModel = model<IInventory>("inventory", InventorySchema)
+export const InventoryModel = AppMainMongooseRepo.model<IInventory>("inventory", InventorySchema)

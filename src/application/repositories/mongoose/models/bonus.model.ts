@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -45,4 +45,4 @@ BonusSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const BonusModel = model<IBonus, AppBonus>('bonus', BonusSchema)
+export const BonusModel = AppMainMongooseRepo.model<IBonus, AppBonus>('bonus', BonusSchema)

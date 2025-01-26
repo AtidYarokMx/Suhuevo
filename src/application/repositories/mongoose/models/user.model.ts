@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 import { type IUser } from '@app/dtos/user.dto'
 
@@ -37,4 +37,4 @@ UserSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const UserModel = model<IUser>('user', UserSchema)
+export const UserModel = AppMainMongooseRepo.model<IUser>('user', UserSchema)

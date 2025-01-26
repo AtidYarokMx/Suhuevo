@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { IJob } from '@app/dtos/job.dto'
 
@@ -9,7 +9,7 @@ export const JobSchema = new Schema<IJob>({
 
   name: { type: String, required: true, trim: true },
   departmentId: { type: String },
-  
+
   /* defaults */
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },
@@ -28,4 +28,4 @@ JobSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const JobModel = model<IJob>('job', JobSchema)
+export const JobModel = AppMainMongooseRepo.model<IJob>('job', JobSchema)

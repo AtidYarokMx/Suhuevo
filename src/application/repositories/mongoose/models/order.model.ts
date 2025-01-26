@@ -3,7 +3,7 @@
  */
 
 /* lib */
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
@@ -32,4 +32,4 @@ OrderSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const OrderModel = model<IOrder>("order", OrderSchema)
+export const OrderModel = AppMainMongooseRepo.model<IOrder>("order", OrderSchema)

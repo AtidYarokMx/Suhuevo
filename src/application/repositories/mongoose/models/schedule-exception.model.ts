@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 import { IScheduleException } from '@app/dtos/schedule-exception.dto'
 
@@ -28,4 +28,4 @@ ScheduleExceptionSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const ScheduleExceptionModel = model<IScheduleException>('schedule-exception', ScheduleExceptionSchema)
+export const ScheduleExceptionModel = AppMainMongooseRepo.model<IScheduleException>('schedule-exception', ScheduleExceptionSchema)

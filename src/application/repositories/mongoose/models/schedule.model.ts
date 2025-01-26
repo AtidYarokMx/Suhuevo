@@ -1,4 +1,4 @@
-// import { Schema, model } from '@app/repositories/mongoose'
+// import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 // import { DbLogger } from '@app/handlers/loggers/db.logger'
 // import { ISchedule } from '@app/dtos/schedule.dto'
 
@@ -29,4 +29,4 @@
 // })
 
 // /* model instance */
-// export const ScheduleModel = model<ISchedule>('schedule', ScheduleSchema)
+// export const ScheduleModel = AppMainMongooseRepo.model<ISchedule>('schedule', ScheduleSchema)

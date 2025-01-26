@@ -1,4 +1,4 @@
-import { Schema, model } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* handlers */
 import { DbLogger } from '@app/handlers/loggers/db.logger'
 /* dtos */
@@ -45,4 +45,4 @@ CatalogPersonalBonusSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const CatalogPersonalBonusModel = model<ICatalogPersonalBonus, AppCatalogPersonalBonus>('catalog-personal-bonus', CatalogPersonalBonusSchema)
+export const CatalogPersonalBonusModel = AppMainMongooseRepo.model<ICatalogPersonalBonus, AppCatalogPersonalBonus>('catalog-personal-bonus', CatalogPersonalBonusSchema)
