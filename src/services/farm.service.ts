@@ -19,11 +19,163 @@ class FarmService {
   }
 
   async getAll() {
-    const farms = await FarmModel.find({ active: true }).populate({
-      path: "sheds",
-      match: { active: true },
-      populate: { path: "inventory" }
-    }).exec()
+    const farms = await FarmModel.aggregate([
+      {
+        $match:
+        /**
+         * query: The query in MQL.
+         */
+        {
+          active: true
+        }
+      },
+      {
+        $lookup: {
+          from: "sheds",
+          localField: "_id",
+          foreignField: "farm",
+          as: "sheds"
+        }
+      },
+      {
+        $unwind:
+        /**
+         * path: Path to the array field.
+         * includeArrayIndex: Optional name for index.
+         * preserveNullAndEmptyArrays: Optional
+         *   toggle to unwind null and empty values.
+         */
+        {
+          path: "$sheds",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup:
+        /**
+         * from: The target collection.
+         * localField: The local join field.
+         * foreignField: The target join field.
+         * as: The name for the results.
+         * pipeline: Optional pipeline to run on the foreign collection.
+         * let: Optional variables to use in the pipeline field stages.
+         */
+        {
+          from: "inventories",
+          localField: "sheds._id",
+          foreignField: "shed",
+          as: "inventory"
+        }
+      },
+      {
+        $unwind:
+        /**
+         * path: Path to the array field.
+         * includeArrayIndex: Optional name for index.
+         * preserveNullAndEmptyArrays: Optional
+         *   toggle to unwind null and empty values.
+         */
+        {
+          path: "$inventory",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group:
+        /**
+         * _id: The id of the group.
+         * fieldN: The first field name.
+         */
+        {
+          _id: {
+            farm: "$_id"
+          },
+          initialChickenTotal: {
+            $sum: {
+              $ifNull: ["$sheds.initialChicken", 0]
+            }
+          },
+          mortality: {
+            $sum: {
+              $ifNull: ["$inventory.mortality", 0]
+            }
+          },
+          water: {
+            $sum: {
+              $ifNull: ["$inventory.water", 0]
+            }
+          },
+          food: {
+            $sum: {
+              $ifNull: ["$inventory.food", 0]
+            }
+          },
+          original: {
+            $push: "$$ROOT"
+          }
+        }
+      },
+      {
+        $addFields:
+        /**
+         * newField: The new field name.
+         * expression: The new field expression.
+         */
+        {
+          summary: {
+            food: "$food",
+            water: "$water",
+            mortality: "$mortality",
+            totalChicken: {
+              $subtract: [
+                "$initialChickenTotal",
+                "$mortality"
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project:
+        /**
+         * specifications: The fields to
+         *   include or exclude.
+         */
+        {
+          summary: 1,
+          original: {
+            $arrayElemAt: ["$original", 0]
+          }
+        }
+      },
+      {
+        $replaceRoot:
+        /**
+         * replacementDocument: A document or string.
+         */
+        {
+          newRoot: {
+            $mergeObjects: [
+              "$original",
+              {
+                summary: "$summary"
+              }
+            ]
+          }
+        }
+      },
+      {
+        $project:
+        /**
+         * specifications: The fields to
+         *   include or exclude.
+         */
+        {
+          sheds: 0,
+          inventory: 0
+        }
+      }
+    ])
     return farms
   }
 

@@ -10,6 +10,7 @@ import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 import { validateObjectId } from '@app/utils/validate.util'
 /* dtos */
 import { createInventory, updateInventoryBody, type createInventoryBody } from '@app/dtos/inventory.dto'
+import { AppLocals } from '@app/interfaces/auth.dto'
 
 class InventoryController {
   public async getOne(req: Request, res: Response) {
@@ -61,9 +62,10 @@ class InventoryController {
 
   public async create(req: Request, res: Response) {
     const body = req.body as createInventoryBody
+    const locals = res.locals as AppLocals
     try {
       const parsedBody = createInventory.parse(body)
-      const response = await inventoryService.create(parsedBody)
+      const response = await inventoryService.create(parsedBody, locals)
       return res.status(200).json(response)
     } catch (error) {
       const { statusCode, error: err } = appErrorResponseHandler(error)
