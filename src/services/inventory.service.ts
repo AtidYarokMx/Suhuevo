@@ -7,6 +7,7 @@ import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
 import { updateInventoryBody, type createInventoryBody } from '@app/dtos/inventory.dto'
 import { Types } from '@app/repositories/mongoose'
 import { AppErrorResponse } from '@app/models/app.response'
+import { AppLocals } from '@app/interfaces/auth.dto'
 
 
 class InventoryService {
@@ -30,9 +31,11 @@ class InventoryService {
     return inventory
   }
 
-  async create(body: createInventoryBody) {
-    const inventory = await InventoryModel.create({ ...body })
-    return inventory
+  async create(body: createInventoryBody, locals: AppLocals) {
+    const user = locals.user._id
+    const inventory = new InventoryModel({ ...body, createdBy: user, lastUpdateBy: user })
+    const saved = await inventory.save({ validateBeforeSave: true })
+    return saved
   }
 
   async update(id: string, body: updateInventoryBody, session: ClientSession) {

@@ -16,7 +16,7 @@ export type IInventory = ICommonFields & {
 /* endpoint dtos */
 export const createInventory = z.object({
   date: z.string({ message: "El campo 'date' es requerido." }).date("Se debe ingresar un formato de fecha válido en formato YYYY-MM-DD."),
-  chicken: z.number({ message: "El campo 'chicken' es requerido." }).gte(0, "Se debe ingresar una cantidad igual o mayor a 0"),
+  chicken: z.number({ message: "El campo 'chicken' es requerido." }).gte(0, "Se debe ingresar una cantidad igual o mayor a 0").optional(),
   mortality: z.number({ message: "El campo 'mortality' es requerido." }).gte(0, "Se debe ingresar una cantidad igual o mayor a 0").optional(),
   water: z.number({ message: "El campo 'water' es requerido." }).gte(0, "Se debe ingresar una cantidad igual o mayor a 0"),
   food: z.number({ message: "El campo 'food' es requerido." }).gte(0, "Se debe ingresar una cantidad igual o mayor a 0"),
