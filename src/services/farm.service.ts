@@ -21,11 +21,7 @@ class FarmService {
   async getAll() {
     const farms = await FarmModel.aggregate([
       {
-        $match:
-        /**
-         * query: The query in MQL.
-         */
-        {
+        $match: {
           active: true
         }
       },
@@ -38,29 +34,13 @@ class FarmService {
         }
       },
       {
-        $unwind:
-        /**
-         * path: Path to the array field.
-         * includeArrayIndex: Optional name for index.
-         * preserveNullAndEmptyArrays: Optional
-         *   toggle to unwind null and empty values.
-         */
-        {
+        $unwind: {
           path: "$sheds",
           preserveNullAndEmptyArrays: true
         }
       },
       {
-        $lookup:
-        /**
-         * from: The target collection.
-         * localField: The local join field.
-         * foreignField: The target join field.
-         * as: The name for the results.
-         * pipeline: Optional pipeline to run on the foreign collection.
-         * let: Optional variables to use in the pipeline field stages.
-         */
-        {
+        $lookup: {
           from: "inventories",
           localField: "sheds._id",
           foreignField: "shed",
@@ -68,25 +48,13 @@ class FarmService {
         }
       },
       {
-        $unwind:
-        /**
-         * path: Path to the array field.
-         * includeArrayIndex: Optional name for index.
-         * preserveNullAndEmptyArrays: Optional
-         *   toggle to unwind null and empty values.
-         */
-        {
+        $unwind: {
           path: "$inventory",
           preserveNullAndEmptyArrays: true
         }
       },
       {
-        $group:
-        /**
-         * _id: The id of the group.
-         * fieldN: The first field name.
-         */
-        {
+        $group: {
           _id: {
             farm: "$_id"
           },
@@ -116,16 +84,12 @@ class FarmService {
         }
       },
       {
-        $addFields:
-        /**
-         * newField: The new field name.
-         * expression: The new field expression.
-         */
-        {
+        $addFields: {
           summary: {
             food: "$food",
             water: "$water",
             mortality: "$mortality",
+            initialChickenTotal: "$initialChickenTotal",
             totalChicken: {
               $subtract: [
                 "$initialChickenTotal",
@@ -136,12 +100,7 @@ class FarmService {
         }
       },
       {
-        $project:
-        /**
-         * specifications: The fields to
-         *   include or exclude.
-         */
-        {
+        $project: {
           summary: 1,
           original: {
             $arrayElemAt: ["$original", 0]
@@ -149,11 +108,7 @@ class FarmService {
         }
       },
       {
-        $replaceRoot:
-        /**
-         * replacementDocument: A document or string.
-         */
-        {
+        $replaceRoot: {
           newRoot: {
             $mergeObjects: [
               "$original",
@@ -165,12 +120,7 @@ class FarmService {
         }
       },
       {
-        $project:
-        /**
-         * specifications: The fields to
-         *   include or exclude.
-         */
-        {
+        $project: {
           sheds: 0,
           inventory: 0
         }
