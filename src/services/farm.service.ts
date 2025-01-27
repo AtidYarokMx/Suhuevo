@@ -139,13 +139,12 @@ class FarmService {
   }
 
   async getAllWithSheds() {
-    // const farms = await FarmModel.find({ active: true }).populate({
-    //   path: "sheds",
-    //   match: { active: true },
-    //   populate: { path: "inventory" }
-    // }).exec()
     const farm = await FarmModel.aggregate([
-      { $match: { active: true } },
+      {
+        $match: {
+          active: true // Consideramos solo granjas activas
+        }
+      },
       {
         $lookup: {
           from: "sheds",
@@ -155,105 +154,123 @@ class FarmService {
         }
       },
       {
-        $addFields: {
-          originalSheds: "$sheds"
-        }
-      },
-      {
-        $unwind: {
-          path: "$sheds",
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
         $lookup: {
           from: "inventories",
           localField: "sheds._id",
           foreignField: "shed",
-          as: "inventory"
-        }
-      },
-      {
-        $unwind: {
-          path: "$inventory",
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $group: {
-          _id: {
-            farm: "$_id",
-          },
-          initialChickenTotal: {
-            $sum: {
-              $ifNull: ["$sheds.initialChicken", 0]
-            }
-          },
-          mortality: {
-            $sum: {
-              $ifNull: ["$inventory.mortality", 0]
-            }
-          },
-          water: {
-            $sum: {
-              $ifNull: ["$inventory.water", 0]
-            }
-          },
-          food: {
-            $sum: {
-              $ifNull: ["$inventory.food", 0]
-            }
-          },
-          originalSheds: {
-            $first: "$originalSheds"
-          },
-          original: {
-            $push: "$$ROOT"
-          }
+          as: "inventories"
         }
       },
       {
         $addFields: {
+          // Calculamos el summary global de la granja
           summary: {
-            food: "$food",
-            water: "$water",
-            mortality: "$mortality",
-            initialChickenTotal: "$initialChickenTotal",
+            initialChickenTotal: {
+              $sum: "$sheds.initialChicken"
+            },
+            mortality: {
+              $sum: "$inventories.mortality"
+            },
+            water: {
+              $sum: "$inventories.water"
+            },
+            food: {
+              $sum: "$inventories.food"
+            },
             totalChicken: {
               $subtract: [
-                "$initialChickenTotal",
-                "$mortality"
+                { $sum: "$sheds.initialChicken" },
+                { $sum: "$inventories.mortality" }
               ]
+            }
+          },
+          // Agregamos un summary a cada shed
+          sheds: {
+            $map: {
+              input: "$sheds",
+              as: "shed",
+              in: {
+                $mergeObjects: [
+                  "$$shed",
+                  {
+                    summary: {
+                      initialChicken: "$$shed.initialChicken",
+                      mortality: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$inventories",
+                                as: "inventory",
+                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                              }
+                            },
+                            as: "inv",
+                            in: "$$inv.mortality"
+                          }
+                        }
+                      },
+                      water: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$inventories",
+                                as: "inventory",
+                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                              }
+                            },
+                            as: "inv",
+                            in: "$$inv.water"
+                          }
+                        }
+                      },
+                      food: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$inventories",
+                                as: "inventory",
+                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                              }
+                            },
+                            as: "inv",
+                            in: "$$inv.food"
+                          }
+                        }
+                      },
+                      totalChicken: {
+                        $subtract: [
+                          "$$shed.initialChicken",
+                          {
+                            $sum: {
+                              $map: {
+                                input: {
+                                  $filter: {
+                                    input: "$inventories",
+                                    as: "inventory",
+                                    cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                                  }
+                                },
+                                as: "inv",
+                                in: "$$inv.mortality"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
             }
           }
         }
       },
       {
         $project: {
-          summary: 1,
-          originalSheds: 1,
-          original: {
-            $arrayElemAt: ["$original", 0]
-          }
-        }
-      },
-      {
-        $replaceRoot: {
-          newRoot: {
-            $mergeObjects: [
-              "$original",
-              {
-                summary: "$summary",
-                sheds: "$originalSheds"
-              }
-            ]
-          }
-        }
-      },
-      {
-        $project: {
-          inventory: 0,
-          originalSheds: 0
+          inventories: 0 // Excluimos los inventarios del resultado final
         }
       }
     ])
