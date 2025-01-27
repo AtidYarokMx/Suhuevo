@@ -22,7 +22,7 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
 }, { toJSON: { virtuals: true }, toObject: { virtuals: true } })
 
 export const ShedHistorySchema = new Schema<ICommonHistoryFields<IShed>>({
-  change: { type: Object, required: true },
+  change: { type: ShedSchema.clone(), required: true },
   updatedAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedBy: { type: SchemaTypes.ObjectId, required: true }
 })

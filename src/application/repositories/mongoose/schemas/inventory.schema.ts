@@ -20,7 +20,7 @@ export const InventorySchema = new Schema<IInventory>({
 })
 
 export const InventoryHistorySchema = new Schema<ICommonHistoryFields<IInventory>>({
-  change: { type: Object, required: true },
+  change: { type: InventorySchema.clone(), required: true },
   updatedAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedBy: { type: SchemaTypes.ObjectId, ref: "user", required: true }
 })
