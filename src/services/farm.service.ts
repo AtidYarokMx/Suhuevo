@@ -139,12 +139,125 @@ class FarmService {
   }
 
   async getAllWithSheds() {
-    const farms = await FarmModel.find({ active: true }).populate({
-      path: "sheds",
-      match: { active: true },
-      populate: { path: "inventory" }
-    }).exec()
-    return farms
+    // const farms = await FarmModel.find({ active: true }).populate({
+    //   path: "sheds",
+    //   match: { active: true },
+    //   populate: { path: "inventory" }
+    // }).exec()
+    const farm = await FarmModel.aggregate([
+      { $match: { active: true } },
+      {
+        $lookup: {
+          from: "sheds",
+          localField: "_id",
+          foreignField: "farm",
+          as: "sheds"
+        }
+      },
+      {
+        $addFields: {
+          originalSheds: "$sheds"
+        }
+      },
+      {
+        $unwind: {
+          path: "$sheds",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: "inventories",
+          localField: "sheds._id",
+          foreignField: "shed",
+          as: "inventory"
+        }
+      },
+      {
+        $unwind: {
+          path: "$inventory",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: {
+            farm: "$_id",
+          },
+          initialChickenTotal: {
+            $sum: {
+              $ifNull: ["$sheds.initialChicken", 0]
+            }
+          },
+          mortality: {
+            $sum: {
+              $ifNull: ["$inventory.mortality", 0]
+            }
+          },
+          water: {
+            $sum: {
+              $ifNull: ["$inventory.water", 0]
+            }
+          },
+          food: {
+            $sum: {
+              $ifNull: ["$inventory.food", 0]
+            }
+          },
+          originalSheds: {
+            $first: "$originalSheds"
+          },
+          original: {
+            $push: "$$ROOT"
+          }
+        }
+      },
+      {
+        $addFields: {
+          summary: {
+            food: "$food",
+            water: "$water",
+            mortality: "$mortality",
+            initialChickenTotal: "$initialChickenTotal",
+            totalChicken: {
+              $subtract: [
+                "$initialChickenTotal",
+                "$mortality"
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          summary: 1,
+          originalSheds: 1,
+          original: {
+            $arrayElemAt: ["$original", 0]
+          }
+        }
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              "$original",
+              {
+                summary: "$summary",
+                sheds: "$originalSheds"
+              }
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          inventory: 0,
+          originalSheds: 0
+        }
+      }
+    ])
+    return farm
   }
 
   async create(body: createFarmBody, session: ClientSession) {
