@@ -39,6 +39,7 @@ class BoxProductionController {
 
   public async sendBoxesToSells(req: Request, res: Response) {
     const body = req.body as z.infer<typeof sendBoxesToSellsBody>
+    console.log(body)
     const locals = res.locals as AppLocals
     const session = await AppMainMongooseRepo.startSession()
     try {

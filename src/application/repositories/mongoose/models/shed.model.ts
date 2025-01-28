@@ -8,6 +8,8 @@ import { AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { ShedHistoryModel } from '@app/repositories/mongoose/history/shed.history-model'
 /* schema */
 import { ShedSchema } from '@app/repositories/mongoose/schemas/shed.schema'
+/* utils */
+import { calculateWeeksFromDate } from '@app/utils/date.util'
 /* dtos */
 import type { AppShedModel, IShed } from '@app/dtos/shed.dto'
 
@@ -17,6 +19,11 @@ ShedSchema.virtual("inventory", {
   localField: "_id",
   foreignField: "shed",
   justOne: true
+})
+
+ShedSchema.virtual("chickenAge").get(function () {
+  if (typeof this.chickenBirth === "undefined") return null
+  return calculateWeeksFromDate(this.chickenBirth)
 })
 
 /* pre (middlewares) */
