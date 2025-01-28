@@ -3,7 +3,7 @@
  */
 
 /* lib */
-import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
+import { Schema, AppMainMongooseRepo, Model } from '@app/repositories/mongoose'
 /* handlers */
 import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
@@ -12,6 +12,15 @@ import { type IFarm, type AppFarmModel, type IFarmVirtuals, FarmStatus } from '@
 export const FarmSchema = new Schema<IFarm, AppFarmModel, {}, {}, IFarmVirtuals>({
   name: { type: String, trim: true, required: true },
   description: { type: String, trim: true, required: true },
+  farmNumber: {
+    type: Number, validate: {
+      validator: async function (value: number) {
+        const count = await (this.constructor as Model<IFarm>).countDocuments({ farmNumber: value, active: true })
+        return count === 0
+      },
+      message: "Ya existe un registro con ese id"
+    }
+  },
   /* enums */
   status: { type: String, enum: FarmStatus, default: FarmStatus.ACTIVE },
   /* defaults */

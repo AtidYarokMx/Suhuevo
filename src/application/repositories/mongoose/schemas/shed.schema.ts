@@ -1,4 +1,4 @@
-import { Schema, SchemaTypes } from '@app/repositories/mongoose'
+import { Model, Schema, SchemaTypes } from '@app/repositories/mongoose'
 /* dtos */
 import { type AppShedModel, type IShed, type IShedVirtuals, ShedStatus } from '@app/dtos/shed.dto'
 import type { ICommonHistoryFields } from '@app/dtos/common.dto'
@@ -9,6 +9,15 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   week: { type: Number, default: 1 },
   period: { type: Number, default: 1 },
   initialChicken: { type: Number, required: true },
+  shedNumber: {
+    type: Number, validate: {
+      validator: async function (value: number) {
+        const count = await (this.constructor as Model<IShed>).countDocuments({ shedNumber: value, active: true })
+        return count === 0
+      },
+      message: "Ya existe un registro con ese id"
+    }
+  },
   /* enums */
   status: { type: String, enum: ShedStatus, default: ShedStatus.ACTIVE },
   /* relations */

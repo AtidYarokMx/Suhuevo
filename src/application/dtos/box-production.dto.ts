@@ -2,6 +2,8 @@ import { Types } from "@app/repositories/mongoose"
 
 export type IBoxProduction = {
   id: number
+  farmNumber: number
+  shedNumber: number
   farm?: Types.ObjectId
   shed?: Types.ObjectId
   code: string
