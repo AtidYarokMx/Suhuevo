@@ -6,6 +6,7 @@ import { AppErrorResponse } from '@app/models/app.response'
 import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
 /* dtos */
 import { createFarmBody, updateFarmBody } from '@app/dtos/farm.dto'
+import { Types } from '@app/repositories/mongoose'
 
 
 class FarmService {
@@ -125,17 +126,152 @@ class FarmService {
           inventory: 0
         }
       }
-    ])
+    ]).exec()
     return farms
   }
 
   async getOneWithSheds(_id: string) {
-    const farms = await FarmModel.findOne({ _id, active: true }).populate({
-      path: "sheds",
-      match: { active: true },
-      populate: { path: "inventory" }
-    }).exec()
-    return farms
+    const farms = await FarmModel.aggregate([
+      {
+        $match: {
+          _id: new Types.ObjectId(_id),
+          active: true // Consideramos solo granjas activas
+        }
+      },
+      {
+        $lookup: {
+          from: "sheds",
+          localField: "_id",
+          foreignField: "farm",
+          as: "sheds"
+        }
+      },
+      {
+        $lookup: {
+          from: "inventories",
+          localField: "sheds._id",
+          foreignField: "shed",
+          as: "inventories"
+        }
+      },
+      {
+        $addFields: {
+          // Calculamos el summary global de la granja
+          summary: {
+            initialChickenTotal: {
+              $sum: "$sheds.initialChicken"
+            },
+            mortality: {
+              $sum: "$inventories.mortality"
+            },
+            water: {
+              $sum: "$inventories.water"
+            },
+            food: {
+              $sum: "$inventories.food"
+            },
+            totalChicken: {
+              $subtract: [
+                { $sum: "$sheds.initialChicken" },
+                { $sum: "$inventories.mortality" }
+              ]
+            }
+          },
+          // Agregamos un summary a cada shed
+          sheds: {
+            $map: {
+              input: "$sheds",
+              as: "shed",
+              in: {
+                $mergeObjects: [
+                  "$$shed",
+                  {
+                    summary: {
+                      initialChicken: "$$shed.initialChicken",
+                      mortality: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$inventories",
+                                as: "inventory",
+                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                              }
+                            },
+                            as: "inv",
+                            in: "$$inv.mortality"
+                          }
+                        }
+                      },
+                      water: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$inventories",
+                                as: "inventory",
+                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                              }
+                            },
+                            as: "inv",
+                            in: "$$inv.water"
+                          }
+                        }
+                      },
+                      food: {
+                        $sum: {
+                          $map: {
+                            input: {
+                              $filter: {
+                                input: "$inventories",
+                                as: "inventory",
+                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                              }
+                            },
+                            as: "inv",
+                            in: "$$inv.food"
+                          }
+                        }
+                      },
+                      totalChicken: {
+                        $subtract: [
+                          "$$shed.initialChicken",
+                          {
+                            $sum: {
+                              $map: {
+                                input: {
+                                  $filter: {
+                                    input: "$inventories",
+                                    as: "inventory",
+                                    cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
+                                  }
+                                },
+                                as: "inv",
+                                in: "$$inv.mortality"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          inventories: 0 // Excluimos los inventarios del resultado final
+        }
+      }
+    ]).exec()
+
+    if (farms.length <= 0)
+      throw new AppErrorResponse({ name: "Farm Not Found", statusCode: 404, code: "FarmNotFound", description: "No se encontró la granja solicitada", message: "No se encontró la granja solicitada" })
+
+    return farms[0]
   }
 
   async getAllWithSheds() {
@@ -273,7 +409,7 @@ class FarmService {
           inventories: 0 // Excluimos los inventarios del resultado final
         }
       }
-    ])
+    ]).exec()
     return farm
   }
 
