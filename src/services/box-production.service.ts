@@ -13,7 +13,7 @@ import { AppErrorResponse } from '@app/models/app.response'
 
 class BoxProductionService {
   async getAll() {
-    const boxes = await AppSequelizeMSSQLClient.query("SELECT * FROM produccion_cajas WHERE status = 1")
+    const boxes = await AppSequelizeMSSQLClient.query("SELECT * FROM produccion_cajas WHERE status = 1", { type: QueryTypes.SELECT })
     return boxes
   }
 
