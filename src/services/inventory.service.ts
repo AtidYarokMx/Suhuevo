@@ -3,6 +3,7 @@ import { type ClientSession } from 'mongoose'
 /* models */
 import { InventoryModel } from '@app/repositories/mongoose/models/inventory.model'
 import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
 /* dtos */
 import { updateInventoryBody, type createInventoryBody } from '@app/dtos/inventory.dto'
 import { Types } from '@app/repositories/mongoose'
@@ -44,23 +45,27 @@ class InventoryService {
   }
 
   async reportFromFarm(farmId: string) {
-    const inventory = await InventoryModel.aggregate([
-      { $match: { active: true } },
-      { $lookup: { from: "sheds", localField: "shed", foreignField: "_id", as: "shed" } },
+    const inventory = await FarmModel.aggregate([
+      { $match: { active: true, _id: new Types.ObjectId(farmId) } },
+      { $lookup: { from: "sheds", localField: "_id", foreignField: "farm", as: "shed" } },
       { $unwind: { path: "$shed", preserveNullAndEmptyArrays: true } },
-      { $match: { "shed": { $ne: null } } },
-      { $lookup: { from: "farms", localField: "shed.farm", foreignField: "_id", as: "shed.farm" } },
-      { $unwind: { path: "$shed.farm", preserveNullAndEmptyArrays: true } },
-      { $match: { "shed.farm": { $ne: null } } },
-      { $match: { "shed.farm._id": new Types.ObjectId(farmId) } },
+      { $lookup: { from: "inventories", localField: "shed._id", foreignField: "shed", as: "inventory" } },
+      { $unwind: { path: "$inventory", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          date: {
+            $ifNull: ["$inventory.date", "$shed.createdAt"]
+          }
+        }
+      },
       {
         $group: {
-          _id: { month: { $month: "$date" }, year: { $year: "$date" } },
-          chickenAdded: { $sum: "$chicken" },
-          mortality: { $sum: "$mortality" },
-          water: { $sum: "$water" },
-          food: { $sum: "$food" },
-          initialChicken: { $first: "$shed.initialChicken" },
+          _id: { farm: "$_id", month: { $month: "$date" }, year: { $year: "$date" } },
+          chickenAdded: { $sum: { $ifNull: ["$inventory.chicken", 0] } },
+          mortality: { $sum: { $ifNull: ["$inventory.mortality", 0] } },
+          water: { $sum: { $ifNull: ["$inventory.water", 0] } },
+          food: { $sum: { $ifNull: ["$inventory.food", 0] } },
+          initialChicken: { $sum: { $ifNull: ["$shed.initialChicken", 0] } },
         }
       },
       {
@@ -91,6 +96,11 @@ class InventoryService {
           water: 1,
           food: 1
         }
+      },
+      {
+        $sort: {
+          year: 1
+        }
       }
     ]).exec();
 
@@ -110,14 +120,14 @@ class InventoryService {
 
     const inventory = await InventoryModel.aggregate([
       { $match: { shed: new Types.ObjectId(shedId), active: true } },
-      {
-        $addFields: {
-          initialChicken: shed.initialChicken
-        }
-      },
+      { $addFields: { initialChicken: shed.initialChicken } },
       {
         $group: {
-          _id: { month: { $month: "$date" }, year: { $year: "$date" } },
+          _id: {
+            shed: "$shed",
+            month: { $month: "$date" },
+            year: { $year: "$date" }
+          },
           chickenAdded: { $sum: "$chicken" },
           mortality: { $sum: "$mortality" },
           water: { $sum: "$water" },
@@ -152,6 +162,11 @@ class InventoryService {
           mortality: 1,
           water: 1,
           food: 1
+        }
+      },
+      {
+        $sort: {
+          year: 1
         }
       }
     ]).exec();
