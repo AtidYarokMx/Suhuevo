@@ -18,6 +18,7 @@ export type IShed = ICommonFields & {
   week: number
   period: number
   initialChicken: number
+  shedNumber?: number
   /* enums */
   status: ShedStatus
   /* relations */
@@ -35,13 +36,15 @@ export const createShed = z.object({
   name: z.string(),
   description: z.string(),
   initialChicken: z.number().default(0),
-  farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
+  farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` })),
+  shedNumber: z.number().gt(0, "shedNumber debe ser mayor a 0").optional()
 })
 
 export const updateShed = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
-  farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` })).optional()
+  farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` })).optional(),
+  shedNumber: z.number().gt(0, "shedNumber debe ser mayor a 0").optional()
 })
 
 export type createShedBody = z.infer<typeof createShed>

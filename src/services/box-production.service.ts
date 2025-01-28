@@ -13,16 +13,13 @@ import { AppErrorResponse } from '@app/models/app.response'
 
 class BoxProductionService {
   async getAll() {
-    const boxes = await AppSequelizeMSSQLClient.query("SELECT * FROM produccion_cajas WHERE status = 1")
+    const boxes = await BoxProductionModel.find({ active: true })
     return boxes
   }
 
   async getOne(code: string) {
-    const boxes = await AppSequelizeMSSQLClient.query("SELECT TOP 1 * FROM produccion_cajas WHERE status = 1 AND codigo = :code", {
-      replacements: { code },
-      type: QueryTypes.SELECT
-    })
-    return boxes
+    const box = await BoxProductionModel.find({ active: true, code })
+    return box
   }
 
   async sendBoxesToSells(shed: string, codes: string[]) {
@@ -65,6 +62,8 @@ class BoxProductionService {
 
       const document: AnyKeys<IBoxProduction> & AnyObject = {
         id: box.id,
+        farmNumber: box.id_granja,
+        shedNumber: box.id_caceta,
         code: box.codigo,
         weight,
         type,
