@@ -10,6 +10,7 @@ import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 import { validateObjectId } from '@app/utils/validate.util'
 /* dtos */
 import { createFarm, createFarmBody, updateFarm, updateFarmBody } from '@app/dtos/farm.dto'
+import { AppLocals } from '@app/interfaces/auth.dto'
 
 class FarmController {
   public async getOne(req: Request, res: Response) {
@@ -58,11 +59,12 @@ class FarmController {
 
   public async create(req: Request, res: Response) {
     const body = req.body as createFarmBody
+    const locals = res.locals as AppLocals
     const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       createFarm.parse(body)
-      const response = await farmService.create(body, session)
+      const response = await farmService.create(body, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)
@@ -76,12 +78,13 @@ class FarmController {
   public async update(req: Request, res: Response) {
     const id = req.params.id
     const body = req.body as updateFarmBody
+    const locals = res.locals as AppLocals
     const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
       validateObjectId(id)
       updateFarm.parse(body)
-      const response = await farmService.update(id, body, session)
+      const response = await farmService.update(id, body, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)

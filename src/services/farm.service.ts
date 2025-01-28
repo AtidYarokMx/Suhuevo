@@ -7,6 +7,7 @@ import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
 /* dtos */
 import { createFarmBody, updateFarmBody } from '@app/dtos/farm.dto'
 import { Types } from '@app/repositories/mongoose'
+import { AppLocals } from '@app/interfaces/auth.dto'
 
 
 class FarmService {
@@ -413,16 +414,19 @@ class FarmService {
     return farm
   }
 
-  async create(body: createFarmBody, session: ClientSession) {
-    const farm = new FarmModel({ ...body })
+  async create(body: createFarmBody, session: ClientSession, locals: AppLocals) {
+    const user = locals.user._id
+    const farm = new FarmModel({ ...body, createdBy: user, lastUpdateBy: user })
     const saved = await farm.save({ validateBeforeSave: true, session })
     return saved.toJSON()
   }
 
-  async update(_id: string, body: updateFarmBody, session: ClientSession) {
+  async update(_id: string, body: updateFarmBody, session: ClientSession, locals: AppLocals) {
     const farm = await FarmModel.findOne({ _id, active: true }, null, { session }).exec()
     if (farm == null) throw new AppErrorResponse({ statusCode: 404, name: "Granja no encontrada", description: "La granja ingresada es inexistente en el sistema o fue eliminada" })
-    const updated = await FarmModel.updateOne({ _id }, { ...body }, { session, runValidators: true }).exec()
+    const user = locals.user._id
+    farm.set({ ...body, lastUpdateBy: user })
+    const updated = await farm.save({ validateBeforeSave: true, session })
     return updated
   }
 }
