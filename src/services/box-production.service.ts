@@ -13,10 +13,11 @@ import { AppErrorResponse } from '@app/models/app.response'
 import { AppLocals } from '@app/interfaces/auth.dto'
 import { ShipmentModel } from '@app/repositories/mongoose/models/shipment.model'
 import { z } from 'zod'
+import { IShipmentCode } from '@app/dtos/shipment.dto'
 
 class BoxProductionService {
   async getAll() {
-    const boxes = await BoxProductionModel.find({ active: true })
+    const boxes = await BoxProductionModel.find({ active: true, status: 1 })
     return boxes
   }
 
@@ -33,8 +34,8 @@ class BoxProductionService {
 
     const updated = await BoxProductionModel.updateMany({ active: true, status: 1, code: { $in: codes } }, { status: 2 }, { session, runValidators: true }).exec()
     const user = locals.user._id
-    const codeIds = ids.map((item) => item._id)
-    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeIds, createdBy: user, lastUpdateBy: user })
+    const codeItems = ids.map<IShipmentCode>((item, index) => ({ code: item._id }))
+    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeItems, createdBy: user, lastUpdateBy: user })
     await shipment.save({ session, validateBeforeSave: true })
     return updated
   }

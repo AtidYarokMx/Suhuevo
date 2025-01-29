@@ -1,3 +1,7 @@
-// export const AppMongooseSettings = {
-//   uri: process.env.MONGODB_URI ?? ''
-// }
+import { ConnectOptions } from "mongoose";
+
+export const AppMongooseSettings: ConnectOptions = {
+  appName: "ProavicolDev",
+  retryWrites: true,
+  w: "majority",
+}
