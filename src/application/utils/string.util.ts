@@ -1,3 +1,3 @@
-export function prefixPadStart(prefix: string, maxLength: number, fillString?: string) {
-  return `${prefix}`.padStart(maxLength, fillString)
+export function padStart(value: string | number, maxLength: number, fillString: string) {
+  return `${value}`.padStart(maxLength, fillString)
 }

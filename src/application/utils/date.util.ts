@@ -40,3 +40,21 @@ export function calculateMinuteDifference(date: Moment, end: Moment) {
   const difference = date.diff(end, 'minutes')
   return difference
 }
+
+export function calculateWeekDifferenceFromToday(weeks: number): Date {
+  const date = moment().subtract(weeks, "weeks")
+  return date.toDate()
+}
+
+export function calculateWeeksFromDate(startDate: string | Date): number {
+  const start = moment(startDate)
+  // Validar que la fecha sea válida
+  if (!start.isValid()) {
+    throw new Error("La fecha proporcionada no es válida.");
+  }
+  // Obtener la diferencia en semanas
+  const now = moment();
+  const weeks = now.diff(start, "weeks");
+
+  return weeks;
+}

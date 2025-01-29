@@ -28,6 +28,7 @@ import attendanceRoutes from '@routes/attendance.routes';
 import deparmentRoutes from '@routes/deparment.routes';
 import inventoryRoutes from '@routes/inventory.routes';
 import employeeRoutes from '@routes/employee.routes';
+import shipmentRoutes from '@routes/shipment.routes';
 import scheduleRoutes from '@routes/schedule.routes';
 import downloadRoutes from '@routes/download.routes';
 import absenceRoutes from '@routes/absence.routes';
@@ -97,6 +98,7 @@ export class AppServer {
     this.app.use('/api/employee', employeeRoutes)
     this.app.use('/api/schedule', scheduleRoutes)
     this.app.use('/api/overtime', overtimeRoutes)
+    this.app.use('/api/shipment', shipmentRoutes)
     this.app.use('/api/absence', absenceRoutes)
     this.app.use('/api/payroll', payrollRoutes)
     this.app.use('/api/catalog', catalogRoutes)

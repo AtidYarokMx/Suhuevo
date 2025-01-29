@@ -17,6 +17,7 @@ export type IShed = ICommonFields & {
   description: string
   week: number
   period: number
+  chickenBirth: Date
   initialChicken: number
   shedNumber?: number
   /* enums */
@@ -26,6 +27,7 @@ export type IShed = ICommonFields & {
 }
 
 export type IShedVirtuals = {
+  chickenAge: number
   inventory: IInventory[]
 }
 
@@ -35,6 +37,7 @@ export type AppShedModel = Model<IShed, {}, {}, IShedVirtuals>
 export const createShed = z.object({
   name: z.string(),
   description: z.string(),
+  weeksChicken: z.number().gt(0, "weeksChicken debe ser mayor a 0"),
   initialChicken: z.number().default(0),
   farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` })),
   shedNumber: z.number().gt(0, "shedNumber debe ser mayor a 0").optional()
@@ -43,6 +46,7 @@ export const createShed = z.object({
 export const updateShed = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
+  weeksChicken: z.number().gt(0, "weeksChicken debe ser mayor a 0").optional(),
   farm: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` })).optional(),
   shedNumber: z.number().gt(0, "shedNumber debe ser mayor a 0").optional()
 })

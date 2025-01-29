@@ -15,3 +15,9 @@ export type ICommonHistoryFields<T> = {
   updatedAt: Date
   updatedBy: Types.ObjectId
 }
+
+export type ICommonCounterFields = {
+  _id: Types.ObjectId
+  id: string
+  value: number
+}

@@ -41,8 +41,8 @@ class ShedController {
     const session = await AppMainMongooseRepo.startSession()
     try {
       session.startTransaction()
-      createShed.parse(body)
-      const response = await shedService.create(body, session, locals)
+      const validatedBody = createShed.parse(body)
+      const response = await shedService.create(validatedBody, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)
@@ -61,8 +61,8 @@ class ShedController {
     try {
       session.startTransaction()
       validateObjectId(id)
-      updateShed.parse(body)
-      const response = await shedService.update(id, body, session, locals)
+      const validatedBody = updateShed.parse(body)
+      const response = await shedService.update(id, validatedBody, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)

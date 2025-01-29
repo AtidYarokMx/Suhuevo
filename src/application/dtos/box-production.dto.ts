@@ -1,6 +1,10 @@
+/* lib */
+import { z } from 'zod'
+/* types */
 import { Types } from "@app/repositories/mongoose"
 
 export type IBoxProduction = {
+  _id: Types.ObjectId
   id: number
   farmNumber: number
   shedNumber: number
@@ -28,3 +32,8 @@ export type IBoxProductionSequelize = {
   creacion: Date
   actualizacion: Date
 }
+
+/* endpoints dtos */
+export const sendBoxesToSellsBody = z.object({
+  codes: z.array(z.string().length(21))
+})

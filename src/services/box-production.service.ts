@@ -1,19 +1,23 @@
+/* lib */
 import { QueryTypes } from 'sequelize'
+import { AnyBulkWriteOperation, AnyKeys, AnyObject, ClientSession } from 'mongoose'
 /* repos */
 import { AppSequelizeMSSQLClient } from '@app/repositories/sequelize'
-import { SalesInventoryModel } from '@app/repositories/mongoose/models/sales-inventory.model'
-/* dtos */
-import { IBoxProduction, IBoxProductionSequelize } from '@app/dtos/box-production.dto'
-import { ISalesInventory } from '@app/dtos/sales-inventory.dto'
-import { Types } from '@app/repositories/mongoose'
+/* models */
 import { BoxProductionModel } from '@app/repositories/mongoose/models/box-production.model'
+/* utils */
 import { extractDataFromBarcode } from '@app/utils/barcode.util'
-import { AnyBulkWriteOperation, AnyKeys, AnyObject } from 'mongoose'
+/* dtos */
+import { IBoxProduction, IBoxProductionSequelize, sendBoxesToSellsBody } from '@app/dtos/box-production.dto'
 import { AppErrorResponse } from '@app/models/app.response'
+import { AppLocals } from '@app/interfaces/auth.dto'
+import { ShipmentModel } from '@app/repositories/mongoose/models/shipment.model'
+import { z } from 'zod'
+import { IShipmentCode } from '@app/dtos/shipment.dto'
 
 class BoxProductionService {
   async getAll() {
-    const boxes = await BoxProductionModel.find({ active: true })
+    const boxes = await BoxProductionModel.find({ active: true, status: 1 })
     return boxes
   }
 
@@ -22,29 +26,18 @@ class BoxProductionService {
     return box
   }
 
-  async sendBoxesToSells(shed: string, codes: string[]) {
-    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>("SELECT * FROM produccion_cajas WHERE status = 1 AND codigo IN (:codes)", {
-      type: QueryTypes.SELECT,
-      replacements: { codes }
-    })
+  async sendBoxesToSells({ codes }: z.infer<typeof sendBoxesToSellsBody>, session: ClientSession, locals: AppLocals) {
+    const ids = await BoxProductionModel.find({ active: true, status: 1, code: { $in: codes } }, { _id: true }, { session }).exec()
 
-    const sequelizeToMongooseFields = boxes.map((box) => {
-      return {
-        updateOne: {
-          filter: { code: box.codigo },
-          update: {
-            shed: new Types.ObjectId(shed),
-            code: box.codigo,
-            weight: parseFloat(box.peso),
-            type: box.tipo,
-          },
-          upsert: true
-        }
-      }
-    })
+    if (ids.length <= 0)
+      throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", description: "No se encontró ningún código", code: "CodesNotFound", message: "No se encontraron códigos con los parámetros seleccionados" })
 
-    const boxesInSales = SalesInventoryModel.insertMany(sequelizeToMongooseFields)
-    return boxesInSales
+    const updated = await BoxProductionModel.updateMany({ active: true, status: 1, code: { $in: codes } }, { status: 2 }, { session, runValidators: true }).exec()
+    const user = locals.user._id
+    const codeItems = ids.map<IShipmentCode>((item, index) => ({ code: item._id }))
+    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeItems, createdBy: user, lastUpdateBy: user })
+    await shipment.save({ session, validateBeforeSave: true })
+    return updated
   }
 
   async synchronize() {
@@ -71,10 +64,13 @@ class BoxProductionService {
       }
 
       if (existingCodesArray.includes(box.codigo)) {
+        const documentWihoutStatus = { ...document }
+        delete documentWihoutStatus.status
+
         return {
           updateOne: {
             filter: { code: box.codigo },
-            update: { $set: document },
+            update: { $set: documentWihoutStatus },
           },
         }
       }
