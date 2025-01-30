@@ -36,6 +36,7 @@ import payrollRoutes from '@routes/payroll.routes';
 import holidayRoutes from '@routes/holiday.routes';
 import catalogRoutes from '@routes/catalog.routes';
 import serverRoutes from '@routes/server.routes'
+import clientRoutes from '@routes/client.routes';
 import bonusRoutes from '@routes/bonus.routes';
 import fileRoutes from '@routes/file.routes';
 import ruleRoutes from '@routes/rule.routes';
@@ -104,6 +105,7 @@ export class AppServer {
     this.app.use('/api/catalog', catalogRoutes)
     this.app.use('/api/holiday', holidayRoutes)
     this.app.use('/api/server', serverRoutes)
+    this.app.use('/api/client', clientRoutes)
     this.app.use('/api/bonus', bonusRoutes)
     this.app.use('/docs', downloadRoutes)
     this.app.use('/api/auth', authRoutes)
