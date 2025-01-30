@@ -2,13 +2,16 @@
 import { z } from 'zod'
 import { AnyBulkWriteOperation, type ClientSession } from 'mongoose'
 /* models */
-import { CatalogPersonalBonusModel } from '@app/repositories/mongoose/models/catalog-personal-bonus.model'
+import { CatalogEggModel } from '@app/repositories/mongoose/catalogs/egg.catalog'
 import { CatalogRuleModel } from '@app/repositories/mongoose/models/catalog-rule.model'
+import { CatalogPaymentMethodModel } from '@app/repositories/mongoose/catalogs/payment-method.catalog'
+import { CatalogPersonalBonusModel } from '@app/repositories/mongoose/models/catalog-personal-bonus.model'
 /* dtos */
 import { ICatalogPersonalBonus, ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
 import { ICatalogRule, ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dto'
+import { createPaymentMethodBody } from '@app/dtos/payment-method.dto'
 import { createEggType } from '@app/dtos/egg.dto'
-import { CatalogEggModel } from '@app/repositories/mongoose/catalogs/egg.catalog'
+import { AppLocals } from '@app/interfaces/auth.dto'
 
 
 class CatalogService {
@@ -69,6 +72,19 @@ class CatalogService {
     const catalog = new CatalogEggModel({ ...body, active: true })
     const saved = await catalog.save({ session, validateBeforeSave: true })
     return saved.toJSON()
+  }
+
+  /* payment methods catalog */
+  async getPaymentMethods() {
+    const catalog = await CatalogPaymentMethodModel.find({ active: true }).exec()
+    return catalog
+  }
+
+  async createPaymentMethod(body: z.infer<typeof createPaymentMethodBody>, session: ClientSession, locals: AppLocals) {
+    const user = locals.user._id
+    const catalog = new CatalogPaymentMethodModel({ ...body, active: true, createdBy: user, lastUpdateBy: user })
+    const savedCatalog = await catalog.save({ session, validateBeforeSave: true })
+    return savedCatalog.toJSON()
   }
 }
 

@@ -12,6 +12,8 @@ import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
 import { ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
 import { ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dto'
 import { createEggType } from '@app/dtos/egg.dto'
+import { createPaymentMethodBody } from '@app/dtos/payment-method.dto'
+import { AppLocals } from '@app/interfaces/auth.dto'
 
 class CatalogController {
   /* personal bonus */
@@ -108,6 +110,35 @@ class CatalogController {
       session.startTransaction()
       const validatedBody = createEggType.parse(body)
       const response = await catalogService.createCtalogEggType(validatedBody, session)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  /* catálogo de los métodos de pago */
+  public async getPaymentMethods(req: Request, res: Response) {
+    try {
+      const response = await catalogService.getPaymentMethods()
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async createPaymentMethod(req: Request, res: Response) {
+    const body = req.body as z.infer<typeof createPaymentMethodBody>
+    const locals = res.locals as AppLocals
+    const session = await AppMainMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const validatedBody = createPaymentMethodBody.parse(body)
+      const response = await catalogService.createPaymentMethod(validatedBody, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)

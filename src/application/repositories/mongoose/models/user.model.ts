@@ -1,8 +1,8 @@
 import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 import { UserLogger } from '@app/handlers/loggers/user.logger'
-import { type IUser } from '@app/dtos/user.dto'
+import { AppUserModel, IUserVirtuals, type IUser } from '@app/dtos/user.dto'
 
-export const UserSchema = new Schema<IUser>({
+export const UserSchema = new Schema<IUser, AppUserModel, {}, {}, IUserVirtuals>({
   /* required fields */
   id: { type: String, trim: true, unique: true },
   name: { type: String, trim: true },
@@ -18,12 +18,12 @@ export const UserSchema = new Schema<IUser>({
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() }
-})
+}, { toJSON: { virtuals: true }, toObject: { virtuals: true } })
 
-// /* methods */
-// UserSchema.method('fullname', function fullname () {
-//   return `${String(this.name)} ${String(this.firstLastName)} ${String(this.secondLastName)}`.trim()
-// })
+/* virtuals */
+UserSchema.virtual('fullname').get(function () {
+  return `${String(this.name)} ${String(this.firstLastName)} ${String(this.secondLastName)}`.trim()
+})
 
 /* pre (middlewares) */
 UserSchema.pre('save', async function (next) {
@@ -37,4 +37,4 @@ UserSchema.post('save', function (doc) {
 })
 
 /* model instance */
-export const UserModel = AppMainMongooseRepo.model<IUser>('user', UserSchema)
+export const UserModel = AppMainMongooseRepo.model<IUser, AppUserModel>('user', UserSchema)

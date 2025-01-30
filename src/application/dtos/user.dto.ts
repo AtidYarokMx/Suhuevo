@@ -1,6 +1,7 @@
+import { Model } from "@app/repositories/mongoose"
 import { Types } from "mongoose"
 
-export interface IUser {
+export type IUser = {
   _id: Types.ObjectId
   id: string
   name: string
@@ -18,6 +19,8 @@ export interface IUser {
   createdAt: Date
 }
 
-export interface IUserMethods {
-  fullname: () => string
+export type IUserVirtuals = {
+  fullname: string
 }
+
+export type AppUserModel = Model<IUser, {}, {}, IUserVirtuals>
