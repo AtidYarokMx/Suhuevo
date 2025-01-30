@@ -6,7 +6,7 @@ import { ICommonCounterFields, ICommonHistoryFields } from '@app/dtos/common.dto
 
 export const ShipmentSchema = new Schema<IShipment>({
   /* required fields */
-  id: { type: String },
+  id: { type: String, immutable: true },
   name: { type: String, required: true },
   description: { type: String },
   codes: [{

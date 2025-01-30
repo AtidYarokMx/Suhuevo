@@ -30,3 +30,16 @@ export const createClientBody = z.object({
   businessAddress: z.string().min(1).optional(),
   businessPhone: z.string().min(1).max(15).optional(),
 })
+
+export const updateClientBody = z.object({
+  name: z.string().trim().min(1).optional(),
+  firstLastName: z.string().trim().min(1).optional(),
+  secondLastName: z.string().trim().min(1).optional(),
+  email: z.string().email().optional(),
+  address: z.string().min(1).optional(),
+  phone: z.string().min(1).max(15).optional(),
+  rfc: z.string().min(12).max(13).optional(),
+  businessName: z.string().min(1).optional(),
+  businessAddress: z.string().min(1).optional(),
+  businessPhone: z.string().min(1).max(15).optional(),
+})

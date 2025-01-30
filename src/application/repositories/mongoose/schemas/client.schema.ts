@@ -4,7 +4,7 @@ import { Model, Schema, SchemaTypes } from '@app/repositories/mongoose'
 
 export const ClientSchema = new Schema<IClient>({
   id: {
-    type: String, required: true, validate: {
+    type: String, immutable: true, validate: {
       validator: async function (value: string) {
         const count = await (this.constructor as Model<IClient>).countDocuments({ id: value, active: true })
         return count === 0
@@ -31,7 +31,12 @@ export const ClientSchema = new Schema<IClient>({
 })
 
 export const ClientHistorySchema = new Schema<ICommonHistoryFields<IClient>>({
-  change: { type: ClientSchema.clone(), required: true },
+  change: {
+    type: {
+      ...ClientSchema.clone().obj,
+      id: { type: String, required: true }
+    }, required: true
+  },
   updatedAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedBy: { type: SchemaTypes.ObjectId, required: true }
 })
