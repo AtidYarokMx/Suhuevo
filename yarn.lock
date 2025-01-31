@@ -4599,7 +4599,7 @@ mongodb@~6.12.0:
     bson "^6.10.1"
     mongodb-connection-string-url "^3.0.0"
 
-mongoose@^8.8.2:
+mongoose@^8.9.6:
   version "8.9.6"
   resolved "https://registry.yarnpkg.com/mongoose/-/mongoose-8.9.6.tgz#c08857af598f73bf3f81fbb31a3f3e86291a5034"
   integrity sha512-ipLvXwNPVuuuq5H3lnSD0lpaRH3DlCoC6emnMVJvweTwxU29uxDJWxMsNpERDQt8JMvYF1HGVuTK+Id2BlQLCA==
