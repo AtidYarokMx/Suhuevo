@@ -11,8 +11,6 @@ import { CatalogPaymentMethodSchema } from '@app/repositories/mongoose/schemas/c
 /* dtos */
 import { IPaymentMethod } from '@app/dtos/payment-method.dto'
 
-
-
 /* pre (middlewares) */
 CatalogPaymentMethodSchema.pre('save', async function (next) {
   this.updatedAt = new Date(Date.now())

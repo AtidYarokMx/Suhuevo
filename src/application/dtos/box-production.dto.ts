@@ -37,3 +37,10 @@ export type IBoxProductionSequelize = {
 export const sendBoxesToSellsBody = z.object({
   codes: z.array(z.string().length(21))
 })
+
+/* catalog box */
+export const createBoxTypeBody = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  description: z.string().trim().optional(),
+})

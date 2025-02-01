@@ -14,6 +14,7 @@ import { ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dt
 import { createEggType } from '@app/dtos/egg.dto'
 import { createPaymentMethodBody } from '@app/dtos/payment-method.dto'
 import { AppLocals } from '@app/interfaces/auth.dto'
+import { createBoxTypeBody } from '@app/dtos/box-production.dto'
 
 class CatalogController {
   /* personal bonus */
@@ -139,6 +140,35 @@ class CatalogController {
       session.startTransaction()
       const validatedBody = createPaymentMethodBody.parse(body)
       const response = await catalogService.createPaymentMethod(validatedBody, session, locals)
+      await session.commitTransaction()
+      await session.endSession()
+      return res.status(200).json(response)
+    } catch (error) {
+      await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  /* catálogo de tipos de caja de huevo */
+  public async getBoxTypes(req: Request, res: Response) {
+    try {
+      const response = await catalogService.getBoxTypes()
+      return res.status(200).json(response)
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async createBoxType(req: Request, res: Response) {
+    const body = req.body as z.infer<typeof createBoxTypeBody>
+    const locals = res.locals as AppLocals
+    const session = await AppMainMongooseRepo.startSession()
+    try {
+      session.startTransaction()
+      const validatedBody = createBoxTypeBody.parse(body)
+      const response = await catalogService.createBoxType(validatedBody, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)
