@@ -6,12 +6,14 @@ import { CatalogEggModel } from '@app/repositories/mongoose/catalogs/egg.catalog
 import { CatalogRuleModel } from '@app/repositories/mongoose/models/catalog-rule.model'
 import { CatalogPaymentMethodModel } from '@app/repositories/mongoose/catalogs/payment-method.catalog'
 import { CatalogPersonalBonusModel } from '@app/repositories/mongoose/models/catalog-personal-bonus.model'
+import { CatalogBoxModel } from '@app/repositories/mongoose/catalogs/box.catalog'
 /* dtos */
 import { ICatalogPersonalBonus, ICreateCatalogPersonalBonus } from '@app/dtos/catalog-personal-bonus.dto'
 import { ICatalogRule, ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/catalog-rule.dto'
 import { createPaymentMethodBody } from '@app/dtos/payment-method.dto'
 import { createEggType } from '@app/dtos/egg.dto'
 import { AppLocals } from '@app/interfaces/auth.dto'
+import { createBoxTypeBody } from '@app/dtos/box-production.dto'
 
 
 class CatalogService {
@@ -83,6 +85,19 @@ class CatalogService {
   async createPaymentMethod(body: z.infer<typeof createPaymentMethodBody>, session: ClientSession, locals: AppLocals) {
     const user = locals.user._id
     const catalog = new CatalogPaymentMethodModel({ ...body, active: true, createdBy: user, lastUpdateBy: user })
+    const savedCatalog = await catalog.save({ session, validateBeforeSave: true })
+    return savedCatalog.toJSON()
+  }
+
+  /* catálogo de tipos de caja de huevo */
+  async getBoxTypes() {
+    const catalog = await CatalogBoxModel.find({ active: true }).exec()
+    return catalog
+  }
+
+  async createBoxType(body: z.infer<typeof createBoxTypeBody>, session: ClientSession, locals: AppLocals) {
+    const user = locals.user._id
+    const catalog = new CatalogBoxModel({ ...body, active: true, createdBy: user, lastUpdateBy: user })
     const savedCatalog = await catalog.save({ session, validateBeforeSave: true })
     return savedCatalog.toJSON()
   }

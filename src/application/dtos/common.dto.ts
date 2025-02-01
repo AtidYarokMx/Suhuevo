@@ -21,3 +21,10 @@ export type ICommonCounterFields = {
   id: string
   value: number
 }
+
+export type ICommonCatalogFields<T = void> = T & ICommonFields & {
+  _id: Types.ObjectId
+  id: string
+  name: string
+  description?: string
+}

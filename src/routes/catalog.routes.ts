@@ -28,6 +28,9 @@ class CatalogRoutes extends ServerRouter {
     /* payment methods */
     this.router.get('/payment-method', adminMiddleware, this.controller.getPaymentMethods as RequestHandler)
     this.router.post('/payment-method', adminMiddleware, this.controller.createPaymentMethod as RequestHandler)
+    /* tipos de caja de huevo */
+    this.router.get('/box', adminMiddleware, this.controller.getBoxTypes as RequestHandler)
+    this.router.post('/box', adminMiddleware, this.controller.createBoxType as RequestHandler)
   }
 }
 
