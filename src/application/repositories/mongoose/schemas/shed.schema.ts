@@ -10,6 +10,7 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   period: { type: Number, default: 1 },
   initialChicken: { type: Number, required: true },
   chickenBirth: { type: Date, required: true },
+  chickenWeight: { type: Number, required: true },
   shedNumber: {
     type: Number, validate: {
       validator: async function (value: number) {
