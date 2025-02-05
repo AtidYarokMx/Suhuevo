@@ -31,22 +31,14 @@ import type { ClientSession } from "mongoose";
 
 class PayrollService {
   private readonly daysOfWeekInSpanish = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-
-  // private readonly attendanceBonusPercentage = 0.1; 
-  // private readonly punctualityBonusPercentage = 0.1;
-  // private readonly groceryBonus = 145.00;
-  // private readonly vacationBonusPercentage = 0.25;
   private readonly holidayList = ['24-01-01', '24-08-01', '24-12-25', '24-12-31'];
-
   private readonly paymentDay = 5 // Viernes
   private readonly weekStartDay = 3 // Miercoles
   private readonly weekCutOffDay = 2 // Martes
 
   async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
-
     const allowedFields: (keyof IPayroll)[] = ['id', 'name', 'startDate', 'cutoffDate']
-
     const filter: any = { active: true }
     const selection: any = size === 'small' ? {} : { active: 0, _id: 0, __v: 0 }
 
@@ -57,7 +49,6 @@ class PayrollService {
 
       const value = queryFields[field]
       const cleanField = field.replace(/[~<>]/, '')
-
       if (Array.isArray(value)) {
         filter[cleanField] = { $in: value }
       } else if (field.startsWith('~')) {
@@ -85,32 +76,68 @@ class PayrollService {
     return populatedArray
   }
 
+  /**
+   * Genera la nómina semanal (versión preliminar o preview) y calcula el pago de cada empleado.
+   * Se incluye la consideración de las faltas justificadas como días trabajados.
+   */
+
   async generateWeeklyPayroll(body: SchemaGenerateWeeklyPayroll, session: ClientSession) {
-    // la fecha ya viene validada con que siempre venga en miércoles
-    // revisar los dtos la validación en caso de tener que modificarse
-    const weekStartDate = formatParse(body.weekStartDate) // parseo de fecha a momentjs
-    const weekCutOffDate = getNextDay(weekStartDate, 2) // obtiene el siguiente día de la semana con momentjs
-    // fechas formateadas a YYY-MM-DD en string
+    // Se asume que la fecha viene validada (siempre miércoles)
+    const weekStartDate = formatParse(body.weekStartDate)
+    const weekCutOffDate = getNextDay(weekStartDate, 2)
     const formattedWeekStartDate = weekStartDate.format('YYYY-MM-DD')
     const formattedWeekCutoffDate = weekCutOffDate.format('YYYY-MM-DD')
-    // Obtener las asistencias, faltas y tiempo extra entre las fechas de corte e inicio de semana
-    const attendances = await AttendanceModel.find({ active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
-    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
-    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
-    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } }, null, { session }).exec()
-    // promesas para agrupar por employeeId
+
+    // Consultas de registros dentro del periodo
+    const attendances = await AttendanceModel.find(
+      { active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+      null,
+      { session }
+    ).exec()
+    // Se obtienen las faltas **no justificadas** (para efectos de penalización)
+    const absences = await AbsenceModel.find(
+      { active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+      null,
+      { session }
+    ).exec()
+
+    // Faltas que son pagadas (no penalizadas)
+    const paidAbsences = await AbsenceModel.find(
+      { active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+      null,
+      { session }
+    ).exec()
+
+    // **Faltas justificadas**: ahora se cuentan como días trabajados
+    const justifiedAbsences = await AbsenceModel.find(
+      { active: true, isJustified: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+      null,
+      { session }
+    ).exec();
+
+    const overtimeRecords = await OvertimeModel.find(
+      { active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } },
+      null,
+      { session }
+    ).exec()
+
+    // Agrupamos los registros por empleado
     const attendancesByEmployee = groupBy(attendances, 'employeeId')
     const absencesByEmployee = groupBy(absences, 'employeeId')
     const paidAbsencesByEmployee = groupBy(paidAbsences, 'employeeId')
+    const justifiedAbsencesByEmployee = groupBy(justifiedAbsences, 'employeeId');
     const overtimeRecordsByEmployee = groupBy(overtimeRecords, 'employeeId')
+
     // se calcula el proporcional de los esquemas de trabajo
     const fiveDaysSchemeBase = bigMath.chain(2).divide(5).done() // 0.4
     const sixDaysSchemeBase = bigMath.chain(1).divide(6).done() // 0.16666666666666666
+
     // catálogos de bonus generales
     const bonusOvertime = await BonusModel.findOne({ active: true, inputId: 'horas_extra', enabled: true }).exec()
     const bonusAttendance = await BonusModel.findOne({ active: true, inputId: 'asistencia', enabled: true }).exec()
     const bonusPunctuality = await BonusModel.findOne({ active: true, inputId: 'puntualidad', enabled: true }).exec()
     const bonusGrocery = await BonusModel.findOne({ active: true, inputId: 'despensa', enabled: true }).exec()
+
     // bonus personales que sobreescriben el bono general
     const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusOvertime?._id, enabled: true })
     const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: PersonalBonusEntityType.GENERAL, entityId: bonusAttendance?._id, enabled: true }).exec()
@@ -118,31 +145,145 @@ class PayrollService {
     const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: PersonalBonusEntityType.GENERAL, entityId: bonusGrocery?._id, enabled: true }).exec()
     // other bonuses
     const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true })
-    // listado de empleados
-    const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }, null, { session }).populate(["job", "department"]).exec();
+
+    // Listado de empleados activos
+    const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }, null, { session })
+      .populate(["job", "department"]).exec();
+
+    // Se calcula la nómina de cada empleado
     const lines = await Promise.all(employees.map(async (employee, index) => {
       const { dailySalary, jobScheme } = employee
-      // asistencias, ausencias, ausencias pagadas y retardos por cada empleado
-      const employeeAttendances = await AttendanceModel.find({ active: true, employeeId: employee.id, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
-      const employeeAbsences = await AbsenceModel.find({ active: true, employeeId: employee.id, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
-      const employeePaidAbsences = await AbsenceModel.find({ active: true, employeeId: employee.id, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } }, null, { session }).exec()
-      const employeeOvertimeRecords = await OvertimeModel.find({ active: true, employeeId: employee.id, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } }, null, { session }).exec()
+
+      // Se obtienen los registros individuales para cada empleado
+      const employeeAttendances = await AttendanceModel.find(
+        { active: true, employeeId: employee.id, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+        null,
+        { session }
+      ).exec()
+
+      const employeePaidAbsences = await AbsenceModel.find(
+        { active: true, employeeId: employee.id, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+        null,
+        { session }
+      ).exec()
+
+      const employeeJustifiedAbsences = await AbsenceModel.find(
+        { active: true, employeeId: employee.id, isJustified: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+        null,
+        { session }
+      ).exec();
+
+      const employeeOvertimeRecords = await OvertimeModel.find(
+        { active: true, employeeId: employee.id, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } },
+        null,
+        { session }
+      ).exec()
+
       // retardos (?)
-      const employeeTardies = employeeAttendances.filter((item) => item.isLate)
-      // días trabajados = asistencias + ausencias pagadas
-      const daysWorked = employeeAttendances.length + employeePaidAbsences.length
-      /* bonus */
-      console.log(employeeAttendances.length, employeePaidAbsences.length, daysWorked, employeeAbsences.length, employeeOvertimeRecords.length)
-    }))
-    console.log(lines)
+      const employeeTardies = employeeAttendances.filter(item => item.isLate);
+
+      // Se consideran días trabajados: asistencias + ausencias pagadas + faltas justificadas
+      const daysWorked = employeeAttendances.length + employeePaidAbsences.length + employeeJustifiedAbsences.length;
+      const restDaysMultiplier = jobScheme === '5' ? fiveDaysSchemeBase : sixDaysSchemeBase;
+      const paidRestDays = bigMath.multiply(daysWorked, restDaysMultiplier);
+      const totalDays = daysWorked + paidRestDays;
+      const salary = dailySalary * totalDays;
+
+      let taxableBonuses = 0;
+
+      // Cálculo de horas extra
+      const extraHours = Number(sumField(employeeOvertimeRecords, 'hours').toFixed(2));
+      const employeeBonusOvertime = personalBonusOvertime.find(x => x.idEmployee === employee._id) ?? bonusOvertime;
+      const extraHoursPayment = extraHours * (employeeBonusOvertime?.value ?? 0);
+      if (employeeBonusOvertime?.taxable) {
+        taxableBonuses += extraHoursPayment;
+      }
+
+      // Bono de asistencia: solo se otorga si no hay ausencias injustificadas
+      const employeeAbsencesUnjustified = await AbsenceModel.find(
+        { active: true, employeeId: employee.id, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+        null,
+        { session }
+      ).exec();
+      const attendanceBonus = employeeAbsencesUnjustified.length > 0
+        ? 0
+        : this.evaluateBonus(personalBonusAttendance.find(x => x.idEmployee === employee._id) ?? bonusAttendance, salary);
+      if ((personalBonusAttendance.find(x => x.idEmployee === employee._id) ?? bonusAttendance)?.taxable) {
+        taxableBonuses += attendanceBonus;
+      }
+
+      // Bono de puntualidad
+      const punctualityBonus = employeeTardies.length >= 2
+        ? 0
+        : this.evaluateBonus(personalBonusPunctuality.find(x => x.idEmployee === employee._id) ?? bonusPunctuality, salary);
+      if ((personalBonusPunctuality.find(x => x.idEmployee === employee._id) ?? bonusPunctuality)?.taxable) {
+        taxableBonuses += punctualityBonus;
+      }
+
+      // Bono de despensa
+      const groceryBonus = this.evaluateBonus(personalBonusGrocery.find(x => x.idEmployee === employee._id) ?? bonusGrocery, salary);
+      if ((personalBonusGrocery.find(x => x.idEmployee === employee._id) ?? bonusGrocery)?.taxable) {
+        taxableBonuses += groceryBonus;
+      }
+
+      // Bono por día festivo (calculado a partir de las ausencias injustificadas, según lógica de negocio)
+      const holidayBonus = employeeAbsencesUnjustified.reduce((prev, curr) => prev + dailySalary * curr.paidValue, 0);
+
+      // Otros bonos personalizados
+      const employeeCustomBonuses = customPersonalBonus.filter(x => x.idEmployee === employee._id);
+      const customBonusesAmounts = employeeCustomBonuses.map(x => ({
+        amount: this.evaluateBonus(x, salary),
+        taxable: x.taxable
+      }));
+      const customBonusesTotal = sumField(customBonusesAmounts, 'amount');
+
+      const taxPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses +
+        sumField(customBonusesAmounts.filter(x => x.taxable), 'amount');
+      const netPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses + customBonusesTotal;
+
+      return {
+        rowIndex: index + 1,
+        employeeId: employee.id,
+        employeeName: employee.fullname(),
+        jobId: employee.jobId,
+        jobName: employee.job?.name ?? null,
+        departmentId: employee.departmentId,
+        departmentName: employee.department?.name ?? null,
+        dailySalary: employee.dailySalary,
+        daysWorked,
+        paidRestDays,
+        totalDays,
+        salary,
+        extraHours,
+        extraHoursPayment,
+        punctualityBonus,
+        attendanceBonus,
+        groceryBonus,
+        holidayBonus,
+        customBonusesTotal,
+        tardies: employeeTardies.length,
+        taxPay,
+        netPay,
+        jobScheme
+      };
+    }));
+
+    // Solo para preview, no se guarda la nómina
+    console.log(lines);
   }
   // -------------------------------------------------------------
 
-  async executeWeeklyPayroll(body: any, session: ClientSession): Promise<any> {
-    let weekStartDate: any = body.weekStartDate // '2024-09-11T06:00:00.000Z'
-    if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime())) throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
+  /**
+   * Ejecuta (finaliza) la nómina semanal, validando la fecha y guardando los registros.
+   * Se incluye el conteo de faltas justificadas como días trabajados.
+   */
 
+  async executeWeeklyPayroll(body: any, session: ClientSession): Promise<any> {
+    let weekStartDate: any = body.weekStartDate
+    if (weekStartDate == null || isNaN(new Date(weekStartDate).getTime()))
+      throw new AppErrorResponse({ statusCode: 400, name: 'Fecha inválida' });
     weekStartDate = new Date(weekStartDate);
+
     // Se le suman las horas UTC del servidor ya que por defecto viene como las 00:00 UTC 0, para que sea interpretado como las 00:00 UTC-6
     weekStartDate = new Date(weekStartDate.getTime() + (weekStartDate.getTimezoneOffset() * 60000));
 
@@ -151,14 +292,11 @@ class PayrollService {
       throw new AppErrorResponse({ statusCode: 400, name: `La fecha de inicio de semana debe ser un ${dayName}` });
     }
 
-    const weekCutoffDate = getNextTuesday(weekStartDate); // (último martes despues del inicio de semana)
-
+    const weekCutoffDate = getNextTuesday(weekStartDate);
     console.log(weekStartDate, weekStartDate.getDay(), this.daysOfWeekInSpanish[weekStartDate.getDay()])
     console.log(weekCutoffDate, weekCutoffDate.getDay(), this.daysOfWeekInSpanish[weekCutoffDate.getDay()])
-
     const formattedWeekStartDate = moment(weekStartDate).format('YYYY-MM-DD')
     const formattedWeekCutoffDate = moment(weekCutoffDate).format('YYYY-MM-DD')
-
     console.log(formattedWeekStartDate, formattedWeekCutoffDate)
 
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }).populate(["job", "department"]).exec();
@@ -166,14 +304,17 @@ class PayrollService {
 
     // Obtener las asistencias, faltas y tiempo extra entre las fechas de corte e inicio de semana
     const attendances = await AttendanceModel.find({ active: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } });
-    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }, });
-    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate }, });
-    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lt: formattedWeekCutoffDate } })
+    const absences = await AbsenceModel.find({ active: true, isJustified: false, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } });
+    const paidAbsences = await AbsenceModel.find({ active: true, isPaid: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } });
+    const justifiedAbsences = await AbsenceModel.find({ active: true, isJustified: true, date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } });
+    const overtimeRecords = await OvertimeModel.find({ active: true, startTime: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } });
 
-    const attendancesByEmployee = groupBy(attendances, 'employeeId')
-    const absencesByEmployee = groupBy(absences, 'employeeId')
-    const paidAbsencesByEmployee = groupBy(paidAbsences, 'employeeId')
-    const overtimeRecordsByEmployee = groupBy(overtimeRecords, 'employeeId')
+
+    const attendancesByEmployee = groupBy(attendances, 'employeeId');
+    const absencesByEmployee = groupBy(absences, 'employeeId');
+    const paidAbsencesByEmployee = groupBy(paidAbsences, 'employeeId');
+    const justifiedAbsencesByEmployee = groupBy(justifiedAbsences, 'employeeId');
+    const overtimeRecordsByEmployee = groupBy(overtimeRecords, 'employeeId');
 
     const fiveDaysSchemeBase = bigMath.chain(2).divide(5).done()
     const sixDaysSchemeBase = bigMath.chain(1).divide(6).done()
@@ -190,18 +331,17 @@ class PayrollService {
     console.log('bonusGrocery', bonusGrocery)
 
     // Personal bonus that overrides general bonus
-    const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusOvertime?._id, enabled: true }).exec()
-    const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusAttendance?._id, enabled: true }).exec()
-    const personalBonusPunctuality = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusPunctuality?._id, enabled: true }).exec()
-    const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusGrocery?._id, enabled: true }).exec()
+    const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusOvertime?._id, enabled: true }).exec();
+    const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusAttendance?._id, enabled: true }).exec();
+    const personalBonusPunctuality = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusPunctuality?._id, enabled: true }).exec();
+    const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: 'bonus', entityId: bonusGrocery?._id, enabled: true }).exec();
+    const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true });
+
 
     console.log('personalBonusOvertime', personalBonusOvertime)
     console.log('personalBonusAttendance', personalBonusAttendance)
     console.log('personalBonusPunctuality', personalBonusPunctuality)
     console.log('personalBonusGrocery', personalBonusGrocery)
-
-    // Other custom personal bonus
-    const customPersonalBonus = await PersonalBonusModel.find({ active: true, entityType: 'catalog-personal-bonus', enabled: true })
 
     for (const [index, employee] of employees.entries()) {
       const dailySalary = employee.dailySalary
@@ -210,71 +350,52 @@ class PayrollService {
       const employeeAttendances = attendancesByEmployee[employee.id] || [];
       const employeeAbsences = absencesByEmployee[employee.id] || [];
       const employeePaidAbsences = paidAbsencesByEmployee[employee.id] || [];
+      const employeeJustifiedAbsences = justifiedAbsencesByEmployee[employee.id] || [];
       const employeeOvertimeRecords = overtimeRecordsByEmployee[employee.id] || [];
-      const employeeTardies = employeeAttendances.filter((x) => x.isLate);
+      const employeeTardies = employeeAttendances.filter(x => x.isLate);
 
-      const employeeBonusOvertime = personalBonusOvertime.find((x) => x.idEmployee === employee._id) ?? bonusOvertime
-      const employeeBonusAttendance = personalBonusAttendance.find((x) => x.idEmployee === employee._id) ?? bonusAttendance
-      const employeeBonusPunctuality = personalBonusPunctuality.find((x) => x.idEmployee === employee._id) ?? bonusPunctuality
-      const employeeBonusGrocery = personalBonusGrocery.find((x) => x.idEmployee === employee._id) ?? bonusGrocery
+      // Se consideran asistencias, ausencias pagadas y faltas justificadas como días trabajados
+      const daysWorked = employeeAttendances.length + employeePaidAbsences.length + employeeJustifiedAbsences.length;
+      const restDaysMultiplier = jobScheme === '5' ? fiveDaysSchemeBase : sixDaysSchemeBase;
+      const paidRestDays = bigMath.multiply(daysWorked, restDaysMultiplier);
+      const totalDays = daysWorked + paidRestDays;
+      const salary = dailySalary * totalDays;
 
-      const employeeCustomBonuses = customPersonalBonus.filter((x) => x.idEmployee === employee._id)
-
-      const restDaysMultiplier = jobScheme === '5' ? fiveDaysSchemeBase : sixDaysSchemeBase
-
-      // Salario base por los días trabajados
-      const daysWorked = employeeAttendances.length + employeePaidAbsences.length // TODO update later
-      const paidRestDays = bigMath.multiply(daysWorked, restDaysMultiplier)
-      const totalDays = daysWorked + paidRestDays
-      const salary = dailySalary * totalDays
-      console.log('daysWorked', daysWorked, 'dailySalary', dailySalary, 'totalDays', totalDays, 'salary', salary)
-
-      // variable para conteo en caso de ser gravable (taxable)
-      let taxableBonuses = 0
-
-      // Bonus de Horas extra
-      const extraHours = Number(sumField(employeeOvertimeRecords, 'hours').toFixed(2))
-      const extraHoursPayment = extraHours * (employeeBonusOvertime?.value ?? 0) // ((dailySalary / 8) * 2)
-      if (typeof employeeBonusOvertime?.taxable !== "undefined" && employeeBonusOvertime.taxable) {
-        taxableBonuses += extraHoursPayment
+      const employeeBonusOvertime = personalBonusOvertime.find(x => x.idEmployee === employee._id) ?? bonusOvertime;
+      const extraHours = Number(sumField(employeeOvertimeRecords, 'hours').toFixed(2));
+      const extraHoursPayment = extraHours * (employeeBonusOvertime?.value ?? 0);
+      let taxableBonuses = 0;
+      if (employeeBonusOvertime?.taxable) {
+        taxableBonuses += extraHoursPayment;
       }
-      console.log('extraHoursPayment', extraHoursPayment)
-      // Bono de asistencia
+
+      const employeeBonusAttendance = personalBonusAttendance.find(x => x.idEmployee === employee._id) ?? bonusAttendance;
       const attendanceBonus = employeeAbsences.length > 0 ? 0 : this.evaluateBonus(employeeBonusAttendance, salary);
-      if (typeof employeeBonusAttendance?.taxable !== "undefined" && employeeBonusAttendance.taxable) {
-        taxableBonuses += attendanceBonus
+      if (employeeBonusAttendance?.taxable) {
+        taxableBonuses += attendanceBonus;
       }
-      console.log('attendanceBonus', attendanceBonus)
-      // Bono de puntualidad
+
+      const employeeBonusPunctuality = personalBonusPunctuality.find(x => x.idEmployee === employee._id) ?? bonusPunctuality;
       const punctualityBonus = employeeTardies.length >= 2 ? 0 : this.evaluateBonus(employeeBonusPunctuality, salary);
-      if (typeof employeeBonusPunctuality?.taxable !== "undefined" && employeeBonusPunctuality.taxable) {
-        taxableBonuses += punctualityBonus
+      if (employeeBonusPunctuality?.taxable) {
+        taxableBonuses += punctualityBonus;
       }
-      console.log('punctualityBonus', punctualityBonus)
-      // Bono de despensa
+
+      const employeeBonusGrocery = personalBonusGrocery.find(x => x.idEmployee === employee._id) ?? bonusGrocery;
       const groceryBonus = this.evaluateBonus(employeeBonusGrocery, salary);
-      if (typeof employeeBonusGrocery?.taxable !== "undefined" && employeeBonusGrocery.taxable) {
-        taxableBonuses += groceryBonus
+      if (employeeBonusGrocery?.taxable) {
+        taxableBonuses += groceryBonus;
       }
-      console.log('groceryBonus', groceryBonus)
-      // console.log('groceryBonus', groceryBonus) // 145 example
-      // Bono por día festivo (triple pago)
-      // const workedHolidays = employeeAttendances.filter(x => this.holidayList.includes(x.checkInTime.slice(0, 10))).length;
-      // const holidayBonus = workedHolidays * dailySalary * 2
-      // Bono por día festivo (triple pago) manualmente puesto por rh
-      const holidayBonus = employeeAbsences.reduce((prev, curr) => {
-        return prev += dailySalary * curr.paidValue
-      }, 0)
-      console.log('holidayBonus', holidayBonus)
-      // Otros bonos
-      const customBonusesAmounts = employeeCustomBonuses.map((x) => { return { amount: this.evaluateBonus(x, salary), taxable: x.taxable } })
-      const customBonusesTotal = sumField(customBonusesAmounts, 'amount')
-      // Calcular el neto a pagar
-      console.log('salary', salary)
-      const taxPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses + sumField(customBonusesAmounts.filter((x) => x.taxable === true), 'amount')
-      console.log('taxPay', taxPay)
-      const netPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses + customBonusesTotal
-      console.log('netPay', netPay)
+
+      const holidayBonus = employeeAbsences.reduce((prev, curr) => prev + dailySalary * curr.paidValue, 0);
+
+      const employeeCustomBonuses = customPersonalBonus.filter(x => x.idEmployee === employee._id);
+      const customBonusesAmounts = employeeCustomBonuses.map(x => ({ amount: this.evaluateBonus(x, salary), taxable: x.taxable }));
+      const customBonusesTotal = sumField(customBonusesAmounts, 'amount');
+
+      const taxPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses +
+        sumField(customBonusesAmounts.filter(x => x.taxable), 'amount');
+      const netPay = salary + extraHoursPayment + attendanceBonus + punctualityBonus + holidayBonus + taxableBonuses + customBonusesTotal;
 
       lines.push({
         rowIndex: index + 1,
@@ -308,17 +429,17 @@ class PayrollService {
       });
     }
 
-    if (body.preview != null) return { lines, startDate: weekStartDate, cutoffDate: weekCutoffDate }
+    if (body.preview != null)
+      return { lines, startDate: weekStartDate, cutoffDate: weekCutoffDate };
 
     let record = await PayrollModel.findOne({ active: true, startDate: formattedWeekStartDate });
     if (record) {
       record.lines = lines;
-      record.name = `Nomina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
-    }
-    else {
+      record.name = `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`;
+    } else {
       record = new PayrollModel({
         id: 'PR' + String(await consumeSequence('payrolls', session)).padStart(8, '0'),
-        name: `Nomina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
+        name: `Nómina del ${formatDate(weekStartDate)} al ${formatDate(weekCutoffDate)}`,
         lines,
         startDate: formattedWeekStartDate,
         cutoffDate: formattedWeekCutoffDate,
@@ -329,11 +450,15 @@ class PayrollService {
     return record;
   }
 
+  /**
+   * Calcula el monto de un bono según su tipo (monto fijo o porcentaje sobre el salario base).
+   */
+
   evaluateBonus(bonus: IBonus | IPersonalBonus | null, salary: number): number {
-    if (!bonus || bonus?.value == null) return 0
-    if (bonus.type === BonusType.AMOUNT) return bonus.value
-    if (bonus.type === BonusType.PERCENT) return (bonus.value / 100) * salary
-    return 0
+    if (!bonus || bonus.value == null) return 0;
+    if (bonus.type === BonusType.AMOUNT) return bonus.value;
+    if (bonus.type === BonusType.PERCENT) return (bonus.value / 100) * salary;
+    return 0;
   }
 
   /**
@@ -344,54 +469,43 @@ class PayrollService {
    * @throws {AppErrorResponse} - Throws an error if the payroll ID is not provided or the payroll is not found.
    */
   async excelReport(query: any) {
-    const payrollId = query.id
-    if (payrollId == null) throw new AppErrorResponse({ statusCode: 400, name: 'El id es requerido' }); // Validate payroll ID
-
-    const payroll = await PayrollModel.findOne({ active: true, id: payrollId }) // Fetch payroll record
-    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el pago de nomina' }); // Check if payroll exists
-
-    const employeeIds = payroll.lines.map(x => x.employeeId) // Extract employee IDs from payroll lines
-    const employees = await employeeService.get({ ids: employeeIds }) // Fetch employee details
-
-    const departmentIds = [...new Set(payroll.lines.map(x => x.departmentId))]; // Extract unique department IDs
-    const departments = await departmentService.get({ ids: departmentIds }) // Fetch department details
-
-    const jobIds = [...new Set(payroll.lines.map(x => x.jobId))]; // Extract unique job IDs
-    const jobs = await jobService.get({ ids: jobIds }) // Fetch job details
-
-    const rowsArray = payroll.lines.map((line: any) => { // Map payroll lines to rows array
-      const employee: IEmployee = employees[line.employeeId]
+    const payrollId = query.id;
+    if (payrollId == null) throw new AppErrorResponse({ statusCode: 400, name: 'El id es requerido' });
+    const payroll = await PayrollModel.findOne({ active: true, id: payrollId });
+    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: 'No se encontró el pago de nómina' });
+    const employeeIds = payroll.lines.map(x => x.employeeId);
+    const employees = await employeeService.get({ ids: employeeIds });
+    const departmentIds = [...new Set(payroll.lines.map(x => x.departmentId))];
+    const departments = await departmentService.get({ ids: departmentIds });
+    const jobIds = [...new Set(payroll.lines.map(x => x.jobId))];
+    const jobs = await jobService.get({ ids: jobIds });
+    const rowsArray = payroll.lines.map((line: any) => {
+      const employee: IEmployee = employees[line.employeeId];
       return {
-        date: payroll.cutoffDate, // Payroll cutoff date
-        jobName: jobs[line.jobId]?.name ?? '', // Job name
-        mxCurp: employee.mxCurp, // Employee CURP
-        mxNss: employee.mxNss, // Employee NSS
-        employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`, // Employee full name
-
-        sdi: '', // SDI (empty for now)
-
-        dailySalary: line.dailySalary, // Daily salary
-        daysWorked: line.daysWorked, // Days worked
-        paidRestDays: line.paidRestDays, // Paid rest days
-        totalDays: line.totalDays, // Total days
-        salary: line.salary, // Salary
-        extraHours: line.extraHours, // Extra hours
-        extraHoursPayment: line.extraHoursPayment, // Extra hours payment
-
-        punctualityBonus: line.punctualityBonus, // Punctuality bonus
-        attendanceBonus: line.attendanceBonus, // Attendance bonus
-        groceryBonus: line.groceryBonus, // Grocery bonus
-        holidayBonus: line.holidayBonus, // Holiday bonus
-        customBonusesTotal: line.customBonusesTotal, // Custom bonuses total
-        // tardies: line.tardies, // Tardies (commented out)
-        netPay: line.netPay, // Net pay
-        taxPay: line.taxPay, // Taxable pay
-
-        jobScheme: line.jobScheme, // Job scheme
-
-        departmentId: line.departmentId, // Department ID
+        date: payroll.cutoffDate,
+        jobName: jobs[line.jobId]?.name ?? '',
+        mxCurp: employee.mxCurp,
+        mxNss: employee.mxNss,
+        employeeName: `${employee.name} ${employee.lastName ?? ''} ${employee.secondLastName ?? ''}`,
+        sdi: '',
+        dailySalary: line.dailySalary,
+        daysWorked: line.daysWorked,
+        paidRestDays: line.paidRestDays,
+        totalDays: line.totalDays,
+        salary: line.salary,
+        extraHours: line.extraHours,
+        extraHoursPayment: line.extraHoursPayment,
+        punctualityBonus: line.punctualityBonus,
+        attendanceBonus: line.attendanceBonus,
+        groceryBonus: line.groceryBonus,
+        holidayBonus: line.holidayBonus,
+        customBonusesTotal: line.customBonusesTotal,
+        netPay: line.netPay,
+        taxPay: line.taxPay,
+        jobScheme: line.jobScheme,
+        departmentId: line.departmentId,
       }
-    })
+    });
 
     const rowsByDepartment = rowsArray.reduce((acc: any, row: any) => { // Group rows by department
       const departmentId = row.departmentId;
@@ -431,32 +545,28 @@ class PayrollService {
         views: [{ state: 'frozen', xSplit: 0, ySplit: 1 }]
       });
 
-      worksheet.columns = [ // Define worksheet columns
-        { header: 'Nomina', key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
+      worksheet.columns = [
+        { header: 'Nómina', key: 'date', width: 20, style: { numFmt: 'DD/MM/YYYY' } },
         { header: 'Puesto', key: 'jobName', width: 15, style: { numFmt: '@' } },
         { header: 'CURP', key: 'mxCurp', width: 20, style: { numFmt: '@' } },
-        { header: 'Numero seguro social', key: 'mxNss', width: 20, style: { numFmt: '@' } },
+        { header: 'Número de seguro social', key: 'mxNss', width: 20, style: { numFmt: '@' } },
         { header: 'Nombre del empleado', key: 'employeeName', width: 30, style: { numFmt: '@' } },
-
         { header: 'S.D.I', key: 'sdi', width: 10, style: { numFmt: '@' } },
-
         { header: 'Salario Diario', key: 'dailySalary', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        { header: 'Dias Trabajados', key: 'daysWorked', width: 11, style: { numFmt: '@' } },
+        { header: 'Días Trabajados', key: 'daysWorked', width: 11, style: { numFmt: '@' } },
         { header: 'Parte Proporcional Sab y Dom', key: 'paidRestDays', width: 20, style: { numFmt: '@' } },
-        { header: 'Dias a Pagar', key: 'totalDays', width: 10, style: { numFmt: '@' } },
+        { header: 'Días a Pagar', key: 'totalDays', width: 10, style: { numFmt: '@' } },
         { header: 'Sueldo del Periodo', key: 'salary', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        { header: 'Horas Tiempo Extra', key: 'extraHours', width: 10, style: { numFmt: '@' } },
-        { header: 'Valor Tiempo Extra', key: 'extraHoursPayment', width: 10, style: { numFmt: '"$"#,##0.00' } },
-
-        { header: 'Premios de puntualidad', key: 'punctualityBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Horas Extra', key: 'extraHours', width: 10, style: { numFmt: '@' } },
+        { header: 'Valor Horas Extra', key: 'extraHoursPayment', width: 10, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Premio de puntualidad', key: 'punctualityBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: 'Bono de Asistencia', key: 'attendanceBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
         { header: 'Despensa', key: 'groceryBonus', width: 10, style: { numFmt: '"$"#,##0.00' } },
-        { header: 'Dia festivo', key: 'holidayBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: 'Día festivo', key: 'holidayBonus', width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: 'Otros bonos', key: 'customBonusesTotal', width: 15, style: { numFmt: '"$"#,##0.00' } },
-        // { header: '', key: 'tardies', width: 10, style: { numFmt: '@' } },
         { header: 'Base Gravable', key: 'taxPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
         { header: 'Total a pagar', key: 'netPay', width: 10, style: { numFmt: '"$"#,##0.00' } },
-      ]
+      ];
 
       // Headers 1
       const headerRow = worksheet.getRow(1) // Get header row
@@ -466,14 +576,11 @@ class PayrollService {
       headerRow.font = { bold: true }; // Set font to bold
 
       // Solo agregar las propiedades que coinciden con las columnas definidas
-      (rowArray as any).forEach((row: any) => { // Add rows to worksheet
+      (rowArray as any).forEach((row: any) => {
         const filteredRow = worksheet.columns.reduce((acc: any, col: any) => {
-          if (col.key in row) {
-            acc[col.key] = row[col.key];
-          }
+          if (col.key in row) acc[col.key] = row[col.key];
           return acc;
         }, {});
-
         worksheet.addRow(filteredRow);
       });
 
@@ -492,7 +599,7 @@ class PayrollService {
         { formula: `SUM(T2:T${worksheet.rowCount})` }, // Total netPay
       ]);
 
-      totalsRow.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => { // Apply styles to totals row
+      totalsRow.eachCell({ includeEmpty: true }, (cell: any, colNumber: number) => {
         cell.font = { bold: true };
         cell.border = {
           top: { style: 'thick', color: { argb: '000000' } },
@@ -519,36 +626,34 @@ class PayrollService {
       { header: 'Cantidad a Pagar', key: 'totalAmount', width: 20, style: { numFmt: '"$"#,##0.00' } },
     ];
 
-    const headerRow = summarySheet.getRow(1) // Get header row
+    const headerRowSummary = summarySheet.getRow(1);
+    headerRowSummary.eachCell((cell: any) => {
+      cell.fill = headerStyle;
+      cell.border = borderStyle;
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    });
+    headerRowSummary.font = { bold: true };
 
-    headerRow.eachCell((cell: any) => { // Apply styles to header row
-      cell.fill = headerStyle
-      cell.border = borderStyle
-      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-    })
-
-    headerRow.font = { bold: true }; // Set font to bold
-
-    summaryData.forEach((row: any) => { // Add rows to summary sheet
+    summaryData.forEach((row: any) => {
       summarySheet.addRow(row);
     });
 
-    summarySheet.addRow({ // Add total row to summary sheet
+    summarySheet.addRow({
       departmentName: 'TOTAL =',
       totalEmployees: { formula: `SUM(B2:B${summarySheet.rowCount})` },
       totalAmount: { formula: `SUM(C2:C${summarySheet.rowCount})` }
     }).font = { bold: true };
 
-    const totalRow = summarySheet.lastRow; // Get last row
-    totalRow?.eachCell((cell) => { // Apply styles to total row
+    const totalRow = summarySheet.lastRow;
+    totalRow?.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin' },
         bottom: { style: 'double' },
       };
     });
 
-    const excelBuffer = await workbook.xlsx.writeBuffer() // Write workbook to buffer
-    return { file: excelBuffer, fileName: `${payroll.name}.xlsx` } // Return file buffer and name
+    const excelBuffer = await workbook.xlsx.writeBuffer();
+    return { file: excelBuffer, fileName: `${payroll.name}.xlsx` };
   }
 }
 
