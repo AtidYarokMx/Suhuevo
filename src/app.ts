@@ -46,7 +46,7 @@ import shedRoutes from '@routes/shed.routes';
 import jobRoutes from '@routes/job.routes';
 
 /* cronjobs */
-import { dailyAbsencesCronJob, dailyAutomaticAttendancesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
+// import { dailyAbsencesCronJob, dailyAutomaticAttendancesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
 import overtimeRoutes from '@routes/overtime.routes';
 
 // import csurf from 'csurf'
@@ -116,11 +116,11 @@ export class AppServer {
     this.app.use('/api/job', jobRoutes)
   }
 
-  crons(): void {
-    dailyAutomaticAttendancesCronJob.start()
-    dailyAbsencesCronJob.start()
-    dailyPayrollCronJob.start()
-  }
+  // crons(): void {
+  //   dailyAutomaticAttendancesCronJob.start()
+  //   dailyAbsencesCronJob.start()
+  //   dailyPayrollCronJob.start()
+  // }
 
   async initFolders(): Promise<void> {
     if (!fs.existsSync(tempDocsDir)) await fsPromises.mkdir(tempDocsDir, { recursive: true })

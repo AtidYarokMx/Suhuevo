@@ -56,6 +56,7 @@ type EmployeeSchedule = {
 } | null
 
 export interface IEmployeSchedule {
+  [key: string]: EmployeeSchedule;
   monday: EmployeeSchedule,
   tuesday: EmployeeSchedule
   wednesday: EmployeeSchedule
