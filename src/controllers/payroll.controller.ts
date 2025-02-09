@@ -25,7 +25,7 @@ class PayrollController {
       session.startTransaction();
       // Valida el objeto de entrada
       schemaGenerateWeeklyPayroll.parse(body);
-      // Llama al método del servicio que ahora incorpora la lógica de "día festivo trabajado"
+      // Llama al método del servicio que genera y guarda la nómina completa
       const response = await payrollService.generateWeeklyPayroll(body, session);
       await session.commitTransaction();
       await session.endSession();
@@ -38,7 +38,8 @@ class PayrollController {
   }
 
   public async executeWeeklyPayroll(req: Request, res: Response): Promise<any> {
-    const body: any = req.body;
+    // Fusionamos los parámetros de query y body para incluir "preview" si viene en la URL
+    const body: any = { ...req.body, ...req.query };
     const session = await AppMainMongooseRepo.startSession();
     try {
       session.startTransaction();

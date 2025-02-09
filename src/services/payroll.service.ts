@@ -121,6 +121,7 @@ class PayrollService {
    * bonos, etc.) y se guarda en la base de datos.
    */
   async executeWeeklyPayroll(body: any, session: ClientSession): Promise<any> {
+    customLogColored(`Body de la solicitud: ${body.String}`, "blue");
     if (body.preview) {
       customLogColored("Modo preview activado: Generando vista previa de nómina", "blue");
       // Para preview se utiliza el parámetro weekStartDate (se espera que sea un miércoles)
@@ -149,6 +150,8 @@ class PayrollService {
           estimatedWeekly
         };
       });
+      customLogColored(`Vista previa generada para ${previewData.length} empleados`, "green");
+      customLogColored(`Ejemplo de vista previa: ${JSON.stringify(previewData[0])}`, "yellow");
       return previewData;
     } else {
       return await this.generateWeeklyPayroll(body, session);
