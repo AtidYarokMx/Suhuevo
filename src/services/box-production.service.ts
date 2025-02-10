@@ -14,6 +14,7 @@ import { AppLocals } from '@app/interfaces/auth.dto'
 import { ShipmentModel } from '@app/repositories/mongoose/models/shipment.model'
 import { z } from 'zod'
 import { IShipmentCode } from '@app/dtos/shipment.dto'
+import { customLog } from '@app/utils/util.util'
 
 class BoxProductionService {
   async getAll() {
@@ -83,6 +84,7 @@ class BoxProductionService {
     })
 
     const boxesWithCodes = await BoxProductionModel.bulkWrite(sequelizeToMongooseFields)
+    customLog("boxesWithCodes", boxesWithCodes)
     return boxesWithCodes
   }
 }

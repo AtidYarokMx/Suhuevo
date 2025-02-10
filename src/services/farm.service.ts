@@ -8,6 +8,7 @@ import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
 import { createFarmBody, updateFarmBody } from '@app/dtos/farm.dto'
 import { Types } from '@app/repositories/mongoose'
 import { AppLocals } from '@app/interfaces/auth.dto'
+import { customLog } from '@app/utils/util.util'
 
 
 class FarmService {
@@ -415,6 +416,7 @@ class FarmService {
   }
 
   async create(body: createFarmBody, session: ClientSession, locals: AppLocals) {
+    customLog("createFarmBody", body)
     const user = locals.user._id
     const farm = new FarmModel({ ...body, createdBy: user, lastUpdateBy: user })
     const saved = await farm.save({ validateBeforeSave: true, session })

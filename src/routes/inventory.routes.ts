@@ -23,6 +23,8 @@ class InventoryRoutes extends ServerRouter {
     this.router.get('/:id/shed/:shed', adminMiddleware, this.controller.getOneFromShed as RequestHandler)
     this.router.post('/', adminMiddleware, this.controller.create as RequestHandler)
     this.router.patch('/:id', adminMiddleware, this.controller.update as RequestHandler)
+    this.router.get('/egg-type-summary', adminMiddleware, this.controller.getEggTypeSummary as RequestHandler);
+
   }
 }
 
