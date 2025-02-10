@@ -174,41 +174,6 @@ class InventoryService {
     return inventory;
   }
 
-  async getEggTypeSummary() {
-    const summary = await InventoryModel.aggregate([
-      { $match: { active: true } }, // Solo registros activos
-      {
-        $group: {
-          _id: "$eggType",
-          quantity: { $sum: 1 }, // Cuenta la cantidad de registros por tipo de huevo
-        },
-      },
-      {
-        $lookup: {
-          from: "catalog-eggs", // Nombre de la colección del catálogo
-          localField: "_id", // Campo de inventario a relacionar
-          foreignField: "id", // Campo en el catálogo
-          as: "eggInfo", // Resultado del catálogo
-        },
-      },
-      {
-        $unwind: {
-          path: "$eggInfo",
-          preserveNullAndEmptyArrays: true, // Permite mostrar tipos no relacionados
-        },
-      },
-      {
-        $project: {
-          eggType: "$_id",
-          quantity: 1,
-          name: "$eggInfo.name", // Nombre del tipo de huevo
-          description: "$eggInfo.description", // Descripción del tipo
-        },
-      },
-    ]).exec();
-
-    return summary;
-  }
 }
 
 const inventoryService: InventoryService = new InventoryService()

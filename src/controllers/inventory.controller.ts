@@ -112,16 +112,6 @@ class InventoryController {
     }
   }
 
-  public async getEggTypeSummary(req: Request, res: Response) {
-    try {
-      const summary = await inventoryService.getEggTypeSummary();
-      return res.status(200).json({ data: summary });
-    } catch (error) {
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
-    }
-  }
-
 }
 
 export const inventoryController: InventoryController = new InventoryController()

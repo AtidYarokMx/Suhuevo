@@ -87,6 +87,57 @@ class BoxProductionService {
     customLog("boxesWithCodes", boxesWithCodes)
     return boxesWithCodes
   }
+
+  async getEggTypeSummaryFromBoxes(filters: { startDate?: string; endDate?: string; farmNumber?: number; shedNumber?: number; status?: number }) {
+    console.log("Query Params:", filters);
+    const matchConditions: any = { active: true };
+
+    // Filtros opcionales
+    if (filters.startDate || filters.endDate) {
+      matchConditions.createdAt = {};
+      if (filters.startDate) matchConditions.createdAt.$gte = new Date(filters.startDate);
+      if (filters.endDate) matchConditions.createdAt.$lte = new Date(filters.endDate);
+    }
+    if (filters.farmNumber) matchConditions.farmNumber = filters.farmNumber;
+    if (filters.shedNumber) matchConditions.shedNumber = filters.shedNumber;
+    if (filters.status) matchConditions.status = filters.status;
+
+    const summary = await BoxProductionModel.aggregate([
+      { $match: matchConditions }, // Aplicar los filtros dinámicos
+      {
+        $group: {
+          _id: "$type", // Agrupar por tipo de huevo
+          quantity: { $sum: 1 }, // Contar la cantidad de cada tipo de caja
+        },
+      },
+      {
+        $lookup: {
+          from: "catalog-eggs", // Nombre de la colección del catálogo de huevos
+          localField: "_id", // Relacionar con el tipo de huevo
+          foreignField: "id", // ID en el catálogo
+          as: "eggInfo", // Relación con el catálogo
+        },
+      },
+      {
+        $unwind: {
+          path: "$eggInfo",
+          preserveNullAndEmptyArrays: true, // Permitir mostrar tipos sin relación
+        },
+      },
+      {
+        $project: {
+          eggType: "$_id",
+          quantity: 1,
+          name: "$eggInfo.name",
+          description: "$eggInfo.description",
+        },
+      },
+    ]).exec();
+
+    return summary;
+  }
+
+
 }
 
 const boxProductionService: BoxProductionService = new BoxProductionService()
