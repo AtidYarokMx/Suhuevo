@@ -98,14 +98,7 @@ export const updateShed = z.object({
     .optional(),
   shedNumber: z.number().gt(0, "shedNumber debe ser mayor a 0").optional(),
   status: z.nativeEnum(ShedStatus).optional(),
-  generationId: z.string().optional(),
-}).refine((data) => {
-  if (data.status && !data.generationId) {
-    return false;
-  }
-  return true;
-}, {
-  message: "generationId es obligatorio cuando se actualiza el estado.",
+  generationId: z.string().optional()
 });
 
 /**

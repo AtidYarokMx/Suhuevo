@@ -17,7 +17,10 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   mortality: { type: Number, default: 0 },
   eggProduction: { type: Number, default: 0 },
   shedNumber: { type: Number, required: true, immutable: true },
-  generationId: { type: String, default: null },
+  generationId: {
+    type: String,
+    default: () => `${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, "0")}${new Date().getDate().toString().padStart(2, "0")}`
+  },
   ageWeeks: { type: Number, default: 0 },
   /* enums */
   status: {
@@ -49,8 +52,8 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
  * Historial de cambios en casetas
  */
 export const ShedHistorySchema = new Schema<IShedHistory>({
-  shedId: { type: Schema.Types.ObjectId, ref: "shed", required: true },
-  generationId: { type: String, required: true },
+  shedId: { type: Schema.Types.ObjectId, ref: "shed" },
+  generationId: { type: String },
   change: { type: Schema.Types.Mixed, required: true },
   updatedAt: { type: Date, default: Date.now },
   updatedBy: { type: Schema.Types.ObjectId, ref: "user", required: true },
