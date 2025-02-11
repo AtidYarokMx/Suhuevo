@@ -24,7 +24,6 @@ export type IShed = ICommonFields & {
   description: string;
   week: number;
   period: number;
-  chickenBirth: Date;
   chickenWeight: number;
   initialChicken: number;
   avgEggWeight: number;

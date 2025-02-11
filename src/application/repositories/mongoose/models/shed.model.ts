@@ -21,11 +21,6 @@ ShedSchema.virtual("inventory", {
   justOne: true
 })
 
-ShedSchema.virtual("chickenAge").get(function () {
-  if (typeof this.chickenBirth === "undefined") return null
-  return calculateWeeksFromDate(this.chickenBirth)
-})
-
 /* pre (middlewares) */
 ShedSchema.pre('save', async function (next) {
   this.updatedAt = new Date(Date.now())

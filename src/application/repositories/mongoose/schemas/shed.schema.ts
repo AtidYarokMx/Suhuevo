@@ -10,7 +10,6 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   week: { type: Number, default: 1 },
   period: { type: Number, default: 1 },
   initialChicken: { type: Number, required: true, default: 0 },
-  chickenBirth: { type: Date, required: true },
   chickenWeight: { type: Number, required: true, default: 0 },
   avgEggWeight: { type: Number, default: 0 },
   foodConsumed: { type: Number, default: 0 },
