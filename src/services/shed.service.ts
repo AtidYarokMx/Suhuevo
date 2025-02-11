@@ -9,7 +9,7 @@ import { ShedHistoryModel } from '@app/repositories/mongoose/history/shed.histor
 import { customLog } from '@app/utils/util.util'
 
 /* dtos e interfaces */
-import { initializeShedBody, ShedStatus } from '@app/dtos/shed.dto'
+import { createShedBody, initializeShedBody, ShedStatus } from '@app/dtos/shed.dto'
 import { AppErrorResponse } from '@app/models/app.response'
 import { AppLocals } from '@app/interfaces/auth.dto'
 import { Types } from '@app/repositories/mongoose'
@@ -62,10 +62,7 @@ class ShedService {
   /**
    * Crea una nueva caseta dentro de una granja con `shedNumber` único
    */
-  async create(body: any, session: ClientSession, locals: AppLocals) {
-    customLog("📌 [Service] Creando nueva caseta...");
-    session.startTransaction();
-
+  async create(body: createShedBody, session: ClientSession, locals: AppLocals) {
     try {
       const user = locals.user._id;
       const { farm } = body;
@@ -105,17 +102,12 @@ class ShedService {
         ageWeeks: 0,
         status: "readyToProduction",
       });
+
       const saved = await shed.save({ validateBeforeSave: true, session });
 
       customLog("✅ [Service] Caseta creada exitosamente:", saved);
-
-      await session.commitTransaction();
-      session.endSession();
       return saved.toJSON();
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      customLog("❌ [Service] Error al crear la caseta:", error);
       throw error;
     }
   }

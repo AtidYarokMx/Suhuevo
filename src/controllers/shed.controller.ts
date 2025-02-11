@@ -32,6 +32,10 @@ class ShedController {
    * 🏗️ Crea una nueva caseta
    * @route POST /api/shed
    */
+  /**
+ * 🏗️ Crea una nueva caseta
+ * @route POST /api/sheds
+ */
   public async create(req: Request, res: Response): Promise<Response> {
     const body = req.body as createShedBody;
     const locals = res.locals as AppLocals;
@@ -39,23 +43,29 @@ class ShedController {
 
     try {
       customLog(`📌 ShedController.create: Creando caseta con datos: ${JSON.stringify(body)}`);
-      session.startTransaction();
 
+      // Verificar si la transacción ya está en progreso
+      if (!session.inTransaction()) {
+        session.startTransaction();
+      }
+
+      // Validar los datos antes de enviarlos al servicio
       const validatedBody = createShed.parse(body);
       const response = await shedService.create(validatedBody, session, locals);
 
       await session.commitTransaction();
-      customLog(`✅ ShedController.create: Caseta creada exitosamente con id: ${response._id}`);
+      customLog(`✅ ShedController.create: Caseta creada exitosamente - ID: ${response._id}`);
       return res.status(201).json(response);
-    } catch (error: any) {
+    } catch (error) {
       await session.abortTransaction();
-      customLog(`❌ ShedController.create: Error al crear caseta: ${error.message}`);
+      customLog(`❌ ShedController.create: Error al crear caseta - ${String(error)}`);
       const { statusCode, error: err } = appErrorResponseHandler(error);
       return res.status(statusCode).json(err);
     } finally {
       await session.endSession();
     }
   }
+
 
   /**
    * 🚀 Inicializa una caseta con los datos obligatorios
