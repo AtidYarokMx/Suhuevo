@@ -117,8 +117,8 @@ class FarmController {
 
     try {
       customLog(`📌 FarmController.create: Creando nueva granja con datos: ${JSON.stringify(body)}`);
-      session.startTransaction();
 
+      session.startTransaction();
       const validatedBody = createFarm.parse(body);
       const response = await farmService.create(validatedBody, session, locals);
 

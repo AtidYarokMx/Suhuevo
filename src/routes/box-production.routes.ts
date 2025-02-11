@@ -25,3 +25,4 @@ class BoxProductionRoutes extends ServerRouter {
 
 const boxProductionRoutes: BoxProductionRoutes = new BoxProductionRoutes()
 export default boxProductionRoutes.router
+
