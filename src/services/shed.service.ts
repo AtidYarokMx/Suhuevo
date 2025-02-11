@@ -100,7 +100,7 @@ class ShedService {
         waterConsumed: 0,
         mortality: 0,
         ageWeeks: 0,
-        status: "inactive",
+        status: ShedStatus.INACTIVE,
       });
 
       const saved = await shed.save({ validateBeforeSave: true, session });

@@ -26,6 +26,8 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
     default: ShedStatus.INACTIVE,
     validate: {
       validator: function (newStatus: string) {
+        // Si es una nueva caseta, no se valida el cambio de estado
+        if ((this as any).isNew) return true;
         return isValidStatusChange(this.status as ShedStatus, newStatus as ShedStatus);
       },
       message: "Cambio de estado no permitido",
