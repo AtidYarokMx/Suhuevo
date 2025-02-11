@@ -27,7 +27,7 @@ class BoxProductionService {
     return box
   }
 
-  async sendBoxesToSells({ codes, plates }: z.infer<typeof sendBoxesToSellsBody>, session: ClientSession, locals: AppLocals) {
+  async sendBoxesToSells({ codes, plates, driver }: z.infer<typeof sendBoxesToSellsBody>, session: ClientSession, locals: AppLocals) {
     const ids = await BoxProductionModel.find({ active: true, status: 1, code: { $in: codes } }, { _id: true }, { session }).exec()
 
     if (ids.length <= 0)
@@ -36,7 +36,7 @@ class BoxProductionService {
     const updated = await BoxProductionModel.updateMany({ active: true, status: 1, code: { $in: codes } }, { status: 2 }, { session, runValidators: true }).exec()
     const user = locals.user._id
     const codeItems = ids.map<IShipmentCode>((item, index) => ({ code: item._id }))
-    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeItems, vehiclePlates: plates, createdBy: user, lastUpdateBy: user })
+    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeItems, vehiclePlates: plates, driver, createdBy: user, lastUpdateBy: user })
     await shipment.save({ session, validateBeforeSave: true })
     return updated
   }

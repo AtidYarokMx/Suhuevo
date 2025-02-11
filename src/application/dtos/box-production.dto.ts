@@ -36,7 +36,8 @@ export type IBoxProductionSequelize = {
 /* endpoints dtos */
 export const sendBoxesToSellsBody = z.object({
   codes: z.array(z.string()),
-  plates: z.string()
+  plates: z.string(),
+  driver: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
 })
 
 /* catalog box */
