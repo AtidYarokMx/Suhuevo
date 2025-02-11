@@ -14,6 +14,7 @@ export const ShipmentSchema = new Schema<IShipment>({
     code: { type: SchemaTypes.ObjectId, ref: "box-production", required: true },
     status: { type: Number, enum: ShipmentCodeStatus, default: ShipmentCodeStatus.review }
   }],
+  vehiclePlates: { type: String, required: true },
   status: { type: Number, enum: ShipmentStatus, default: ShipmentStatus.review },
   /* defaults */
   active: { type: Boolean, default: true },
