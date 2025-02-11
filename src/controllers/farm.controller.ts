@@ -118,7 +118,12 @@ class FarmController {
     try {
       customLog(`📌 FarmController.create: Creando nueva granja con datos: ${JSON.stringify(body)}`);
 
-      session.startTransaction();
+      // Verificar si la transacción ya está en progreso
+      if (!session.inTransaction()) {
+        session.startTransaction();
+      }
+
+      // Validar los datos antes de enviarlos al servicio
       const validatedBody = createFarm.parse(body);
       const response = await farmService.create(validatedBody, session, locals);
 

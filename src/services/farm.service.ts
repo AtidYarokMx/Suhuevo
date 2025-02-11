@@ -443,31 +443,34 @@ class FarmService {
   /**
    * Crea una nueva granja con `farmNumber` único
    */
-  async create(body: any, session: ClientSession, locals: AppLocals) {
-    session.startTransaction();
-
+  async create(body: createFarmBody, session: ClientSession, locals: AppLocals) {
     try {
       const user = locals.user._id;
 
       const farmNumber = body.farmNumber || (await this.getNextFarmNumber(session));
       const exists = await FarmModel.findOne({ farmNumber }).session(session).exec();
+
       if (exists) {
-        throw new AppErrorResponse({ name: "FarmNumberInUseError", statusCode: 400, message: `El número de granja ${farmNumber} ya está en uso.` });
+        throw new AppErrorResponse({
+          name: "FarmNumberInUseError",
+          statusCode: 400,
+          message: `El número de granja ${farmNumber} ya está en uso.`,
+        });
       }
 
       customLog("📌 [Service] Creando nueva granja...");
-      const farm = new FarmModel({ ...body, farmNumber, createdBy: user, lastUpdateBy: user });
+      const farm = new FarmModel({
+        ...body,
+        farmNumber,
+        createdBy: user,
+        lastUpdateBy: user,
+      });
+
       const saved = await farm.save({ validateBeforeSave: true, session });
 
       customLog("✅ [Service] Granja creada exitosamente:", saved);
-
-      await session.commitTransaction();
-      session.endSession();
       return saved.toJSON();
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
-      customLog("❌ [Service] Error al crear la granja:", error);
       throw error;
     }
   }
