@@ -35,7 +35,8 @@ export type IBoxProductionSequelize = {
 
 /* endpoints dtos */
 export const sendBoxesToSellsBody = z.object({
-  codes: z.array(z.string())
+  codes: z.array(z.string()),
+  plates: z.string()
 })
 
 /* catalog box */
