@@ -88,6 +88,10 @@ class ShedService {
         });
       }
 
+      const creationDate = new Date();
+      const generationId = `${creationDate.getFullYear()}${(creationDate.getMonth() + 1).toString().padStart(2, "0")}${creationDate.getDate().toString().padStart(2, "0")}`;
+
+
       const shed = new ShedModel({
         ...body,
         shedNumber,
@@ -100,6 +104,7 @@ class ShedService {
         waterConsumed: 0,
         mortality: 0,
         ageWeeks: 0,
+        generationId,
         status: ShedStatus.INACTIVE,
       });
 
@@ -238,6 +243,7 @@ class ShedService {
             ageWeeks: shed.ageWeeks,
             status: shed.status,
             recordedBy: user,
+            change: shed.toObject(),
           },
         ]);
 

@@ -49,9 +49,9 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
  * Historial de cambios en casetas
  */
 export const ShedHistorySchema = new Schema<IShedHistory>({
-  shedId: { type: Schema.Types.ObjectId, ref: "Shed", required: true },
+  shedId: { type: Schema.Types.ObjectId, ref: "shed", required: true },
   generationId: { type: String, required: true },
-  change: { type: ShedSchema.clone(), required: true },
+  change: { type: Schema.Types.Mixed, required: true },
   updatedAt: { type: Date, default: Date.now },
-  updatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  updatedBy: { type: Schema.Types.ObjectId, ref: "user", required: true },
 });
