@@ -19,21 +19,21 @@ class FarmRoutes extends ServerRouter {
   config(): void {
     /**
      * 📢 Obtiene todas las granjas activas
-     * @route GET /api/farms
+     * @route GET /api/farm
      * @access Admin
      */
     this.router.get("/", adminMiddleware, this.controller.getAll as RequestHandler);
 
     /**
      * 📢 Obtiene todas las granjas con sus casetas asociadas
-     * @route GET /api/farms/sheds
+     * @route GET /api/farm/sheds
      * @access Admin
      */
     this.router.get("/sheds", adminMiddleware, this.controller.getAllWithSheds as RequestHandler);
 
     /**
      * 🔍 Obtiene una granja por su ID
-     * @route GET /api/farms/:id
+     * @route GET /api/farm/:id
      * @access Admin
      */
     this.router.get("/:id", adminMiddleware, this.controller.getOne as RequestHandler);
