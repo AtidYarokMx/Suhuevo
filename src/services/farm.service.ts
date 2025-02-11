@@ -1,5 +1,5 @@
 /* lib */
-import { type ClientSession } from 'mongoose'
+import mongoose, { type ClientSession } from 'mongoose'
 /* app models */
 import { AppErrorResponse } from '@app/models/app.response'
 /* models */
@@ -12,6 +12,31 @@ import { customLog } from '@app/utils/util.util'
 
 
 class FarmService {
+  /**
+   * Obtiene el siguiente `farmNumber` disponible
+   */
+  private async getNextFarmNumber(session: ClientSession): Promise<number> {
+    customLog("📌 Buscando el último número de granja...");
+    try {
+      const lastFarm = await FarmModel.findOne({}, { farmNumber: 1 })
+        .sort({ farmNumber: -1 })
+        .session(session)
+        .exec();
+
+      const nextFarmNumber = lastFarm ? (lastFarm.farmNumber ?? 0) + 1 : 1;
+      customLog(`✅ Siguiente farmNumber disponible: ${nextFarmNumber}`);
+      return nextFarmNumber;
+    } catch (error) {
+      customLog("❌ Error en getNextFarmNumber:", error);
+      throw new AppErrorResponse({
+        name: "GetNextFarmNumberError",
+        statusCode: 500,
+        message: "Error al obtener el siguiente número de granja.",
+      });
+    }
+  }
+
+
   async getOne(_id: string) {
     const farms = await FarmModel.findOne({ _id, active: true }).populate({
       path: "sheds",
@@ -415,12 +440,36 @@ class FarmService {
     return farm
   }
 
-  async create(body: createFarmBody, session: ClientSession, locals: AppLocals) {
-    customLog("createFarmBody", body)
-    const user = locals.user._id
-    const farm = new FarmModel({ ...body, createdBy: user, lastUpdateBy: user })
-    const saved = await farm.save({ validateBeforeSave: true, session })
-    return saved.toJSON()
+  /**
+   * Crea una nueva granja con `farmNumber` único
+   */
+  async create(body: any, session: ClientSession, locals: AppLocals) {
+    session.startTransaction();
+
+    try {
+      const user = locals.user._id;
+
+      const farmNumber = body.farmNumber || (await this.getNextFarmNumber(session));
+      const exists = await FarmModel.findOne({ farmNumber }).session(session).exec();
+      if (exists) {
+        throw new AppErrorResponse({ name: "FarmNumberInUseError", statusCode: 400, message: `El número de granja ${farmNumber} ya está en uso.` });
+      }
+
+      customLog("📌 [Service] Creando nueva granja...");
+      const farm = new FarmModel({ ...body, farmNumber, createdBy: user, lastUpdateBy: user });
+      const saved = await farm.save({ validateBeforeSave: true, session });
+
+      customLog("✅ [Service] Granja creada exitosamente:", saved);
+
+      await session.commitTransaction();
+      session.endSession();
+      return saved.toJSON();
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      customLog("❌ [Service] Error al crear la granja:", error);
+      throw error;
+    }
   }
 
   async update(_id: string, body: updateFarmBody, session: ClientSession, locals: AppLocals) {

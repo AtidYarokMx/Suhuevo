@@ -15,6 +15,8 @@ import { ShipmentModel } from '@app/repositories/mongoose/models/shipment.model'
 import { z } from 'zod'
 import { IShipmentCode } from '@app/dtos/shipment.dto'
 import { customLog } from '@app/utils/util.util'
+import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
+import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
 
 class BoxProductionService {
   async getAll() {
@@ -42,50 +44,51 @@ class BoxProductionService {
   }
 
   async synchronize() {
-    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>("SELECT * FROM produccion_cajas WHERE status = 1", { type: QueryTypes.SELECT })
-    if (boxes.length <= 0)
-      throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", description: "No se encontró ningún código", code: "CodesNotFound", message: "No se encontraron códigos con los parámetros seleccionados" })
+    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>(
+      "SELECT * FROM produccion_cajas WHERE status = 1",
+      { type: QueryTypes.SELECT }
+    );
 
-    const codes = boxes.map((item) => item.codigo)
+    if (boxes.length <= 0) {
+      throw new AppErrorResponse({
+        statusCode: 404,
+        name: "Codes Not Found",
+        message: "No se encontraron códigos en la base de datos."
+      });
+    }
 
-    const existingCodes = await BoxProductionModel.find({ code: { $in: codes }, active: true }, { code: true })
-    const existingCodesArray = existingCodes.map((item) => item.code)
+    const codes = boxes.map((item) => item.codigo);
 
-    const sequelizeToMongooseFields = boxes.map<AnyBulkWriteOperation<AnyKeys<IBoxProduction> & AnyObject>>((box) => {
-      const { weight, type } = extractDataFromBarcode(box.codigo)
+    // Obtener las granjas y casetas existentes con sus números
+    const farms = await FarmModel.find({}, { _id: 1, farmNumber: 1 }).exec();
+    const sheds = await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 }).exec();
 
-      const document: AnyKeys<IBoxProduction> & AnyObject = {
-        id: box.id,
-        farmNumber: box.id_granja,
-        shedNumber: box.id_caceta,
-        code: box.codigo,
-        weight,
-        type,
-        status: box.status,
-      }
+    const farmMap = Object.fromEntries(farms.map((farm) => [farm.farmNumber, farm._id]));
+    const shedMap = Object.fromEntries(sheds.map((shed) => [`${shed.farm}-${shed.shedNumber}`, shed._id]));
 
-      if (existingCodesArray.includes(box.codigo)) {
-        const documentWihoutStatus = { ...document }
-        delete documentWihoutStatus.status
+    const sequelizeToMongooseFields = boxes.map<AnyBulkWriteOperation<IBoxProduction>>((box) => {
+      const farmId = farmMap[box.id_granja];
+      const shedId = shedMap[`${farmId}-${box.id_caceta}`];
 
-        return {
-          updateOne: {
-            filter: { code: box.codigo },
-            update: { $set: documentWihoutStatus },
-          },
-        }
+      if (!farmId || !shedId) {
+        throw new AppErrorResponse({
+          statusCode: 400,
+          name: "Farm/Shed Not Found",
+          message: `No se encontró una granja/caseta correspondiente para el código ${box.codigo}.`
+        });
       }
 
       return {
-        insertOne: {
-          document
-        },
-      }
-    })
+        updateOne: {
+          filter: { code: box.codigo },
+          update: { $set: { farm: farmId, shed: shedId } },
+          upsert: true
+        }
+      };
+    });
 
-    const boxesWithCodes = await BoxProductionModel.bulkWrite(sequelizeToMongooseFields)
-    customLog("boxesWithCodes", boxesWithCodes)
-    return boxesWithCodes
+    const result = await BoxProductionModel.bulkWrite(sequelizeToMongooseFields);
+    return result;
   }
 
   async getEggTypeSummaryFromBoxes(filters: { startDate?: string; endDate?: string; farmNumber?: number; shedNumber?: number; status?: number }) {

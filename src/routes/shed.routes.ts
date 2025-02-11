@@ -1,26 +1,60 @@
-import type { RequestHandler } from 'express'
-/* route model */
-import { ServerRouter } from './models/route'
-/* middlewares */
-import { adminMiddleware } from '@app/middlewares/auth.middleware'
-/* controllers */
-import { shedController } from '@controllers/shed.controller'
+import { Router } from 'express';
+import { shedController } from '@controllers/shed.controller';
+import { adminMiddleware } from '@app/middlewares/auth.middleware';
 
-class ShedRoutes extends ServerRouter {
-  controller = shedController
+/**
+ * 📌 Rutas para la gestión de casetas (Sheds)
+ * Todas las rutas requieren autenticación de administrador.
+ */
+const shedRoutes = Router();
 
-  constructor() {
-    super()
-    this.config()
-  }
+/**
+ * 🏗️ Crea una nueva caseta
+ * @route POST /api/shed
+ * @access Admin
+ */
+shedRoutes.post('/', adminMiddleware, shedController.create);
 
-  config(): void {
-    this.router.get('/', adminMiddleware, this.controller.getAll as RequestHandler)
-    this.router.get('/:id', adminMiddleware, this.controller.getOne as RequestHandler)
-    this.router.post('/', adminMiddleware, this.controller.create as RequestHandler)
-    this.router.put('/:id', adminMiddleware, this.controller.update as RequestHandler)
-  }
-}
+/**
+ * 🚀 Inicializa una caseta
+ * @route PUT /api/shed/:id/initialize
+ * @access Admin
+ */
+shedRoutes.put('/:id/initialize', adminMiddleware, shedController.initializeShed);
 
-const shedRoutes: ShedRoutes = new ShedRoutes()
-export default shedRoutes.router
+/**
+ * 🔄 Cambia el estado de una caseta
+ * @route PUT /api/shed/:id/status
+ * @access Admin
+ */
+shedRoutes.put('/:id/status', adminMiddleware, shedController.changeShedStatus);
+
+/**
+ * 🛠️ Actualiza datos de una caseta
+ * @route PUT /api/shed/:id
+ * @access Admin
+ */
+shedRoutes.put("/:id", adminMiddleware, shedController.updateShed);
+
+/**
+ * 📜 Obtiene el historial de una caseta con filtro de fechas opcional
+ * @route GET /api/shed/:id/history?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+ * @access Admin
+ */
+shedRoutes.get('/:id/history', adminMiddleware, shedController.getShedHistory);
+
+/**
+ * 🔍 Obtiene una caseta por su identificador
+ * @route GET /api/shed/:id
+ * @access Admin
+ */
+shedRoutes.get('/:id', adminMiddleware, shedController.getOne);
+
+/**
+ * 📢 Obtiene todas las casetas activas
+ * @route GET /api/shed
+ * @access Admin
+ */
+shedRoutes.get('/', adminMiddleware, shedController.getAll);
+
+export default shedRoutes;

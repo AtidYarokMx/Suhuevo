@@ -40,3 +40,5 @@ export function appErrorResponseHandler(error: unknown | any): IErrorHandlerResp
   console.log(error)
   return { statusCode: 500, error: result }
 }
+
+export { AppErrorResponse }

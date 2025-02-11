@@ -1,8 +1,14 @@
-import { AppHistoryMongooseRepo } from '@app/repositories/mongoose'
+import { AppHistoryMongooseRepo } from '@app/repositories/mongoose';
 /* schema */
-import { ShedHistorySchema } from '@app/repositories/mongoose/schemas/shed.schema'
+import { ShedHistorySchema } from '@app/repositories/mongoose/schemas/shed.schema';
 /* dtos */
-import { IShed } from '@app/dtos/shed.dto'
-import { ICommonHistoryFields } from '@app/dtos/common.dto'
+import { IShed } from '@app/dtos/shed.dto';
+import { ICommonHistoryFields, IShedHistory } from '@app/dtos/common.dto';
 
-export const ShedHistoryModel = AppHistoryMongooseRepo.model<ICommonHistoryFields<IShed>>("shed", ShedHistorySchema)
+/**
+ * Modelo para almacenar el historial de cambios en casetas
+ */
+export const ShedHistoryModel = AppHistoryMongooseRepo.model<IShedHistory>(
+  "shed_history",
+  ShedHistorySchema
+);

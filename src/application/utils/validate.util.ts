@@ -11,3 +11,19 @@ export function validateBarcode(code: string) {
   const schema = z.string().length(21)
   return schema.parse(code)
 }
+
+type Status = 'inactive' | 'cleaning' | 'readyToProduction' | 'production';
+
+export const validStatusTransitions: Record<Status, Status[]> = {
+  inactive: ["cleaning"],
+  cleaning: ["readyToProduction"],
+  readyToProduction: ["production"],
+  production: ["inactive", "cleaning"],
+};
+
+/**
+export function isValidStatusChange(currentStatus: Status, newStatus: Status): boolean {
+ */
+export function isValidStatusChange(currentStatus: Status, newStatus: Status): boolean {
+  return validStatusTransitions[currentStatus]?.includes(newStatus) ?? false;
+}

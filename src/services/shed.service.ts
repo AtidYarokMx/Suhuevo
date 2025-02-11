@@ -3,21 +3,373 @@ import { type ClientSession } from 'mongoose'
 
 /* modelos */
 import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { ShedHistoryModel } from '@app/repositories/mongoose/history/shed.history-model'
 
 /* utilidades */
-import { calculateWeekDifferenceFromToday } from '@app/utils/date.util'
 import { customLog } from '@app/utils/util.util'
 
 /* dtos e interfaces */
-import { createShedBody, IShed, updateShedBody } from '@app/dtos/shed.dto'
+import { initializeShedBody, ShedStatus } from '@app/dtos/shed.dto'
 import { AppErrorResponse } from '@app/models/app.response'
 import { AppLocals } from '@app/interfaces/auth.dto'
 import { Types } from '@app/repositories/mongoose'
+import { isValidStatusChange } from '@app/utils/validate.util'
+
 
 /**
- * Clase de servicio para la gestión de casetas.
+ * 📌 Servicio para la gestión de casetas (Sheds)
  */
 class ShedService {
+
+  /**
+   * 📌 Obtiene el siguiente número de caseta disponible en una granja
+   * @param farmId - ID de la granja
+   * @param session - Sesión de base de datos para transacción
+   * @returns Número de caseta disponible
+   * @throws Error si no se puede obtener el número de caseta
+   */
+  private async getNextShedNumber(
+    farmId: string,
+    session: ClientSession
+  ): Promise<number> {
+    customLog(`📌 Buscando el último número de caseta para la granja ${farmId}...`);
+
+    try {
+      const lastShed = await ShedModel.findOne({ farm: farmId }, { shedNumber: 1 })
+        .sort({ shedNumber: -1 })
+        .session(session)
+        .exec();
+
+      let nextShedNumber = lastShed ? (lastShed.shedNumber ?? 0) + 1 : 1;
+
+      // Asegurar que el número no esté en uso
+      while (await ShedModel.exists({ farm: farmId, shedNumber: nextShedNumber }).session(session)) {
+        nextShedNumber++;
+      }
+
+      customLog(`✅ Siguiente shedNumber disponible: ${nextShedNumber}`);
+      return nextShedNumber;
+    } catch (error) {
+      customLog("❌ Error en getNextShedNumber:", error);
+      throw new AppErrorResponse({
+        name: "GetNextShedNumberError",
+        statusCode: 500,
+        message: "Error al obtener el siguiente número de caseta.",
+      });
+    }
+  }
+
+  /**
+   * Crea una nueva caseta dentro de una granja con `shedNumber` único
+   */
+  async create(body: any, session: ClientSession, locals: AppLocals) {
+    customLog("📌 [Service] Creando nueva caseta...");
+    session.startTransaction();
+
+    try {
+      const user = locals.user._id;
+      const { farm } = body;
+
+      if (!farm) {
+        throw new AppErrorResponse({
+          name: "FarmRequiredError",
+          statusCode: 400,
+          message: "Es necesario especificar una granja para la caseta.",
+        });
+      }
+
+      const shedNumber = body.shedNumber || (await this.getNextShedNumber(farm, session));
+      customLog(`🔢 [Service] Asignado shedNumber: ${shedNumber}`);
+
+      // Verificar que no exista un `shedNumber` duplicado en la misma granja
+      const exists = await ShedModel.findOne({ farm, shedNumber }).session(session).exec();
+      if (exists) {
+        throw new AppErrorResponse({
+          name: "ShedNumberInUseError",
+          statusCode: 400,
+          message: `El número de caseta ${shedNumber} ya está en uso en la granja ${farm}.`,
+        });
+      }
+
+      const shed = new ShedModel({
+        ...body,
+        shedNumber,
+        createdBy: user,
+        lastUpdateBy: user,
+        initialChicken: 0,
+        avgChickenWeight: 0,
+        avgEggWeight: 0,
+        foodConsumed: 0,
+        waterConsumed: 0,
+        mortality: 0,
+        ageWeeks: 0,
+        status: "readyToProduction",
+      });
+      const saved = await shed.save({ validateBeforeSave: true, session });
+
+      customLog("✅ [Service] Caseta creada exitosamente:", saved);
+
+      await session.commitTransaction();
+      session.endSession();
+      return saved.toJSON();
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      customLog("❌ [Service] Error al crear la caseta:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🚀 Inicializa una caseta y cambia su estado a "production"
+   * @param _id - ID de la caseta a inicializar
+   * @param body - Datos obligatorios para la inicialización
+   * @param session - Sesión de base de datos
+   * @param locals - Datos del usuario autenticado
+   * @returns Caseta actualizada
+   * @throws Error si la caseta no puede ser inicializada
+   */
+  async initializeShed(
+    _id: string,
+    body: initializeShedBody,
+    session: ClientSession,
+    locals: AppLocals
+  ) {
+    session.startTransaction();
+    try {
+      const user = locals.user._id;
+      const shed = await ShedModel.findOne({ _id, active: true }).session(session).exec();
+
+      if (!shed) {
+        throw new AppErrorResponse({
+          statusCode: 404,
+          name: "ShedNotFound",
+          message: "La caseta no existe o está inactiva.",
+        });
+      }
+
+      // Solo se puede inicializar si el estado actual es "readyToProduction"
+      if (shed.status !== ShedStatus.READY_TO_PRODUCTION) {
+        throw new AppErrorResponse({
+          statusCode: 400,
+          name: "InvalidStatus",
+          message: "Solo se puede inicializar una caseta que esté en estado 'readyToProduction'.",
+        });
+      }
+
+      // Generar un ID único para la parvada
+      const generationId = new Date().toISOString().split("T")[0].replace(/-/g, "");
+
+      // Actualizar la caseta con los datos de inicialización
+      shed.set({
+        initialChicken: body.initialChicken,
+        ageWeeks: body.ageWeeks,
+        avgHenWeight: body.avgHenWeight,
+        avgEggWeight: 0,
+        foodConsumed: 0,
+        waterConsumed: 0,
+        mortality: 0,
+        generationId,
+        status: ShedStatus.PRODUCTION,
+        lastUpdateBy: user,
+      });
+
+      const updated = await shed.save({ validateBeforeSave: true, session });
+
+      await session.commitTransaction();
+      customLog(`✅ Caseta inicializada con éxito en estado 'production'`);
+      session.endSession();
+      return updated;
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  /**
+   * 🔄 Cambia el estado de una caseta asegurando el flujo correcto
+   * @param _id - ID de la caseta
+   * @param newStatus - Nuevo estado permitido
+   * @param session - Sesión de base de datos
+   * @param locals - Datos del usuario autenticado
+   * @returns Caseta con estado actualizado
+   * @throws Error si el estado no es válido
+   */
+  async changeShedStatus(
+    _id: string,
+    newStatus: ShedStatus,
+    session: ClientSession,
+    locals: AppLocals
+  ) {
+    session.startTransaction();
+    try {
+      const user = locals.user._id;
+      const shed = await ShedModel.findOne({ _id, active: true }).session(session).exec();
+
+      if (!shed) {
+        throw new AppErrorResponse({
+          statusCode: 404,
+          name: "ShedNotFound",
+          message: "La caseta no existe o está inactiva.",
+        });
+      }
+
+      // Validación del flujo de estados
+      const validTransitions = {
+        [ShedStatus.INACTIVE]: [ShedStatus.CLEANING],
+        [ShedStatus.CLEANING]: [ShedStatus.READY_TO_PRODUCTION],
+        [ShedStatus.READY_TO_PRODUCTION]: [ShedStatus.PRODUCTION], // Solo mediante `initializeShed`
+        [ShedStatus.PRODUCTION]: [ShedStatus.INACTIVE], // Finalización de la parvada
+      };
+
+      if (!validTransitions[shed.status]?.includes(newStatus)) {
+        throw new AppErrorResponse({
+          statusCode: 400,
+          name: "InvalidStatusChange",
+          message: `No se puede cambiar el estado de '${shed.status}' a '${newStatus}'.`,
+        });
+      }
+
+
+      // Si el estado cambia a "inactive" después de "production", se finaliza la parvada
+      if (shed.status === ShedStatus.PRODUCTION && newStatus === ShedStatus.INACTIVE) {
+        await ShedHistoryModel.create([
+          {
+            shedId: shed._id,
+            generationId: shed.generationId,
+            initialChicken: shed.initialChicken,
+            mortality: shed.mortality,
+            foodConsumed: shed.foodConsumed,
+            waterConsumed: shed.waterConsumed,
+            eggProduction: shed.eggProduction,
+            ageWeeks: shed.ageWeeks,
+            status: shed.status,
+            recordedBy: user,
+          },
+        ]);
+
+        // Restablecer valores de la caseta
+        shed.set({
+          initialChicken: 0,
+          avgEggWeight: 0,
+          foodConsumed: 0,
+          waterConsumed: 0,
+          mortality: 0,
+          eggProduction: 0,
+          ageWeeks: 0,
+          generationId: null,
+          status: ShedStatus.INACTIVE,
+          lastUpdateBy: user,
+        });
+      } else {
+        shed.status = newStatus;
+        shed.lastUpdateBy = user;
+      }
+
+      const updated = await shed.save({ validateBeforeSave: true, session });
+
+      await session.commitTransaction();
+      session.endSession();
+      return updated;
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  async updateShedData(_id: string, body: any, session: ClientSession, locals: AppLocals) {
+    session.startTransaction();
+    try {
+      const user = locals.user._id;
+      const shed = await ShedModel.findOne({ _id, active: true }).session(session).exec();
+
+      if (!shed) {
+        throw new AppErrorResponse({
+          statusCode: 404,
+          name: "ShedNotFound",
+          message: "La caseta no existe o está inactiva.",
+        });
+      }
+
+      // Validar cambio de estado
+      if (body.status && !isValidStatusChange(shed.status, body.status)) {
+        throw new AppErrorResponse({
+          statusCode: 400,
+          name: "InvalidStatusChange",
+          message: `No se puede cambiar el estado de '${shed.status}' a '${body.status}'.`,
+        });
+      }
+
+      // Guardar historial antes de modificar la caseta
+      await ShedHistoryModel.create([
+        {
+          shedId: shed._id,
+          generationId: shed.generationId,
+          initialChicken: shed.initialChicken,
+          mortality: shed.mortality,
+          foodConsumed: shed.foodConsumed,
+          waterConsumed: shed.waterConsumed,
+          eggProduction: shed.eggProduction,
+          ageWeeks: shed.ageWeeks,
+          status: shed.status,
+          recordedBy: user,
+        },
+      ]);
+
+      // Actualizar datos con los nuevos valores
+      shed.set({
+        initialChicken: body.initialChicken ?? shed.initialChicken,
+        mortality: shed.mortality + (body.mortality || 0),
+        foodConsumed: shed.foodConsumed + (body.foodConsumed || 0),
+        waterConsumed: shed.waterConsumed + (body.waterConsumed || 0),
+        avgEggWeight: body.avgEggWeight ?? shed.avgEggWeight,
+        status: body.status ?? shed.status,
+        lastUpdateBy: user,
+      });
+
+      // Calcular producción de huevo
+      if (body.eggBoxes) {
+        shed.eggProduction = body.eggBoxes.reduce((total: number, box: any) => {
+          return total + box.quantity * box.eggCount;
+        }, 0);
+      }
+
+      const updated = await shed.save({ validateBeforeSave: true, session });
+
+      await session.commitTransaction();
+      session.endSession();
+      return updated;
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+  }
+
+  /**
+  * Obtiene el historial de una caseta con opción de filtrar por rango de fechas.
+  * @param shedId - ID de la caseta.
+  * @param startDate - Fecha de inicio (opcional).
+  * @param endDate - Fecha de fin (opcional).
+  */
+  async getShedHistory(shedId: string, startDate?: string, endDate?: string) {
+    const query: any = { shedId: shedId };
+
+    if (startDate) {
+      query.recordedAt = { $gte: new Date(startDate) };
+    }
+    if (endDate) {
+      query.recordedAt = { ...query.recordedAt, $lte: new Date(endDate) };
+    }
+
+    return await ShedHistoryModel.find(query)
+      .sort({ recordedAt: -1 })
+      .populate("recordedBy", "name")
+      .exec();
+  }
+
   /**
    * Obtiene una caseta activa por su identificador, incluyendo datos agregados de inventario y de la granja asociada.
    *
@@ -189,108 +541,6 @@ class ShedService {
         statusCode: 500,
         code: "ShedQueryError",
         description: "Error al consultar las casetas",
-        message: error.message
-      })
-    }
-  }
-
-  /**
-   * Crea una nueva caseta.
-   *
-   * @param data - Objeto con los datos necesarios para crear la caseta, incluyendo "weeksChicken" para calcular la fecha de nacimiento.
-   * @param session - Sesión activa de la base de datos.
-   * @param locals - Variables locales de la aplicación (incluye información del usuario).
-   * @returns Objeto JSON de la caseta creada.
-   * @throws {AppErrorResponse} En caso de error durante la creación.
-   */
-  async create({ weeksChicken, ...body }: createShedBody, session: ClientSession, locals: AppLocals) {
-    try {
-      customLog(`Creación de caseta iniciada. weeksChicken: ${weeksChicken}, data: ${JSON.stringify(body)}`)
-
-      const user = locals.user._id
-      const chickenBirthDate = calculateWeekDifferenceFromToday(weeksChicken)
-      const shed = new ShedModel({
-        ...body,
-        chickenBirth: chickenBirthDate,
-        createdBy: user,
-        lastUpdateBy: user
-      })
-
-      const saved = await shed.save({ validateBeforeSave: true, session })
-      customLog(`Caseta creada exitosamente con id: ${saved._id}`)
-      return saved.toJSON()
-    } catch (error: any) {
-      customLog(`Error al crear caseta: ${error.message}`)
-      throw new AppErrorResponse({
-        name: "ShedCreationError",
-        statusCode: 500,
-        code: "ShedCreationError",
-        description: "Error al crear la caseta",
-        message: error.message
-      })
-    }
-  }
-
-  /**
-   * Actualiza la información de una caseta existente.
-   *
-   * @param _id - Identificador de la caseta a actualizar.
-   * @param data - Datos nuevos para la caseta, pudiendo incluir "weeksChicken" o "farm".
-   * @param session - Sesión activa de la base de datos.
-   * @param locals - Variables locales de la aplicación (incluye información del usuario).
-   * @returns La caseta actualizada.
-   * @throws {AppErrorResponse} Si la caseta no existe o ocurre un error durante la actualización.
-   */
-  async update(
-    _id: string,
-    { weeksChicken, farm, ...body }: updateShedBody,
-    session: ClientSession,
-    locals: AppLocals
-  ) {
-    try {
-      customLog(
-        `Actualización de caseta iniciada. id: ${_id}, data: ${JSON.stringify({
-          weeksChicken,
-          farm,
-          ...body
-        })}`
-      )
-
-      const shed = await ShedModel.findOne({ _id, active: true }, null, { session }).exec()
-      if (!shed) {
-        customLog(`Caseta no encontrada para actualizar. id: ${_id}`)
-        throw new AppErrorResponse({
-          statusCode: 404,
-          name: "Caseta no encontrada",
-          description:
-            "La caseta ingresada es inexistente en el sistema o fue eliminada",
-          message: "Caseta no encontrada"
-        })
-      }
-
-      const user = locals.user._id
-      const updateBody: Partial<IShed> = { ...body }
-
-      if (typeof farm !== "undefined") {
-        updateBody.farm = new Types.ObjectId(farm)
-      }
-
-      if (typeof weeksChicken !== "undefined") {
-        updateBody.chickenBirth = calculateWeekDifferenceFromToday(weeksChicken)
-      }
-
-      shed.set({ ...updateBody, lastUpdateBy: user })
-      const updated = await shed.save({ validateBeforeSave: true, session })
-
-      customLog(`Caseta actualizada exitosamente. id: ${_id}`)
-      return updated
-    } catch (error: any) {
-      customLog(`Error al actualizar caseta con id ${_id}: ${error.message}`)
-      throw new AppErrorResponse({
-        name: "ShedUpdateError",
-        statusCode: 500,
-        code: "ShedUpdateError",
-        description: "Error al actualizar la caseta",
         message: error.message
       })
     }

@@ -1,4 +1,5 @@
 import { Types } from "@app/repositories/mongoose"
+import { IShed } from "./shed.dto"
 
 export type ICommonFields = {
   /* defaults */
@@ -7,13 +8,6 @@ export type ICommonFields = {
   createdAt: Date
   lastUpdateBy: Types.ObjectId
   createdBy: Types.ObjectId
-}
-
-export type ICommonHistoryFields<T> = {
-  change: T
-  /* defaults */
-  updatedAt: Date
-  updatedBy: Types.ObjectId
 }
 
 export type ICommonCounterFields = {
@@ -27,4 +21,21 @@ export type ICommonCatalogFields<T = void> = T & ICommonFields & {
   id: string
   name: string
   description?: string
+}
+
+/**
+ * Interfaz para almacenar los cambios históricos de cualquier modelo.
+ */
+export interface ICommonHistoryFields<T> {
+  change: T; // Guarda un snapshot del modelo antes del cambio
+  updatedAt: Date;
+  updatedBy: Types.ObjectId;
+}
+
+/**
+ * Interfaz específica para el historial de casetas.
+ */
+export interface IShedHistory extends ICommonHistoryFields<IShed> {
+  shedId: Types.ObjectId;
+  generationId: string;
 }

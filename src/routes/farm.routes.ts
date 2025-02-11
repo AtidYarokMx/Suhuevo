@@ -13,14 +13,51 @@ class FarmRoutes extends ServerRouter {
     super()
     this.config()
   }
-
+  /**
+     * 🔧 Configuración de las rutas de granjas
+     */
   config(): void {
-    this.router.get('/', adminMiddleware, this.controller.getAll as RequestHandler)
-    this.router.get('/shed', adminMiddleware, this.controller.getAllWithSheds as RequestHandler)
-    this.router.get('/:id', adminMiddleware, this.controller.getOne as RequestHandler)
-    this.router.get('/:id/shed', adminMiddleware, this.controller.getOneWithSheds as RequestHandler)
-    this.router.post('/', adminMiddleware, this.controller.create as RequestHandler)
-    this.router.put('/:id', adminMiddleware, this.controller.update as RequestHandler)
+    /**
+     * 📢 Obtiene todas las granjas activas
+     * @route GET /api/farms
+     * @access Admin
+     */
+    this.router.get("/", adminMiddleware, this.controller.getAll as RequestHandler);
+
+    /**
+     * 📢 Obtiene todas las granjas con sus casetas asociadas
+     * @route GET /api/farms/sheds
+     * @access Admin
+     */
+    this.router.get("/sheds", adminMiddleware, this.controller.getAllWithSheds as RequestHandler);
+
+    /**
+     * 🔍 Obtiene una granja por su ID
+     * @route GET /api/farms/:id
+     * @access Admin
+     */
+    this.router.get("/:id", adminMiddleware, this.controller.getOne as RequestHandler);
+
+    /**
+     * 🔍 Obtiene una granja por su ID con sus casetas asociadas
+     * @route GET /api/farms/:id/sheds
+     * @access Admin
+     */
+    this.router.get("/:id/sheds", adminMiddleware, this.controller.getOneWithSheds as RequestHandler);
+
+    /**
+     * 🏗️ Crea una nueva granja
+     * @route POST /api/farms
+     * @access Admin
+     */
+    this.router.post("/", adminMiddleware, this.controller.create as RequestHandler);
+
+    /**
+     * 🛠️ Actualiza los datos de una granja
+     * @route PUT /api/farms/:id
+     * @access Admin
+     */
+    this.router.put("/:id", adminMiddleware, this.controller.update as RequestHandler);
   }
 }
 

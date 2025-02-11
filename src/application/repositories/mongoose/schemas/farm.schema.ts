@@ -2,6 +2,7 @@ import { Model, Schema, SchemaTypes } from '@app/repositories/mongoose'
 /* dtos */
 import { AppFarmModel, FarmStatus, IFarm, IFarmVirtuals } from '@app/dtos/farm.dto'
 import type { ICommonHistoryFields } from '@app/dtos/common.dto'
+import { FarmModel } from '../models/farm.model';
 
 export const FarmSchema = new Schema<IFarm, AppFarmModel, {}, {}, IFarmVirtuals>({
   name: { type: String, trim: true, required: true },
@@ -9,7 +10,7 @@ export const FarmSchema = new Schema<IFarm, AppFarmModel, {}, {}, IFarmVirtuals>
   farmNumber: {
     type: Number, validate: {
       validator: async function (value: number) {
-        const count = await (this.constructor as Model<IFarm>).countDocuments({ farmNumber: value, active: true })
+        const count = await FarmModel.countDocuments({ farmNumber: value });
         return count === 0
       },
       message: "Ya existe un registro con ese id"
