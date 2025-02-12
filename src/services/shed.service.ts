@@ -217,8 +217,7 @@ class ShedService {
           message: `No se puede cambiar el estado de '${shed.status}' a '${newStatus}'.`,
         });
       }
-
-
+      customLog(`🔄 Cambiando estado de caseta ${_id} a ${newStatus}...`);
       // Si el estado cambia a "inactive" después de "production", se finaliza la parvada
       if (shed.status === ShedStatus.PRODUCTION && newStatus === ShedStatus.INACTIVE) {
         await ShedHistoryModel.create([
@@ -254,10 +253,7 @@ class ShedService {
         shed.status = newStatus;
         shed.lastUpdateBy = user;
       }
-
       const updated = await shed.save({ validateBeforeSave: true, session });
-
-
       return updated;
     } catch (error) {
       throw error;

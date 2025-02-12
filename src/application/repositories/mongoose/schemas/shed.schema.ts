@@ -31,10 +31,11 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
       validator: function (newStatus: string) {
         // Si es una nueva caseta, no se valida el cambio de estado
         if ((this as any).isNew) return true;
-        return isValidStatusChange(this.status as ShedStatus, newStatus as ShedStatus);
+        return this.status.includes(newStatus as ShedStatus);
       },
       message: "Cambio de estado no permitido",
     },
+    lastUpdateBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
 
   /* relations */
