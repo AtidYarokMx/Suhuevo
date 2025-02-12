@@ -197,6 +197,7 @@ class ShedService {
     locals: AppLocals
   ) {
     session.startTransaction();
+    customLog(`🔄 Cambiando estado de caseta ${_id} a ${newStatus}...`);
     try {
       const user = locals.user._id;
       const shed = await ShedModel.findOne({ _id, active: true }).session(session).exec();

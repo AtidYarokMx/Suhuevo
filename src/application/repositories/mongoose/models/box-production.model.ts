@@ -10,7 +10,6 @@ import { UserLogger } from '@app/handlers/loggers/user.logger'
 import { IBoxProduction } from '@app/dtos/box-production.dto'
 
 export const BoxProductionSchema = new Schema<IBoxProduction>({
-  id: { type: Number, unique: true, required: true },
   farmNumber: { type: Number, required: true },
   shedNumber: { type: Number, required: true },
   farm: { type: Schema.Types.ObjectId, ref: "farm" },

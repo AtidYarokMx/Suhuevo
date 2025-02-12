@@ -5,8 +5,10 @@ import { AnyBulkWriteOperation, AnyKeys, AnyObject, ClientSession } from 'mongoo
 import { AppSequelizeMSSQLClient } from '@app/repositories/sequelize'
 /* models */
 import { BoxProductionModel } from '@app/repositories/mongoose/models/box-production.model'
+import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
+import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
 /* utils */
-import { extractDataFromBarcode } from '@app/utils/barcode.util'
+import { customLog } from '@app/utils/util.util'
 /* dtos */
 import { IBoxProduction, IBoxProductionSequelize, sendBoxesToSellsBody } from '@app/dtos/box-production.dto'
 import { AppErrorResponse } from '@app/models/app.response'
@@ -14,9 +16,8 @@ import { AppLocals } from '@app/interfaces/auth.dto'
 import { ShipmentModel } from '@app/repositories/mongoose/models/shipment.model'
 import { z } from 'zod'
 import { IShipmentCode } from '@app/dtos/shipment.dto'
-import { customLog } from '@app/utils/util.util'
-import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
-import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { ObjectId } from 'mongodb'
+import { CatalogBoxModel } from '@app/repositories/mongoose/catalogs/box.catalog'
 
 class BoxProductionService {
   async getAll() {
@@ -43,7 +44,15 @@ class BoxProductionService {
     return updated
   }
 
+  /**
+   * 🔄 **Sincroniza los códigos de producción desde SQL a MongoDB**
+   * @route POST /api/boxes/sync
+   * @returns Resultado de la sincronización
+   */
   async synchronize() {
+    customLog("📌 Iniciando sincronización de códigos...");
+
+    // 🔹 Consulta los registros desde SQL Server
     const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>(
       "SELECT * FROM produccion_cajas WHERE status = 1",
       { type: QueryTypes.SELECT }
@@ -57,39 +66,103 @@ class BoxProductionService {
       });
     }
 
-    const codes = boxes.map((item) => item.codigo);
+    // 🔹 Filtrar solo registros válidos con `codigo`
+    const validBoxes = boxes.filter(box => box.codigo);
+    if (validBoxes.length === 0) {
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "Invalid Data",
+        message: "Los códigos obtenidos desde SQL son inválidos o vacíos."
+      });
+    }
 
-    // Obtener las granjas y casetas existentes con sus números
+    // 🔹 **Obtener las granjas y casetas existentes en MongoDB**
     const farms = await FarmModel.find({}, { _id: 1, farmNumber: 1 }).exec();
     const sheds = await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 }).exec();
+    const catalogBoxes = await CatalogBoxModel.find({}, { _id: 1, id: 1 }).exec(); // 🔹 **Obtener catálogo de tipos de cajas**
 
+    // 🔹 **Crear mapas para acceso rápido**
     const farmMap = Object.fromEntries(farms.map((farm) => [farm.farmNumber, farm._id]));
     const shedMap = Object.fromEntries(sheds.map((shed) => [`${shed.farm}-${shed.shedNumber}`, shed._id]));
+    const boxTypeMap = Object.fromEntries(catalogBoxes.map((box) => [box.id, box._id])); // 🔹 **Mapeo de tipos de cajas**
 
-    const sequelizeToMongooseFields = boxes.map<AnyBulkWriteOperation<IBoxProduction>>((box) => {
-      const farmId = farmMap[box.id_granja];
-      const shedId = shedMap[`${farmId}-${box.id_caceta}`];
-
-      if (!farmId || !shedId) {
-        throw new AppErrorResponse({
-          statusCode: 400,
-          name: "Farm/Shed Not Found",
-          message: `No se encontró una granja/caseta correspondiente para el código ${box.codigo}.`
-        });
-      }
-
-      return {
-        updateOne: {
-          filter: { code: box.codigo },
-          update: { $set: { farm: farmId, shed: shedId } },
-          upsert: true
-        }
-      };
+    // 🔹 **Verificar qué códigos ya existen en MongoDB**
+    const existingCodes = await BoxProductionModel.distinct("code", {
+      code: { $in: validBoxes.map((box) => box.codigo) },
     });
 
-    const result = await BoxProductionModel.bulkWrite(sequelizeToMongooseFields);
-    return result;
+
+    const bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = [];
+
+    for (const box of validBoxes) {
+      // 🔹 **Omitir códigos ya registrados**
+      if (existingCodes.includes(box.codigo)) {
+        customLog(`⚠️ Código ${box.codigo} ya registrado. Omitiendo...`);
+        continue;
+      }
+
+      // 🔹 **Asignar granja `1` o "anónima" si no existe**
+      const farmId = farmMap[box.id_granja] || farmMap[1] || new ObjectId();
+      const shedId = shedMap[`${farmId}-${box.id_caceta}`] || Object.values(shedMap)[0] || new ObjectId();
+
+      if (!farmId || !shedId) {
+        customLog(`⚠️ No se encontró una granja/caseta para el código ${box.codigo}. Omitiendo...`);
+        continue;
+      }
+
+      // 🔹 **Relacionar con el tipo de caja en el catálogo**
+      const boxTypeId = boxTypeMap[box.tipo] || null; // Puede ser `null` si no se encuentra
+
+      bulkOperations.push({
+        updateOne: {
+          filter: { code: box.codigo },
+          update: {
+            $setOnInsert: {
+              _id: new ObjectId(), // 🔹 **ID único**
+              farm: farmId,
+              shed: shedId,
+              type: boxTypeId, // 🔹 **Asociación con tipo de caja**
+              weight: box.peso,
+              status: box.status,
+              createdAt: box.creacion,
+              updatedAt: box.actualizacion,
+            },
+          },
+          upsert: true, // 🔹 **Solo inserta si no existe**
+        },
+      });
+    }
+
+    if (bulkOperations.length === 0) {
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "No Valid Records",
+        message: "No se encontraron registros válidos para sincronizar."
+      });
+    }
+
+    // 🔹 **Ejecutar transacción para evitar inconsistencias**
+    const session: ClientSession = await BoxProductionModel.startSession();
+    session.startTransaction();
+
+    try {
+      const result = await BoxProductionModel.bulkWrite(bulkOperations, { session });
+      await session.commitTransaction();
+      customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos nuevos añadidos.`);
+      return result;
+    } catch (error) {
+      await session.abortTransaction();
+      throw new AppErrorResponse({
+        statusCode: 500,
+        name: "SyncError",
+        message: `Error al sincronizar: ${String(error)}`,
+      });
+    } finally {
+      session.endSession();
+    }
   }
+
+
 
   async getEggTypeSummaryFromBoxes(filters: { startDate?: string; endDate?: string; farmNumber?: number; shedNumber?: number; status?: number }) {
     console.log("Query Params:", filters);

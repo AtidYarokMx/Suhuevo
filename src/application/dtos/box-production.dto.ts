@@ -3,13 +3,15 @@ import { z } from 'zod'
 /* types */
 import { Types } from "@app/repositories/mongoose"
 
+/**
+ * 📌 Modelo de Producción de Cajas en MongoDB
+ */
 export type IBoxProduction = {
   _id: Types.ObjectId
-  id: number
   farmNumber: number
   shedNumber: number
-  farm?: Types.ObjectId
-  shed?: Types.ObjectId
+  farm: Types.ObjectId
+  shed: Types.ObjectId
   code: string
   weight: number
   type: number
@@ -20,9 +22,11 @@ export type IBoxProduction = {
   createdAt: Date
 }
 
-/* raw query */
+/**
+ * 📌 Modelo de Producción de Cajas en SQL Server (Raw Query)
+ */
 export type IBoxProductionSequelize = {
-  id: number
+  id: number | null
   id_granja: number
   id_caceta: number
   codigo: string
@@ -33,16 +37,20 @@ export type IBoxProductionSequelize = {
   actualizacion: Date
 }
 
-/* endpoints dtos */
+/**
+ * 📌 DTO para enviar cajas a ventas
+ */
 export const sendBoxesToSellsBody = z.object({
-  codes: z.array(z.string()),
-  plates: z.string(),
+  codes: z.array(z.string().trim().min(1, "Código inválido")), // 🔹 Validación para evitar códigos vacíos
+  plates: z.string().trim().min(1, "Las placas son requeridas"),
   driver: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
 })
 
-/* catalog box */
+/**
+ * 📌 DTO para crear tipos de caja
+ */
 export const createBoxTypeBody = z.object({
-  id: z.string().trim().min(1),
-  name: z.string().trim().min(1),
+  id: z.string().trim().min(1, "El ID es requerido"),
+  name: z.string().trim().min(1, "El nombre es requerido"),
   description: z.string().trim().optional(),
 })
