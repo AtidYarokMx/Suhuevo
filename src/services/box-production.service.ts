@@ -51,112 +51,46 @@ class BoxProductionService {
    */
   async synchronize() {
     customLog("📌 Iniciando sincronización de códigos...");
+    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>("SELECT * FROM produccion_cajas WHERE status = 1", { type: QueryTypes.SELECT });
+    if (!boxes.length) throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", message: "No se encontraron códigos." });
 
-    // 🔹 Consulta los registros desde SQL Server
-    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>(
-      "SELECT * FROM produccion_cajas WHERE status = 1",
-      { type: QueryTypes.SELECT }
-    );
-
-    if (boxes.length <= 0) {
-      throw new AppErrorResponse({
-        statusCode: 404,
-        name: "Codes Not Found",
-        message: "No se encontraron códigos en la base de datos."
-      });
-    }
-
-    // 🔹 Filtrar solo registros válidos con `codigo`
     const validBoxes = boxes.filter(box => box.codigo);
-    if (validBoxes.length === 0) {
-      throw new AppErrorResponse({
-        statusCode: 400,
-        name: "Invalid Data",
-        message: "Los códigos obtenidos desde SQL son inválidos o vacíos."
-      });
-    }
+    if (!validBoxes.length) throw new AppErrorResponse({ statusCode: 400, name: "Invalid Data", message: "Códigos inválidos o vacíos." });
 
-    // 🔹 **Obtener las granjas y casetas existentes en MongoDB**
-    const farms = await FarmModel.find({}, { _id: 1, farmNumber: 1 }).exec();
-    const sheds = await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 }).exec();
-    const catalogBoxes = await CatalogBoxModel.find({}, { _id: 1, id: 1 }).exec(); // 🔹 **Obtener catálogo de tipos de cajas**
+    const existingCodes = new Set(await BoxProductionModel.distinct("code", { code: { $in: validBoxes.map(box => box.codigo) } }));
+    const farms = Object.fromEntries((await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map(f => [f.farmNumber, f._id]));
+    const sheds = Object.fromEntries((await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map(s => [`${s.farm}-${s.shedNumber}`, s._id]));
+    const boxTypes = Object.fromEntries((await CatalogBoxModel.find({}, { _id: 1, id: 1 })).map(b => [b.id, b._id]));
 
-    // 🔹 **Crear mapas para acceso rápido**
-    const farmMap = Object.fromEntries(farms.map((farm) => [farm.farmNumber, farm._id]));
-    const shedMap = Object.fromEntries(sheds.map((shed) => [`${shed.farm}-${shed.shedNumber}`, shed._id]));
-    const boxTypeMap = Object.fromEntries(catalogBoxes.map((box) => [box.id, box._id])); // 🔹 **Mapeo de tipos de cajas**
-
-    // 🔹 **Verificar qué códigos ya existen en MongoDB**
-    const existingCodes = await BoxProductionModel.distinct("code", {
-      code: { $in: validBoxes.map((box) => box.codigo) },
-    });
-
-
-    const bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = [];
-
-    for (const box of validBoxes) {
-      // 🔹 **Omitir códigos ya registrados**
-      if (existingCodes.includes(box.codigo)) {
+    const bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = validBoxes.reduce<AnyBulkWriteOperation<IBoxProduction>[]>((ops, box) => {
+      if (existingCodes.has(box.codigo)) {
         customLog(`⚠️ Código ${box.codigo} ya registrado. Omitiendo...`);
-        continue;
+        return ops;
       }
-
-      // 🔹 **Asignar granja `1` o "anónima" si no existe**
-      const farmId = farmMap[box.id_granja] || farmMap[1] || new ObjectId();
-      const shedId = shedMap[`${farmId}-${box.id_caceta}`] || Object.values(shedMap)[0] || new ObjectId();
-
-      if (!farmId || !shedId) {
-        customLog(`⚠️ No se encontró una granja/caseta para el código ${box.codigo}. Omitiendo...`);
-        continue;
-      }
-
-      // 🔹 **Relacionar con el tipo de caja en el catálogo**
-      const boxTypeId = boxTypeMap[box.tipo] || null; // Puede ser `null` si no se encuentra
-
-      bulkOperations.push({
+      const farmId = farms[box.id_granja] || Object.values(farms)[0] || new ObjectId();
+      const shedId = sheds[`${farmId}-${box.id_caceta}`] || Object.values(sheds)[0] || new ObjectId();
+      ops.push({
         updateOne: {
           filter: { code: box.codigo },
-          update: {
-            $setOnInsert: {
-              _id: new ObjectId(), // 🔹 **ID único**
-              farm: farmId,
-              shed: shedId,
-              type: boxTypeId, // 🔹 **Asociación con tipo de caja**
-              weight: box.peso,
-              status: box.status,
-              createdAt: box.creacion,
-              updatedAt: box.actualizacion,
-            },
-          },
-          upsert: true, // 🔹 **Solo inserta si no existe**
-        },
+          update: { $setOnInsert: { _id: new ObjectId(), farm: farmId, shed: shedId, type: boxTypes[box.tipo] || null, weight: box.peso, status: box.status, createdAt: box.creacion, updatedAt: box.actualizacion } },
+          upsert: true
+        }
       });
-    }
+      return ops;
+    }, []);
 
-    if (bulkOperations.length === 0) {
-      throw new AppErrorResponse({
-        statusCode: 400,
-        name: "No Valid Records",
-        message: "No se encontraron registros válidos para sincronizar."
-      });
-    }
+    if (!bulkOperations.length) throw new AppErrorResponse({ statusCode: 400, name: "No Valid Records", message: "No hay registros válidos para sincronizar." });
 
-    // 🔹 **Ejecutar transacción para evitar inconsistencias**
     const session: ClientSession = await BoxProductionModel.startSession();
     session.startTransaction();
-
     try {
       const result = await BoxProductionModel.bulkWrite(bulkOperations, { session });
       await session.commitTransaction();
-      customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos nuevos añadidos.`);
+      customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos añadidos.`);
       return result;
     } catch (error) {
       await session.abortTransaction();
-      throw new AppErrorResponse({
-        statusCode: 500,
-        name: "SyncError",
-        message: `Error al sincronizar: ${String(error)}`,
-      });
+      throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error al sincronizar: ${String(error)}` });
     } finally {
       session.endSession();
     }

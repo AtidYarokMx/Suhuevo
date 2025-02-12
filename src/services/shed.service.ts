@@ -129,7 +129,6 @@ class ShedService {
     session: ClientSession,
     locals: AppLocals
   ) {
-    session.startTransaction();
     try {
       const user = locals.user._id;
       const shed = await ShedModel.findOne({ _id, active: true }).session(session).exec();
@@ -169,14 +168,8 @@ class ShedService {
       });
 
       const updated = await shed.save({ validateBeforeSave: true, session });
-
-      await session.commitTransaction();
-      customLog(`✅ Caseta inicializada con éxito en estado 'production'`);
-      session.endSession();
       return updated;
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
       throw error;
     }
   }
@@ -196,7 +189,6 @@ class ShedService {
     session: ClientSession,
     locals: AppLocals
   ) {
-    session.startTransaction();
     customLog(`🔄 Cambiando estado de caseta ${_id} a ${newStatus}...`);
     try {
       const user = locals.user._id;
@@ -265,18 +257,14 @@ class ShedService {
 
       const updated = await shed.save({ validateBeforeSave: true, session });
 
-      await session.commitTransaction();
-      session.endSession();
+
       return updated;
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
       throw error;
     }
   }
 
   async updateShedData(_id: string, body: any, session: ClientSession, locals: AppLocals) {
-    session.startTransaction();
     try {
       const user = locals.user._id;
       const shed = await ShedModel.findOne({ _id, active: true }).session(session).exec();
@@ -334,12 +322,8 @@ class ShedService {
 
       const updated = await shed.save({ validateBeforeSave: true, session });
 
-      await session.commitTransaction();
-      session.endSession();
       return updated;
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
       throw error;
     }
   }

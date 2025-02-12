@@ -72,8 +72,11 @@ class ShedController {
    * @route PUT /api/shed/:id/initialize
    */
   public async initializeShed(req: Request, res: Response): Promise<Response> {
-    const session = await startSession();
-    session.startTransaction();
+    const session = await AppMainMongooseRepo.startSession();
+    // Verificar si la transacción ya está en progreso
+    if (!session.inTransaction()) {
+      session.startTransaction();
+    }
     try {
       validateObjectId(req.params.id);
       const body = initializeShed.parse(req.body);
@@ -96,26 +99,45 @@ class ShedController {
    * @route PUT /api/shed/:id/status
    */
   public async changeShedStatus(req: Request, res: Response): Promise<Response> {
-    const session = await startSession();
-    session.startTransaction();
+    const session = await AppMainMongooseRepo.startSession();
+    // Verificar si la transacción ya está en progreso
+    if (!session.inTransaction()) {
+      session.startTransaction();
+    }
     try {
+      customLog(`📌 ShedController.changeShedStatus: Recibida solicitud para ID ${req.params.id}`);
+
       validateObjectId(req.params.id);
+
+      if (!req.body || !req.body.status) {
+        throw new AppErrorResponse({ statusCode: 400, name: "BadRequest", message: "Falta el parámetro 'status'." });
+      }
       const { status } = req.body;
       if (!Object.values(ShedStatus).includes(status)) {
         throw new AppErrorResponse({ statusCode: 400, name: "InvalidStatus", message: "Estado no válido." });
       }
 
+      customLog(`📌 ShedController.changeShedStatus: Llamando a shedService.changeShedStatus para ID ${req.params.id}`);
       const updatedShed = await shedService.changeShedStatus(req.params.id, status, session, res.locals as AppLocals);
 
+      if (!updatedShed) {
+        throw new AppErrorResponse({ statusCode: 404, name: "NotFound", message: "Caseta no encontrada." });
+      }
+
       await session.commitTransaction();
-      customLog(`✅ ShedController.changeShedStatus: Estado cambiado a '${status}' - ID: ${req.params.id}`);
+      customLog(`✅ ShedController.changeShedStatus: Estado actualizado - ID: ${req.params.id}`);
       return res.status(200).json(updatedShed);
     } catch (error: any) {
-      await session.abortTransaction();
-      customLog(`❌ ShedController.changeShedStatus: Error al cambiar estado - ${error.message}`);
-      return res.status(error.statusCode || 500).json({ message: error.message });
+      if (session) {
+        await session.abortTransaction().catch(() => { });
+      }
+      customLog(`❌ ShedController.changeShedStatus: Error - ${error.message}`);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
     } finally {
-      await session.endSession();
+      if (session) {
+        await session.endSession().catch(() => { });
+      }
     }
   }
 
@@ -124,9 +146,11 @@ class ShedController {
    * @route PUT /api/shed/:id
    */
   public async updateShed(req: Request, res: Response): Promise<Response> {
-    const session = await startSession();
-    session.startTransaction();
-
+    const session = await AppMainMongooseRepo.startSession();
+    // Verificar si la transacción ya está en progreso
+    if (!session.inTransaction()) {
+      session.startTransaction();
+    }
     try {
       validateObjectId(req.params.id);
       const updatedShed = await shedService.updateShedData(req.params.id, req.body, session, res.locals as AppLocals);
