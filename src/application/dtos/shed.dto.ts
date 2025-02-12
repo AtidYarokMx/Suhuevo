@@ -78,7 +78,7 @@ export const initializeShed = z.object({
   initialChicken: z.number().min(1, "Debe haber al menos una gallina"),
   avgHenWeight: z.number().min(1, "Debe de pesar mas de 1 gramo"),
   ageWeeks: z.number().default(0),
-  generationId: z.string(),
+  generationId: z.string().optional(),
 });
 
 /**

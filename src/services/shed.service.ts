@@ -166,6 +166,7 @@ class ShedService {
         status: ShedStatus.PRODUCTION,
         lastUpdateBy: user,
       });
+      customLog(`🚀 Inicializando caseta ${_id} con ${body}`);
 
       const updated = await shed.save({ validateBeforeSave: true, session });
       return updated;
