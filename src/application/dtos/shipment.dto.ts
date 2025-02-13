@@ -32,7 +32,7 @@ export type IShipment = ICommonFields & {
   codes: IShipmentCode[]
   status: ShipmentStatus
   vehiclePlates: string
-  driver: Types.ObjectId
+  driver: string
 }
 
 export type IShipmentCounter = {
