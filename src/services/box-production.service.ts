@@ -51,52 +51,114 @@ class BoxProductionService {
    */
   async synchronize() {
     customLog("📌 Iniciando sincronización de códigos...");
-    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>("SELECT * FROM produccion_cajas WHERE status = 1", { type: QueryTypes.SELECT });
+
+    const boxes = await AppSequelizeMSSQLClient.query<IBoxProductionSequelize>(
+      "SELECT * FROM produccion_cajas WHERE status = 1",
+      { type: QueryTypes.SELECT }
+    );
     if (!boxes.length) throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", message: "No se encontraron códigos." });
 
-    const validBoxes = boxes.filter(box => box.codigo);
+    const validBoxes = boxes.filter(box => box.codigo && box.codigo.trim() !== "");
     if (!validBoxes.length) throw new AppErrorResponse({ statusCode: 400, name: "Invalid Data", message: "Códigos inválidos o vacíos." });
 
-    const existingCodes = new Set(await BoxProductionModel.distinct("code", { code: { $in: validBoxes.map(box => box.codigo) } }));
+    const existingDocuments = await BoxProductionModel.find({ code: { $in: validBoxes.map(box => box.codigo) } }, { _id: 1, code: 1 });
+    const existingCodes = new Map(existingDocuments.map(doc => [doc.code, doc._id]));
+
     const farms = Object.fromEntries((await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map(f => [f.farmNumber, f._id]));
     const sheds = Object.fromEntries((await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map(s => [`${s.farm}-${s.shedNumber}`, s._id]));
     const boxTypes = Object.fromEntries((await CatalogBoxModel.find({}, { _id: 1, id: 1 })).map(b => [b.id, b._id]));
 
-    const bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = validBoxes.reduce<AnyBulkWriteOperation<IBoxProduction>[]>((ops, box) => {
-      if (existingCodes.has(box.codigo)) {
-        customLog(`⚠️ Código ${box.codigo} ya registrado. Omitiendo...`);
-        return ops;
-      }
-      const farmId = farms[box.id_granja] || Object.values(farms)[0] || new ObjectId();
-      const shedId = sheds[`${farmId}-${box.id_caceta}`] || Object.values(sheds)[0] || new ObjectId();
-      ops.push({
+    let bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = validBoxes.map(box => {
+      let objectId = existingCodes.get(box.codigo) || new ObjectId();
+
+      customLog(`🔹 Código ${box.codigo} -> ID: ${objectId}`);
+
+      const farmId = farms[box.id_granja] || new ObjectId();
+      const shedId = sheds[`${farmId}-${box.id_caceta}`] || new ObjectId();
+
+      return {
         updateOne: {
           filter: { code: box.codigo },
-          update: { $setOnInsert: { _id: new ObjectId(), farm: farmId, shed: shedId, type: boxTypes[box.tipo] || null, weight: box.peso, status: box.status, createdAt: box.creacion, updatedAt: box.actualizacion } },
+          update: {
+            $setOnInsert: {
+              _id: objectId,
+              code: box.codigo,
+              farm: farmId,
+              shed: shedId,
+              type: boxTypes[box.tipo] || null,
+              weight: box.peso,
+              status: box.status,
+              createdAt: box.creacion,
+              updatedAt: box.actualizacion
+            }
+          },
           upsert: true
         }
-      });
-      return ops;
-    }, []);
+      };
+    });
 
     if (!bulkOperations.length) throw new AppErrorResponse({ statusCode: 400, name: "No Valid Records", message: "No hay registros válidos para sincronizar." });
 
-    const session: ClientSession = await BoxProductionModel.startSession();
-    session.startTransaction();
+    let session: ClientSession | null = null;
     try {
+      session = await BoxProductionModel.startSession();
+      session.startTransaction();
+
       const result = await BoxProductionModel.bulkWrite(bulkOperations, { session });
       await session.commitTransaction();
-      customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos añadidos.`);
-      return result;
-    } catch (error) {
-      await session.abortTransaction();
-      throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error al sincronizar: ${String(error)}` });
-    } finally {
       session.endSession();
+
+      if (result.upsertedCount === 0) {
+        customLog("⚠️ Ningún código fue insertado. Revisando posibles errores...");
+      } else {
+        customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos añadidos.`);
+        return result;
+      }
+    } catch (error: any) {
+      if (session) await session.abortTransaction().catch(() => { });
+      if (session) session.endSession().catch(() => { });
+
+      if (error.code === 11000) {
+        customLog("⚠️ Error de clave duplicada detectado. Generando nuevos IDs y reintentando...");
+        bulkOperations = bulkOperations.map(op => {
+          if ('updateOne' in op) {
+            return {
+              updateOne: {
+                filter: op.updateOne.filter,
+                update: {
+                  ...op.updateOne.update,
+                  $setOnInsert: { ...op.updateOne.update.$setOnInsert, _id: new ObjectId() }
+                }
+              },
+              upsert: true
+            };
+          }
+          return op;
+        });
+
+        try {
+          session = await BoxProductionModel.startSession();
+          session.startTransaction();
+          const retryResult = await BoxProductionModel.bulkWrite(bulkOperations, { session });
+          await session.commitTransaction();
+          session.endSession();
+
+          if (retryResult.upsertedCount === 0) {
+            customLog("⚠️ Reintento realizado, pero ningún código nuevo fue insertado.");
+          } else {
+            customLog(`✅ Reintento exitoso: ${retryResult.upsertedCount} códigos añadidos.`);
+          }
+
+          return retryResult;
+        } catch (retryError) {
+          if (session) await session.abortTransaction().catch(() => { });
+          if (session) session.endSession().catch(() => { });
+          throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error en reintento de sincronización: ${String(retryError)}` });
+        }
+      }
+      throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error al sincronizar: ${String(error)}` });
     }
   }
-
-
 
   async getEggTypeSummaryFromBoxes(filters: { startDate?: string; endDate?: string; farmNumber?: number; shedNumber?: number; status?: number }) {
     console.log("Query Params:", filters);

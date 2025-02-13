@@ -10,11 +10,12 @@ import { UserLogger } from '@app/handlers/loggers/user.logger'
 import { IBoxProduction } from '@app/dtos/box-production.dto'
 
 export const BoxProductionSchema = new Schema<IBoxProduction>({
+  _id: { type: Schema.Types.ObjectId, auto: true },
   farmNumber: { type: Number, required: true },
   shedNumber: { type: Number, required: true },
   farm: { type: Schema.Types.ObjectId, ref: "farm" },
   shed: { type: Schema.Types.ObjectId, ref: "shed" },
-  code: { type: String, required: true },
+  code: { type: String, required: true, unique: true },
   weight: { type: Number, required: true },
   status: { type: Number, required: true },
   type: { type: Number, required: true },
@@ -26,7 +27,7 @@ export const BoxProductionSchema = new Schema<IBoxProduction>({
 
 /* pre (middlewares) */
 BoxProductionSchema.pre('save', async function (next) {
-  this.updatedAt = new Date(Date.now())
+  this.updatedAt = new Date()
   next()
 })
 
