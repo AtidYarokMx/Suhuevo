@@ -43,7 +43,7 @@ export type IBoxProductionSequelize = {
 export const sendBoxesToSellsBody = z.object({
   codes: z.array(z.string().trim().min(1, "Código inválido")), // 🔹 Validación para evitar códigos vacíos
   plates: z.string().trim().min(1, "Las placas son requeridas"),
-  driver: z.string().refine(val => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
+  driver: z.string().trim().min(1, "El nombre del conductor es requerido")
 })
 
 /**
