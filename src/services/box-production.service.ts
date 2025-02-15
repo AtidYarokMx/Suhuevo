@@ -54,17 +54,18 @@ class BoxProductionService {
     }));
 
     if (!summary) {
-      return formattedBoxes;
+      return { boxes: formattedBoxes }
     }
 
-    const typeSummary = formattedBoxes.reduce<Record<string, number>>((acc, box) => {
-      acc[box.type] = (acc[box.type] || 0) + 1;
+    const summaryData = formattedBoxes.reduce((acc: Record<string, number>, box) => {
+      const typeName = box.type || "Desconocida";
+      acc[typeName] = (acc[typeName] || 0) + 1;
       return acc;
     }, {});
 
     return {
       boxes: formattedBoxes,
-      summary: typeSummary
+      summary: summaryData
     };
   }
 
