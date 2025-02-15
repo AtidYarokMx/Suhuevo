@@ -57,15 +57,19 @@ class BoxProductionService {
       return { boxes: formattedBoxes }
     }
 
+    // Generar el resumen en el formato de objeto
     const summaryData = formattedBoxes.reduce((acc: Record<string, number>, box) => {
       const typeName = box.type || "Desconocida";
       acc[typeName] = (acc[typeName] || 0) + 1;
       return acc;
     }, {});
 
+    // Transformar el objeto en un array de objetos
+    const summaryArray = Object.entries(summaryData).map(([type, value]) => ({ type, value }));
+
     return {
       boxes: formattedBoxes,
-      summary: summaryData
+      summary: summaryArray
     };
   }
 
