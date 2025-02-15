@@ -16,15 +16,34 @@ import { AppLocals } from '@app/interfaces/auth.dto'
 import { customLog } from '@app/utils/util.util'
 
 /**
- * 📦 Controlador para la gestión de cajas de producción.
+ * @swagger
+ * tags:
+ *   name: BoxProduction
+ *   description: API para la gestión de cajas de producción
  */
 class BoxProductionController {
 
   /**
-   * 🔍 Obtiene una caja de producción por su código único.
-   * @route GET /api/boxes/:code
-   * @param req - Express request
-   * @param res - Express response
+   * @swagger
+   * /api/boxes/{code}:
+   *   get:
+   *     summary: Obtiene una caja de producción por su código único
+   *     description: Devuelve la información de una caja de producción basada en su código
+   *     tags: [BoxProduction]
+   *     parameters:
+   *       - in: path
+   *         name: code
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Código único de la caja de producción
+   *     responses:
+   *       200:
+   *         description: Caja encontrada
+   *       400:
+   *         description: Código no válido
+   *       404:
+   *         description: Caja no encontrada
    */
   public async getOne(req: Request, res: Response) {
     const code = req.params.code
@@ -40,11 +59,22 @@ class BoxProductionController {
   }
 
   /**
-  * 📢 Obtiene todas las cajas de producción activas.
-  * @route GET /api/boxes
-  * @param req - Express request
-  * @param res - Express response
-  */
+   * @swagger
+   * /api/boxes:
+   *   get:
+   *     summary: Obtiene todas las cajas activas
+   *     description: Retorna todas las cajas de producción activas y su resumen opcionalmente.
+   *     tags: [BoxProduction]
+   *     parameters:
+   *       - in: query
+   *         name: summary
+   *         schema:
+   *           type: boolean
+   *         description: Si es `true`, devuelve un resumen de tipos de huevo.
+   *     responses:
+   *       200:
+   *         description: Lista de cajas activas
+   */
   public async getAll(req: Request, res: Response) {
     try {
       const summary = req.query.summary === "true";
@@ -58,10 +88,43 @@ class BoxProductionController {
   }
 
   /**
-   * 📊 Obtiene un resumen de tipos de huevo basado en las cajas registradas.
-   * @route GET /api/boxes/summary
-   * @param req - Express request
-   * @param res - Express response
+   * @swagger
+   * /api/boxes/summary:
+   *   get:
+   *     summary: Obtiene un resumen de tipos de huevo
+   *     description: Devuelve un resumen de las cajas registradas, agrupadas por tipo de huevo.
+   *     tags: [BoxProduction]
+   *     parameters:
+   *       - in: query
+   *         name: startDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Fecha de inicio (YYYY-MM-DD)
+   *       - in: query
+   *         name: endDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Fecha de fin (YYYY-MM-DD)
+   *       - in: query
+   *         name: farmNumber
+   *         schema:
+   *           type: number
+   *         description: Número de la granja
+   *       - in: query
+   *         name: shedNumber
+   *         schema:
+   *           type: number
+   *         description: Número del galpón
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: number
+   *         description: Estado de las cajas
+   *     responses:
+   *       200:
+   *         description: Resumen de tipos de huevo
    */
   public async getEggTypeSummaryFromBoxes(req: Request, res: Response) {
     customLog("Query Params:", req.query);
@@ -85,10 +148,21 @@ class BoxProductionController {
   }
 
   /**
-   * 🚛 Envía cajas de producción a ventas.
-   * @route POST /api/boxes/sells
-   * @param req - Express request
-   * @param res - Express response
+   * @swagger
+   * /api/boxes/sells:
+   *   post:
+   *     summary: Envía cajas a ventas
+   *     description: Actualiza el estado de las cajas y genera un registro de envío.
+   *     tags: [BoxProduction]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/sendBoxesToSellsBody'
+   *     responses:
+   *       200:
+   *         description: Cajas enviadas exitosamente
    */
   public async sendBoxesToSells(req: Request, res: Response) {
     const body = req.body as z.infer<typeof sendBoxesToSellsBody>
@@ -112,10 +186,15 @@ class BoxProductionController {
   }
 
   /**
-   * 🔄 Sincroniza los códigos de producción desde la base SQL a MongoDB.
-   * @route POST /api/boxes/sync
-   * @param req - Express request
-   * @param res - Express response
+   * @swagger
+   * /api/boxes/sync:
+   *   post:
+   *     summary: Sincroniza datos desde SQL a MongoDB
+   *     description: Importa y actualiza los códigos de producción en MongoDB desde SQL Server.
+   *     tags: [BoxProduction]
+   *     responses:
+   *       200:
+   *         description: Sincronización completada exitosamente
    */
   public async synchronize(req: Request, res: Response) {
     try {

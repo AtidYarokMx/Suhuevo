@@ -20,6 +20,12 @@ import { ObjectId } from 'mongodb'
 import { CatalogBoxModel } from '@app/repositories/mongoose/catalogs/box.catalog'
 
 class BoxProductionService {
+
+  /**
+   * Obtiene todas las cajas activas y su resumen opcionalmente.
+   * @param summary - Si es `true`, devuelve un resumen del tipo de huevo producido.
+   * @returns Lista de cajas y, opcionalmente, el resumen.
+   */
   async getAll(summary: boolean = false) {
     const boxes = await BoxProductionModel.find({ active: true, status: 1 })
       .populate({
@@ -34,13 +40,14 @@ class BoxProductionService {
       })
       .populate({
         path: "type",
-        model: "catalog-box", // Aseguramos que relacione con la colección correcta
+        model: "catalog-box",
         select: "name",
         strictPopulate: false,
       })
       .lean();
 
-    customLog("📦 Cajas encontradas:", boxes);
+    customLog("📦 Cajas encontradas:", boxes.length);
+
     const formattedBoxes = boxes.map(box => ({
       _id: box._id,
       code: box.code,
@@ -57,27 +64,46 @@ class BoxProductionService {
       return { boxes: formattedBoxes }
     }
 
-    // Generar el resumen en el formato de objeto
+    const allTypes = await CatalogBoxModel.find({}, { name: 1 }).lean();
+
     const summaryData = formattedBoxes.reduce((acc: Record<string, number>, box) => {
       const typeName = box.type || "Desconocida";
       acc[typeName] = (acc[typeName] || 0) + 1;
       return acc;
     }, {});
 
-    // Transformar el objeto en un array de objetos
-    const summaryArray = Object.entries(summaryData).map(([type, value]) => ({ type, value }));
+    const uniqueSummary = new Map<string, number>();
+
+    allTypes.forEach(type => {
+      uniqueSummary.set(type.name, summaryData[type.name] || 0);
+    });
+
+    const finalSummary = Array.from(uniqueSummary, ([type, value]) => ({ type, value }));
+    finalSummary.sort((a, b) => a.type.localeCompare(b.type, "es", { numeric: true }));
 
     return {
       boxes: formattedBoxes,
-      summary: summaryArray
+      summary: finalSummary
     };
   }
 
+  /**
+   * Obtiene una caja por su código.
+   * @param code - Código único de la caja.
+   * @returns Caja encontrada o `null` si no existe.
+   */
   async getOne(code: string) {
     const box = await BoxProductionModel.find({ active: true, code })
     return box
   }
 
+  /**
+   * Envía cajas a ventas y actualiza su estado.
+   * @param payload - Información de los códigos, placas y conductor.
+   * @param session - Sesión de transacción de MongoDB.
+   * @param locals - Información del usuario autenticado.
+   * @returns Resultado de la actualización.
+   */
   async sendBoxesToSells({ codes, plates, driver }: z.infer<typeof sendBoxesToSellsBody>, session: ClientSession, locals: AppLocals) {
     const ids = await BoxProductionModel.find({ active: true, status: 1, code: { $in: codes } }, { _id: true }, { session }).exec()
 
@@ -93,9 +119,8 @@ class BoxProductionService {
   }
 
   /**
-   * 🔄 **Sincroniza los códigos de producción desde SQL a MongoDB**
-   * @route POST /api/boxes/sync
-   * @returns Resultado de la sincronización
+   * Sincroniza los códigos de producción desde SQL Server a MongoDB.
+   * @returns Resultado de la sincronización.
    */
   async synchronize() {
     customLog("📌 Iniciando sincronización de códigos...");
@@ -219,6 +244,16 @@ class BoxProductionService {
     }
   }
 
+  /**
+   * Obtiene un resumen de la cantidad de cajas de huevos producidas.
+   * @param filters - Filtros opcionales para la consulta.
+   * @param filters.startDate - Fecha de inicio (`YYYY-MM-DD`).
+   * @param filters.endDate - Fecha de fin (`YYYY-MM-DD`).
+   * @param filters.farmNumber - Número de granja para filtrar.
+   * @param filters.shedNumber - Número de galpón para filtrar.
+   * @param filters.status - Estado de las cajas.
+   * @returns Lista de tipos de huevo con cantidad producida.
+   */
   async getEggTypeSummaryFromBoxes(filters: { startDate?: string; endDate?: string; farmNumber?: number; shedNumber?: number; status?: number }) {
     console.log("Query Params:", filters);
     const matchConditions: any = { active: true };
@@ -233,41 +268,46 @@ class BoxProductionService {
     if (filters.shedNumber) matchConditions.shedNumber = filters.shedNumber;
     if (filters.status) matchConditions.status = filters.status;
 
+
     const summary = await BoxProductionModel.aggregate([
-      { $match: matchConditions }, // Aplicar los filtros dinámicos
-      {
-        $group: {
-          _id: "$type", // Agrupar por tipo de huevo
-          quantity: { $sum: 1 }, // Contar la cantidad de cada tipo de caja
-        },
-      },
+      { $match: matchConditions },
       {
         $lookup: {
-          from: "catalog-eggs", // Nombre de la colección del catálogo de huevos
-          localField: "_id", // Relacionar con el tipo de huevo
-          foreignField: "id", // ID en el catálogo
-          as: "eggInfo", // Relación con el catálogo
+          from: "catalog-boxes",
+          localField: "type",
+          foreignField: "_id",
+          as: "boxInfo",
         },
       },
       {
         $unwind: {
-          path: "$eggInfo",
-          preserveNullAndEmptyArrays: true, // Permitir mostrar tipos sin relación
+          path: "$boxInfo",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$boxInfo._id",
+          id: { $first: "$boxInfo.id" },
+          name: { $first: "$boxInfo.name" },
+          description: { $first: "$boxInfo.description" },
+          quantity: { $sum: 1 },
         },
       },
       {
         $project: {
-          eggType: "$_id",
+          _id: 1,
+          id: 1,
+          name: 1,
+          description: 1,
           quantity: 1,
-          name: "$eggInfo.name",
-          description: "$eggInfo.description",
         },
       },
     ]).exec();
 
+
     return summary;
   }
-
 
 }
 
