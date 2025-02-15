@@ -47,7 +47,8 @@ class BoxProductionController {
   */
   public async getAll(req: Request, res: Response) {
     try {
-      const response = await boxProductionService.getAll()
+      const summary = req.query.summary === "true";
+      const response = await boxProductionService.getAll(summary)
       return res.status(200).json(response)
     } catch (error) {
       customLog(`❌ Error en getAll: ${String(error)}`);

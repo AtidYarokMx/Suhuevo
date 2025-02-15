@@ -4,6 +4,7 @@ import { Model, Schema, SchemaTypes } from '@app/repositories/mongoose'
 import { ICommonCatalogFields, ICommonHistoryFields } from '@app/dtos/common.dto'
 
 export const CatalogBoxSchema = new Schema<ICommonCatalogFields>({
+  _id: { type: SchemaTypes.ObjectId, auto: true },
   id: {
     type: String, required: true, validate: {
       validator: async function (value: number) {
@@ -15,6 +16,7 @@ export const CatalogBoxSchema = new Schema<ICommonCatalogFields>({
   },
   name: { type: String, trim: true, required: true },
   description: { type: String, trim: true },
+  count: { type: Number, default: 0 },
   /* defaults */
   active: { type: Boolean, default: true },
   createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true, immutable: true },

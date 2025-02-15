@@ -18,7 +18,7 @@ export const BoxProductionSchema = new Schema<IBoxProduction>({
   code: { type: String, required: true, unique: true },
   weight: { type: Number, required: true },
   status: { type: Number, required: true },
-  type: { type: Number, required: true },
+  type: { type: Schema.Types.ObjectId, required: true },
   /* defaults */
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },

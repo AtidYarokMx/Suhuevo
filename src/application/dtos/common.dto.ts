@@ -21,6 +21,7 @@ export type ICommonCatalogFields<T = void> = T & ICommonFields & {
   id: string
   name: string
   description?: string
+  count: number
 }
 
 /**

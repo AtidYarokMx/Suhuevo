@@ -20,9 +20,52 @@ import { ObjectId } from 'mongodb'
 import { CatalogBoxModel } from '@app/repositories/mongoose/catalogs/box.catalog'
 
 class BoxProductionService {
-  async getAll() {
+  async getAll(summary: boolean = false) {
     const boxes = await BoxProductionModel.find({ active: true, status: 1 })
-    return boxes
+      .populate({
+        path: "farm",
+        select: "name",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "shed",
+        select: "name",
+        strictPopulate: false,
+      })
+      .populate({
+        path: "type",
+        model: "catalog-box", // Aseguramos que relacione con la colección correcta
+        select: "name",
+        strictPopulate: false,
+      })
+      .lean();
+
+    customLog("📦 Cajas encontradas:", boxes);
+    const formattedBoxes = boxes.map(box => ({
+      _id: box._id,
+      code: box.code,
+      farm: box.farm && !(box.farm instanceof ObjectId) ? (box.farm as { name: string }).name : "Desconocida",
+      shed: box.shed && !(box.shed instanceof ObjectId) ? (box.shed as { name: string }).name : "Desconocida",
+      type: box.type && !(box.type instanceof ObjectId) ? (box.type as { name: string }).name : "Desconocida",
+      weight: box.weight,
+      status: box.status,
+      createdAt: box.createdAt,
+      updatedAt: box.updatedAt,
+    }));
+
+    if (!summary) {
+      return formattedBoxes;
+    }
+
+    const typeSummary = formattedBoxes.reduce<Record<string, number>>((acc, box) => {
+      acc[box.type] = (acc[box.type] || 0) + 1;
+      return acc;
+    }, {});
+
+    return {
+      boxes: formattedBoxes,
+      summary: typeSummary
+    };
   }
 
   async getOne(code: string) {
@@ -66,15 +109,23 @@ class BoxProductionService {
 
     const farms = Object.fromEntries((await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map(f => [f.farmNumber, f._id]));
     const sheds = Object.fromEntries((await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map(s => [`${s.farm}-${s.shedNumber}`, s._id]));
-    const boxTypes = Object.fromEntries((await CatalogBoxModel.find({}, { _id: 1, id: 1 })).map(b => [b.id, b._id]));
+    const boxTypes = Object.fromEntries(
+      (await CatalogBoxModel.find({}, { _id: 1, id: 1 })).map(b => [b.id.toString(), b._id])
+    );
+    customLog(`📦 BoxTypes cargados: ${JSON.stringify(boxTypes)}`);
 
     let bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = validBoxes.map(box => {
       let objectId = existingCodes.get(box.codigo) || new ObjectId();
-
-      customLog(`🔹 Código ${box.codigo} -> ID: ${objectId}`);
-
       const farmId = farms[box.id_granja] || new ObjectId();
       const shedId = sheds[`${farmId}-${box.id_caceta}`] || new ObjectId();
+
+      const boxTypeId = boxTypes[box.tipo.toString()] ?? null;
+
+      if (!boxTypeId) {
+        customLog(`⚠️ Tipo de caja no encontrado para tipo: ${box.tipo} en código: ${box.codigo}`);
+      }
+
+      customLog(`🔹 Código: ${box.codigo} | Tipo: ${box.tipo} | Mapeado a ID: ${boxTypeId}`);
 
       return {
         updateOne: {
@@ -85,7 +136,7 @@ class BoxProductionService {
               code: box.codigo,
               farm: farmId,
               shed: shedId,
-              type: boxTypes[box.tipo] || null,
+              type: boxTypeId,
               weight: box.peso,
               status: box.status,
               createdAt: box.creacion,
@@ -112,7 +163,9 @@ class BoxProductionService {
         customLog("⚠️ Ningún código fue insertado. Revisando posibles errores...");
       } else {
         customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos añadidos.`);
-        return result;
+        // Eliminar `upsertedIds` antes de devolver la respuesta
+        const { upsertedIds, ...resultWithoutUpsertedIds } = result;
+        return resultWithoutUpsertedIds;
       }
     } catch (error: any) {
       if (session) await session.abortTransaction().catch(() => { });
@@ -149,7 +202,8 @@ class BoxProductionService {
             customLog(`✅ Reintento exitoso: ${retryResult.upsertedCount} códigos añadidos.`);
           }
 
-          return retryResult;
+          const { upsertedIds, ...resultWithoutUpsertedIds } = retryResult;
+          return resultWithoutUpsertedIds;
         } catch (retryError) {
           if (session) await session.abortTransaction().catch(() => { });
           if (session) session.endSession().catch(() => { });

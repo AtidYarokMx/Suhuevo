@@ -9,7 +9,7 @@ import { ShedHistoryModel } from '@app/repositories/mongoose/history/shed.histor
 import { customLog } from '@app/utils/util.util'
 
 /* dtos e interfaces */
-import { createShedBody, initializeShedBody, ShedStatus } from '@app/dtos/shed.dto'
+import { createShedBody, initializeShedBody, IShed, ShedStatus } from '@app/dtos/shed.dto'
 import { AppErrorResponse } from '@app/models/app.response'
 import { AppLocals } from '@app/interfaces/auth.dto'
 import { Types } from '@app/repositories/mongoose'
@@ -283,45 +283,53 @@ class ShedService {
         });
       }
 
-      // Guardar historial antes de modificar la caseta
-      await ShedHistoryModel.create([
-        {
-          shedId: shed._id,
-          generationId: shed.generationId,
-          initialChicken: shed.initialChicken,
-          mortality: shed.mortality,
-          foodConsumed: shed.foodConsumed,
-          waterConsumed: shed.waterConsumed,
-          eggProduction: shed.eggProduction,
-          ageWeeks: shed.ageWeeks,
-          status: shed.status,
-          recordedBy: user,
-        },
-      ]);
+      // **Guardar historial solo con cambios**
+      const changeLog: Partial<IShed> = {};
+      Object.keys(body).forEach(key => {
+        if (body[key] !== undefined && body[key] !== (shed as any)[key]) {
+          (changeLog as any)[key] = body[key];
+        }
+      });
 
-      // Actualizar datos con los nuevos valores
+      // **Si hay cambios, registrarlos en el historial**
+      if (Object.keys(changeLog).length > 0) {
+        await ShedHistoryModel.create([
+          {
+            shedId: shed._id,
+            generationId: shed.generationId,
+            change: changeLog,
+            updatedAt: body.updateDate ? new Date(body.updateDate) : new Date(), // ✅ Guardar con la fecha recibida
+            updatedBy: user,
+          },
+        ]);
+      }
+
+      // **Actualizar solo los campos recibidos**
       shed.set({
-        initialChicken: body.initialChicken ?? shed.initialChicken,
-        mortality: shed.mortality + (body.mortality || 0),
-        foodConsumed: shed.foodConsumed + (body.foodConsumed || 0),
-        waterConsumed: shed.waterConsumed + (body.waterConsumed || 0),
-        avgEggWeight: body.avgEggWeight ?? shed.avgEggWeight,
-        status: body.status ?? shed.status,
+        ...(body.initialChicken !== undefined && { initialChicken: body.initialChicken }),
+        ...(body.mortality !== undefined && { mortality: shed.mortality + body.mortality }),
+        ...(body.foodConsumed !== undefined && { foodConsumed: shed.foodConsumed + body.foodConsumed }),
+        ...(body.waterConsumed !== undefined && { waterConsumed: shed.waterConsumed + body.waterConsumed }),
+        ...(body.avgEggWeight !== undefined && { avgEggWeight: body.avgEggWeight }),
+        ...(body.status !== undefined && { status: body.status }),
         lastUpdateBy: user,
       });
 
-      // Calcular producción de huevo
+      // **Calcular producción de huevo**
       if (body.eggBoxes) {
         shed.eggProduction = body.eggBoxes.reduce((total: number, box: any) => {
           return total + box.quantity * box.eggCount;
         }, 0);
       }
 
+      // **Actualizar la fecha del cambio**
+      shed.updatedAt = body.updateDate ? new Date(body.updateDate) : new Date();
+
       const updated = await shed.save({ validateBeforeSave: true, session });
 
       return updated;
     } catch (error) {
-      throw error;
+      throw new AppErrorResponse({ statusCode: 500, name: "UpdateShedError", message: `Error al actualizar caseta: ${String(error)}` });
     }
   }
 
@@ -429,6 +437,7 @@ class ShedService {
       }
 
       customLog(`Caseta encontrada correctamente con id: ${_id}`)
+      customLog(sheds[0])
       return sheds[0]
     } catch (error: any) {
       customLog(`Error al obtener la caseta con id ${_id}: ${error.message}`)

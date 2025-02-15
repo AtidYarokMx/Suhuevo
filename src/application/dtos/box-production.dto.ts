@@ -14,7 +14,7 @@ export type IBoxProduction = {
   shed: Types.ObjectId
   code: string
   weight: number
-  type: number
+  type: Types.ObjectId
   status: number
   /* defaults */
   active: boolean

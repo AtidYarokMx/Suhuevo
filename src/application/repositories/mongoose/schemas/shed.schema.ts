@@ -47,7 +47,7 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
   lastUpdateBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
   updatedAt: { type: Date, default: () => Date.now() },
-}, { toJSON: { virtuals: true }, toObject: { virtuals: true } });
+}, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 /**
  * Historial de cambios en casetas
@@ -58,4 +58,4 @@ export const ShedHistorySchema = new Schema<IShedHistory>({
   change: { type: Schema.Types.Mixed, required: true },
   updatedAt: { type: Date, default: Date.now },
   updatedBy: { type: Schema.Types.ObjectId, ref: "user", required: true },
-});
+}, { timestamps: true });
