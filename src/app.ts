@@ -40,7 +40,7 @@ import clientRoutes from '@routes/client.routes';
 import bonusRoutes from '@routes/bonus.routes';
 import fileRoutes from '@routes/file.routes';
 import ruleRoutes from '@routes/rule.routes';
-import authRoutes from '@routes/auth.routes';
+import { authRoutes } from '@routes/auth.routes';
 import farmRoutes from '@routes/farm.routes';
 import shedRoutes from '@routes/shed.routes';
 import jobRoutes from '@routes/job.routes';
@@ -49,6 +49,9 @@ import swaggerRoutes from './config/swagger';
 /* cronjobs */
 // import { dailyAbsencesCronJob, dailyAutomaticAttendancesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
 import overtimeRoutes from '@routes/overtime.routes';
+import { authenticateUser } from '@app/middlewares/auth.middleware';
+import { globalAuditMiddleware } from '@app/middlewares/audit.middleware';
+import router from '@routes/index.routes';
 
 // import csurf from 'csurf'
 
@@ -69,30 +72,57 @@ export class AppServer {
     void this.initFolders()
   }
 
-  private getHttpsOptions(): any { // https
-    return {
-      key: fs.readFileSync(path.resolve(__dirname, 'SSL/proavicolKey.key')),
-      cert: fs.readFileSync(path.resolve(__dirname, 'SSL/fullchain.pem'))
+  /**
+   * Carga la configuración SSL segura
+   */
+  private getHttpsOptions(): any {
+    const keyPath = path.resolve(__dirname, "SSL/proavicolKey.key");
+    const certPath = path.resolve(__dirname, "SSL/fullchain.pem");
+
+    if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+      ServerLogger.error("SSL Files missing. Server will not start with HTTPS.");
+      process.exit(1);
     }
+
+    return {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    };
   }
 
   config(): void {
     this.app.set('port', process.env.PORT ?? 443)
     this.app.set('port2', process.env.PORT2 ?? 80)
+
     this.app.use(morgan('dev'))
     this.app.use(cors(serverCors))
-    // this.app.use(clientMiddleware)
     this.app.use(cookieParser())
     this.app.use(express.json())
     this.app.use(express.urlencoded({ extended: false }))
     this.app.use(mongoSanitize())
-    // this.app.use(csurf({ cookie: true }))
+
+    // 📌 🚀 Cargar documentación de Swagger ANTES de aplicar autenticación
+    this.app.use(swaggerRoutes);
+
+    // 🔐 Aplicar middleware de autenticación global, excepto en Swagger
+    this.app.use((req, res, next) => {
+      if (req.path.startsWith("/api-docs")) {
+        return next();
+      }
+      authenticateUser(req, res, next);
+    });
+
+    // ✅ Middleware de auditoría global (solo en rutas protegidas)
+    this.app.use(globalAuditMiddleware);
   }
 
   routes(): void {
     this.app.use('/favicon.ico', express.static(path.join(__dirname, '../images/favicon.ico')))
     this.app.use('/public', express.static(path.join(__dirname, '../public')))
-    this.app.use(swaggerRoutes);
+    //this.app.use(swaggerRoutes)
+
+    this.app.use(router)
+
     this.app.use('/api/personal-bonus', personalBonusRoutes)
     this.app.use('/api/attendance', attendanceRoutes)
     this.app.use('/api/department', deparmentRoutes)
@@ -118,14 +148,17 @@ export class AppServer {
     this.app.use('/api/job', jobRoutes)
   }
 
-  // crons(): void {
-  //   dailyAutomaticAttendancesCronJob.start()
-  //   dailyAbsencesCronJob.start()
-  //   dailyPayrollCronJob.start()
-  // }
-
+  /**
+   * Verifica y crea carpetas necesarias para archivos temporales
+   */
   async initFolders(): Promise<void> {
-    if (!fs.existsSync(tempDocsDir)) await fsPromises.mkdir(tempDocsDir, { recursive: true })
+    try {
+      if (!fs.existsSync(tempDocsDir)) {
+        await fsPromises.mkdir(tempDocsDir, { recursive: true });
+      }
+    } catch (error) {
+      ServerLogger.error("Error creating temp directory:", error);
+    }
   }
 
   start(): void {

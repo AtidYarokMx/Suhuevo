@@ -4,8 +4,6 @@
 
 /* lib */
 import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
-/* handlers */
-import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
 import { IBoxProduction } from '@app/dtos/box-production.dto'
 
@@ -31,10 +29,6 @@ BoxProductionSchema.pre('save', async function (next) {
   next()
 })
 
-/* post (middlewares) */
-BoxProductionSchema.post('save', function (doc) {
-  UserLogger.info(`[Producción de Cajas][${String(doc._id)}] Updated/Created: ${JSON.stringify(doc.toJSON())}`)
-})
 
 /* model instance */
 export const BoxProductionModel = AppMainMongooseRepo.model<IBoxProduction>("box-production", BoxProductionSchema)

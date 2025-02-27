@@ -7,11 +7,14 @@ import { join } from 'path'
 
 const appMailTransporter = nodemailer.createTransport({
   host,
-  port,
-  secure, // true for 465, false for other ports
+  port: Number(port),
+  secure: false,
   auth: {
-    user, // generated ethereal user
-    pass // generated ethereal password
+    user,
+    pass
+  },
+  tls: {
+    rejectUnauthorized: false,
   }
 })
 

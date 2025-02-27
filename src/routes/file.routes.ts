@@ -5,7 +5,7 @@ import type { RequestHandler } from 'express'
 /* route model */
 import { ServerRouter } from './models/route'
 /* middlewares */
-import { adminMiddleware } from '@app/middlewares/auth.middleware'
+import { authenticateUser } from '@app/middlewares/auth.middleware'
 import { uploadFileMiddleware } from '@app/middlewares/upload.middleware'
 /* controller */
 import { fileController } from '@controllers/file.controller'
@@ -19,7 +19,7 @@ class FileRoutes extends ServerRouter {
   }
 
   config(): void {
-    this.router.post('/single', adminMiddleware, uploadFileMiddleware.single('file'), this.controller.uploadSingle as RequestHandler)
+    this.router.post('/single', authenticateUser, uploadFileMiddleware.single('file'), this.controller.uploadSingle as RequestHandler)
   }
 }
 

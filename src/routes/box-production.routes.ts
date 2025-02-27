@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express'
 /* route model */
 import { ServerRouter } from './models/route'
 /* middlewares */
-import { adminMiddleware } from '@app/middlewares/auth.middleware'
+import { authenticateUser } from '@app/middlewares/auth.middleware'
 /* controllers */
 import { boxProductionController } from '@controllers/box-production.controller'
 import { customLog } from '@app/utils/util.util'
@@ -22,7 +22,7 @@ class BoxProductionRoutes extends ServerRouter {
 
   /**
  * Configura las rutas de la API para la gestión de cajas de producción.
- * Todas las rutas están protegidas con `adminMiddleware`.
+ * Todas las rutas están protegidas con `authenticateUser`.
  */
   private config(): void {
     customLog("🔧 Configurando rutas de BoxProduction...");
@@ -33,7 +33,7 @@ class BoxProductionRoutes extends ServerRouter {
      * @queryParam {boolean} summary - Si es `true`, devuelve un resumen de los tipos de huevo.
      * @returns Lista de cajas activas o su resumen.
      */
-    this.router.get('/', adminMiddleware, this.wrapWithLogging(this.controller.getAll))
+    this.router.get('/', authenticateUser, this.wrapWithLogging(this.controller.getAll))
 
     /** 
      * 📊 Obtiene un resumen de tipos de huevo basado en las cajas registradas.
@@ -45,7 +45,7 @@ class BoxProductionRoutes extends ServerRouter {
      * @queryParam {number} status - Estado de las cajas.
      * @returns Un resumen de los tipos de huevo y su cantidad.
      */
-    this.router.get('/egg-type-summary', adminMiddleware, this.wrapWithLogging(this.controller.getEggTypeSummaryFromBoxes));
+    this.router.get('/egg-type-summary', authenticateUser, this.wrapWithLogging(this.controller.getEggTypeSummaryFromBoxes));
 
     /** 
      * 🔍 Obtiene una caja de producción por su código.
@@ -53,7 +53,7 @@ class BoxProductionRoutes extends ServerRouter {
      * @pathParam {string} code - Código único de la caja de producción.
      * @returns Información de la caja encontrada o un error si no existe.
      */
-    this.router.get('/:code', adminMiddleware, this.wrapWithLogging(this.controller.getOne))
+    this.router.get('/:code', authenticateUser, this.wrapWithLogging(this.controller.getOne))
 
     /** 
      * 🚛 Envía cajas de producción a ventas.
@@ -61,14 +61,14 @@ class BoxProductionRoutes extends ServerRouter {
      * @bodyParam {object} body - Contiene los códigos de las cajas y la información del transporte.
      * @returns Resultado de la actualización del estado de las cajas.
      */
-    this.router.post('/sells', adminMiddleware, this.wrapWithLogging(this.controller.sendBoxesToSells))
+    this.router.post('/sells', authenticateUser, this.wrapWithLogging(this.controller.sendBoxesToSells))
 
     /** 
      * 🔄 Sincroniza los códigos de producción desde la base SQL a MongoDB.
      * @route POST /api/boxes/sync
      * @returns Resultado de la sincronización de datos.
      */
-    this.router.post('/sync', adminMiddleware, this.wrapWithLogging(this.controller.synchronize))
+    this.router.post('/sync', authenticateUser, this.wrapWithLogging(this.controller.synchronize))
   }
 
   /**

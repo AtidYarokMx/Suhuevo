@@ -7,7 +7,7 @@ export type IUser = {
   name: string
   firstLastName: string
   secondLastName: string
-  role: string
+  roleId: Types.ObjectId
 
   userName: string
   phone: string

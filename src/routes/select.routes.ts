@@ -1,17 +1,17 @@
 import type { RequestHandler } from 'express'
 import { ServerRouter } from './models/route'
 import { selectController } from '@controllers/select.controller'
-import { adminMiddleware } from '@app/middlewares/auth.middleware'
+import { authenticateUser } from '@app/middlewares/auth.middleware'
 
 class SelectRoutes extends ServerRouter {
-  constructor () {
+  constructor() {
     super()
     this.config()
   }
 
-  config (): void {
-    this.router.get('/', [adminMiddleware], selectController.get as RequestHandler)
-    // this.router.get('/search', [adminMiddleware], selectController.search as RequestHandler)
+  config(): void {
+    this.router.get('/', [authenticateUser], selectController.get as RequestHandler)
+    // this.router.get('/search', [authenticateUser], selectController.search as RequestHandler)
   }
 }
 

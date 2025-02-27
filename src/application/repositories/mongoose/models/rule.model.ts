@@ -2,8 +2,6 @@
 import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
 /* dtos */
 import type { IRule } from '@app/dtos/rule.dto'
-/* loggers */
-import { UserLogger } from '@app/handlers/loggers/user.logger'
 
 export const RuleSchema = new Schema<IRule>({
   name: { type: String, trim: true, required: true },
@@ -26,11 +24,6 @@ export const RuleSchema = new Schema<IRule>({
 RuleSchema.pre('save', function (next) {
   this.updatedAt = new Date(Date.now())
   next()
-})
-
-/* post (middlewares) */
-RuleSchema.post('save', function (doc) {
-  UserLogger.info(`[Rule][${String(doc._id)}] Datos de reset creados: ${JSON.stringify(doc.toJSON())}`)
 })
 
 /* model instance */

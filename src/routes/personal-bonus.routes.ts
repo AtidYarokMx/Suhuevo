@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express'
 /* route model */
 import { ServerRouter } from './models/route'
 /* middlewares */
-import { adminMiddleware } from '@app/middlewares/auth.middleware'
+import { authenticateUser } from '@app/middlewares/auth.middleware'
 /* controllers */
 import { personalBonusController } from '@controllers/personal-bonus.controller'
 
@@ -15,9 +15,9 @@ class PersonalBonusRoutes extends ServerRouter {
   }
 
   config(): void {
-    this.router.get('/', adminMiddleware, this.controller.get as RequestHandler)
-    this.router.get('/:id', adminMiddleware, this.controller.getByEmployee as RequestHandler)
-    this.router.put('/:id', adminMiddleware, this.controller.bulk as RequestHandler)
+    this.router.get('/', authenticateUser, this.controller.get as RequestHandler)
+    this.router.get('/:id', authenticateUser, this.controller.getByEmployee as RequestHandler)
+    this.router.put('/:id', authenticateUser, this.controller.bulk as RequestHandler)
   }
 }
 

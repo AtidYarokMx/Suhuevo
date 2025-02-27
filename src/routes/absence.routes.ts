@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express'
 import { ServerRouter } from './models/route'
-import { adminMiddleware } from '@app/middlewares/auth.middleware'
+import { authenticateUser } from '@app/middlewares/auth.middleware'
 import { attendanceController } from '@controllers/attendance.controller'
 import { uploadFileMiddleware } from '@app/middlewares/upload.middleware'
 import { absenceController } from '@controllers/absence.controller'
@@ -9,15 +9,15 @@ import { absenceController } from '@controllers/absence.controller'
 class AttendanceRoutes extends ServerRouter {
   controller = absenceController
 
-  constructor () {
+  constructor() {
     super()
     this.config()
   }
 
-  config (): void {
-    this.router.get('/', [adminMiddleware], this.controller.get as RequestHandler)
-    this.router.get('/search', [adminMiddleware], this.controller.search as RequestHandler)
-    this.router.patch('/update', [adminMiddleware], this.controller.update as RequestHandler)
+  config(): void {
+    this.router.get('/', [authenticateUser], this.controller.get as RequestHandler)
+    this.router.get('/search', [authenticateUser], this.controller.search as RequestHandler)
+    this.router.patch('/update', [authenticateUser], this.controller.update as RequestHandler)
 
     this.router.post('/import-csv', uploadFileMiddleware.single('file'), attendanceController.importFromCsv)
   }

@@ -4,8 +4,6 @@
 
 /* lib */
 import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
-/* handlers */
-import { UserLogger } from '@app/handlers/loggers/user.logger'
 /* types */
 import { IOrder } from '@app/dtos/order.dto'
 
@@ -26,10 +24,6 @@ OrderSchema.pre('save', async function (next) {
   next()
 })
 
-/* post (middlewares) */
-OrderSchema.post('save', function (doc) {
-  UserLogger.info(`[Order][${String(doc._id)}] Updated/Created: ${JSON.stringify(doc.toJSON())}`)
-})
 
 /* model instance */
 export const OrderModel = AppMainMongooseRepo.model<IOrder>("order", OrderSchema)

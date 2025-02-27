@@ -15,8 +15,12 @@
     "@controllers": "dist/controllers",
     "@services": "dist/services",
     "@routes": "dist/routes",
+    "@middlewares": "dist/application/middlewares",
     "@producers": "dist/producers",
-    "@consumers": "dist/consumers"
+    "@utils": "dist/application/utils",
+    "@config": "dist/config",
+    "@consumers": "dist/consumers",
+    "@validations": "dist/validations"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -45,7 +49,9 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/mime": "3",
+    "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -54,8 +60,10 @@
     "dotenv": "^16.4.5",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
     "express-mongo-sanitize": "^2.2.0",
     "express-rate-limit": "^7.4.0",
+    "express-validator": "^7.2.1",
     "iconv-lite": "^0.6.3",
     "jsonwebtoken": "^9.0.2",
     "mathjs": "^13.1.1",
