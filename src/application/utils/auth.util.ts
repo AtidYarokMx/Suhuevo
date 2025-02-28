@@ -18,7 +18,7 @@ export const generateUserToken = (user: any) => {
   const token = jwt.sign(
     { id: user._id.toString(), role: user.roleId.toString() },
     process.env.JWT_SECRET || "supersecreto",
-    { expiresIn: "1h" }
+    { expiresIn: "30s" }
   );
 
   customLog("🔵 Token generado:", token); // <-- Agregar este log
@@ -29,7 +29,7 @@ export const generateUserToken = (user: any) => {
     { expiresIn: "7d" }
   );
   customLog("🔵 RefreshToken generado:", refreshToken);
-  return { token, refreshToken, expiresIn: 3600 };
+  return { token, refreshToken, expiresIn: 30 };
 };
 
 
