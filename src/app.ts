@@ -76,8 +76,8 @@ export class AppServer {
    * Carga la configuración SSL segura
    */
   private getHttpsOptions(): any {
-    const keyPath = path.resolve(__dirname, "../../SSL/proavicolKey.key");
-    const certPath = path.resolve(__dirname, "../../SSL/fullchain.pem");
+    const keyPath = path.resolve(__dirname, "../SSL/proavicolKey.key");
+    const certPath = path.resolve(__dirname, "../SSL/fullchain.pem");
 
     // 🔍 Agrega logs para ver dónde está buscando los archivos
     ServerLogger.info(`🔍 Buscando certificados SSL en:
