@@ -143,9 +143,6 @@ UserSchema.methods.comparePassword = async function (password: string) {
   return await bcrypt.compare(password, this.password);
 };
 
-/* Índices para mejorar rendimiento en búsquedas */
-UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ userName: 1 }, { unique: true });
 
 /* Model instance */
 export const UserModel = AppMainMongooseRepo.model<IUser, AppUserModel>("User", UserSchema);
