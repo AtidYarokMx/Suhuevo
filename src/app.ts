@@ -76,12 +76,12 @@ export class AppServer {
    * Carga la configuración SSL segura
    */
   private getHttpsOptions(): any {
-    const keyPath = path.resolve(__dirname, "SSL/proavicolKey.key");
-    const certPath = path.resolve(__dirname, "SSL/fullchain.pem");
+    const keyPath = path.resolve(__dirname, "../../SSL/proavicolKey.key");
+    const certPath = path.resolve(__dirname, "../../SSL/fullchain.pem");
 
     if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
       ServerLogger.error("SSL Files missing. Server will not start with HTTPS.");
-      process.exit(1);
+      return null;
     }
 
     return {
