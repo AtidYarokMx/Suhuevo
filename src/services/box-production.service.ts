@@ -97,20 +97,86 @@ class BoxProductionService {
     return box
   }
 
-  async getByShedId(shedId: string) {
+  async getSummary(shedId?: string, startDate?: string, endDate?: string, type?: string) {
+    customLog("📌 Generando resumen de producción...");
+
+    const matchConditions: any = { active: true };
+
+    if (shedId && ObjectId.isValid(shedId)) {
+      matchConditions.shed = new ObjectId(shedId);
+    }
+
+    if (startDate || endDate) {
+      matchConditions.createdAt = {};
+      if (startDate) matchConditions.createdAt.$gte = new Date(startDate);
+      if (endDate) matchConditions.createdAt.$lte = new Date(endDate);
+    }
+
+    if (type && type !== "all" && ObjectId.isValid(type)) {
+      matchConditions.type = new ObjectId(type);
+    }
+
+    const boxes = await BoxProductionModel.find(matchConditions).select("type").lean();
+
+    const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1 }).lean();
+
+    const countByType = boxes.reduce((acc: Record<string, number>, box) => {
+      const typeName = allTypes.find(t => t._id.toString() === box.type?.toString())?.name || "Desconocido";
+      acc[typeName] = (acc[typeName] || 0) + 1;
+      return acc;
+    }, {});
+
+    let summaryData = Object.entries(countByType).map(([type, count]) => ({ type, count }));
+
+    if (type === "all") {
+      summaryData = allTypes.map(t => ({ type: t.name, count: countByType[t.name] || 0 }));
+    }
+
+    summaryData.sort((a, b) => a.type.localeCompare(b.type, "es", { numeric: true }));
+
+    return { shedId, startDate, endDate, type, summary: summaryData };
+  }
+
+  async getByShedId(shedId: string, startDate?: string, endDate?: string, type?: string, summary?: boolean) {
     customLog(`📌 Buscando códigos asignados al Shed ID: ${shedId}`);
 
     if (!ObjectId.isValid(shedId)) {
       throw new AppErrorResponse({ statusCode: 400, name: "Invalid Shed ID", message: "El ID del shed no es válido." });
     }
 
-    const boxes = await BoxProductionModel.find({ shed: new ObjectId(shedId), active: true })
-      .select("code shed status createdAt updatedAt")
+    const matchConditions: any = { shed: new ObjectId(shedId), active: true };
+
+    if (startDate || endDate) {
+      matchConditions.createdAt = {};
+      if (startDate) matchConditions.createdAt.$gte = new Date(startDate);
+      if (endDate) matchConditions.createdAt.$lte = new Date(endDate);
+    }
+
+    if (type && ObjectId.isValid(type)) {
+      matchConditions.type = new ObjectId(type);
+    }
+
+    const boxes = await BoxProductionModel.find(matchConditions)
+      .select("code shed type status createdAt updatedAt")
       .lean();
 
     customLog(`📦 Códigos encontrados en el Shed ID ${shedId}: ${boxes.length}`);
 
-    return { shedId, boxes };
+    let summaryData: { type: string; count: number }[] = [];
+
+    if (summary) {
+      const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1 }).lean();
+      const countByType = boxes.reduce((acc: Record<string, number>, box) => {
+        const typeName = allTypes.find(t => t._id.toString() === box.type?.toString())?.name || "Desconocido";
+        acc[typeName] = (acc[typeName] || 0) + 1;
+        return acc;
+      }, {});
+
+      summaryData = Object.entries(countByType).map(([type, count]) => ({ type, count }));
+      summaryData.sort((a, b) => a.type.localeCompare(b.type, "es", { numeric: true }));
+    }
+
+    return { shedId, startDate, endDate, type, boxes, summary: summary ? summaryData : undefined };
   }
 
   /**

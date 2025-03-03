@@ -48,6 +48,12 @@ class BoxProductionRoutes extends ServerRouter {
     this.router.get('/egg-type-summary', authenticateUser, this.wrapWithLogging(this.controller.getEggTypeSummaryFromBoxes));
 
     /** 
+     * 📊 Obtiene un resumen de producción basado en las cajas registradas.
+     * @route GET /api/boxes/summary
+     */
+    this.router.get('/summary', authenticateUser, this.wrapWithLogging(this.controller.getSummary));
+
+    /** 
      * 🔍 Obtiene una caja de producción por su código.
      * @route GET /api/boxes/:code
      * @pathParam {string} code - Código único de la caja de producción.

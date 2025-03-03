@@ -551,6 +551,8 @@ shedRoutes.get('/:id/generations-history', authenticateUser, shedController.getG
  *       500:
  *         description: Error interno del servidor
  */
+
+// Quitar este endpoint
 shedRoutes.get('/:id/production-trends', authenticateUser, shedController.getProductionTrends);
 
 /**

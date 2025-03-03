@@ -60,6 +60,58 @@ class BoxProductionController {
 
   /**
    * @swagger
+   * /api/boxes/summary:
+   *   get:
+   *     summary: Obtiene un resumen de producción
+   *     description: Devuelve el resumen de producción con la opción de filtrar por Shed, fechas y tipo.
+   *     tags: [BoxProduction]
+   *     parameters:
+   *       - in: query
+   *         name: shedId
+   *         schema:
+   *           type: string
+   *         description: ID del Shed en MongoDB (opcional).
+   *       - in: query
+   *         name: startDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Fecha de inicio en formato YYYY-MM-DD (opcional).
+   *       - in: query
+   *         name: endDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Fecha de fin en formato YYYY-MM-DD (opcional).
+   *       - in: query
+   *         name: type
+   *         schema:
+   *           type: string
+   *         description: Tipo de caja (enviar "all" para incluir todos los tipos con 0 valores).
+   *     responses:
+   *       200:
+   *         description: Resumen de producción.
+   */
+  public async getSummary(req: Request, res: Response) {
+    try {
+      const { shedId, startDate, endDate, type } = req.query;
+      const response = await boxProductionService.getSummary(
+        shedId ? String(shedId) : undefined,
+        startDate ? String(startDate) : undefined,
+        endDate ? String(endDate) : undefined,
+        type ? String(type) : undefined
+      );
+      return res.status(200).json(response);
+    } catch (error) {
+      customLog(`❌ Error en getSummary: ${String(error)}`);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+
+  /**
+   * @swagger
    * /api/boxes:
    *   get:
    *     summary: Obtiene todas las cajas activas
