@@ -69,6 +69,14 @@ class BoxProductionRoutes extends ServerRouter {
      * @returns Resultado de la sincronización de datos.
      */
     this.router.post('/sync', authenticateUser, this.wrapWithLogging(this.controller.synchronize))
+
+    /** 
+     * 📦 Obtiene todas las cajas asignadas a un Shed.
+     * @route GET /api/boxes/shed/:shedId
+     * @pathParam {string} shedId - ID del Shed en MongoDB.
+     * @returns Lista de códigos de producción asignados al Shed.
+     */
+    this.router.get('/shed/:shedId', authenticateUser, this.wrapWithLogging(this.controller.getByShedId))
   }
 
   /**

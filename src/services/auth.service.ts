@@ -11,7 +11,7 @@ import { comparePassword, generatePasswordHash, generateUserToken } from "@app/u
 /* DTOs */
 import { IResetPasswordBody, IUpdatePasswordBody } from "@app/dtos/reset-pass.dto";
 import { ClientSession } from "mongoose";
-import { sign, verify } from "jsonwebtoken";
+import { JwtPayload, sign, verify } from "jsonwebtoken";
 import { appMailTransporter } from "@app/repositories/nodemailer";
 import { appBaseUri, appFrontUpdatePasswordUri, appMailSender } from "@app/constants/mail.constants";
 import { customLog } from "@app/utils/util.util";
@@ -83,7 +83,7 @@ class AuthService {
 
       customLog("✅ Autenticación exitosa. Generando token...");
 
-      const { token, refreshToken, expiresIn } = generateUserToken(user);
+      const { token, refreshToken, expiresIn, refreshExpiresIn } = generateUserToken(user);
 
       const existingToken = await RefreshTokenModel.findOne({ userId: user._id });
 
@@ -101,7 +101,7 @@ class AuthService {
         });
       }
 
-      return { token, refreshToken, expiresIn };
+      return { token, refreshToken, expiresIn, refreshExpiresIn };
     } catch (error) {
       customLog("🔴 ERROR en login:", error);
       throw error
@@ -118,29 +118,49 @@ class AuthService {
     }
 
     try {
-      const storedToken = await RefreshTokenModel.findOne({ token: refreshToken }).session(session);
+      customLog("🔍 Verificando Refresh Token...");
 
-      if (!storedToken) {
-        throw new AppErrorResponse({ statusCode: 403, name: "Refresh token inválido o expirado" });
+      // ✅ 1. Verificar si el refreshToken es válido y obtener `decoded`
+      let decoded: JwtPayload;
+      try {
+        decoded = verify(refreshToken, process.env.JWT_REFRESH_SECRET || "refreshsupersecreto") as JwtPayload;
+        customLog("🔍 Decoded RefreshToken:", decoded);
+      } catch (error) {
+        throw new AppErrorResponse({ statusCode: 401, name: "Refresh token inválido o expirado" });
       }
 
-      const decoded: any = verify(refreshToken, process.env.JWT_REFRESH_SECRET || "refreshsupersecreto");
+      // ✅ 2. Verificar si el refreshToken ha expirado
+      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
+        throw new AppErrorResponse({ statusCode: 401, name: "Refresh token expirado" });
+      }
 
+      // ✅ 3. Buscar el usuario
+      customLog("✅ Token válido. Buscando usuario...");
       const user = await UserModel.findById(decoded.id).session(session);
       if (!user) {
         throw new AppErrorResponse({ statusCode: 403, name: "Usuario no encontrado" });
       }
 
-      const { token, refreshToken: newRefreshToken, expiresIn } = generateUserToken(user);
+      // ✅ 4. Buscar el Refresh Token en la BD
+      customLog("🔍 Buscando token en la base de datos...");
+      const storedToken = await RefreshTokenModel.findOne({ userId: decoded.id, token: refreshToken }).session(session);
+      if (!storedToken) {
+        throw new AppErrorResponse({ statusCode: 403, name: "Refresh token no encontrado en la base de datos" });
+      }
 
-      // 🔥 Actualizar el refreshToken en la BD
+      // ✅ 5. Generar nuevos tokens
+      customLog("🔄 Generando nuevo token...");
+      const { token, refreshToken: newRefreshToken, expiresIn, refreshExpiresIn } = generateUserToken(user);
+
+      // ✅ 6. Actualizar el Refresh Token en la BD en una sola operación
+      customLog("🔄 Actualizando refreshToken en la base de datos...");
       await RefreshTokenModel.findOneAndUpdate(
-        { userId: user._id },
-        { token: newRefreshToken, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-        { upsert: true, new: true, session, maxTimeMS: 5000 }
+        { token: refreshToken },
+        { token: newRefreshToken, expiresAt: new Date(Date.now() + refreshExpiresIn * 1000) },
+        { upsert: true, new: true, session, maxTimeMS: 15000 }
       );
 
-      return { token, refreshToken: newRefreshToken, expiresIn };
+      return { token, refreshToken: newRefreshToken, expiresIn, refreshExpiresIn };
     } catch (error) {
       customLog("🔴 Error al renovar token:", error);
       throw new AppErrorResponse({ statusCode: 401, name: "Refresh token inválido o expirado" });
@@ -152,6 +172,7 @@ class AuthService {
    * Cerrar sesión y eliminar Refresh Token
    */
   async logout(refreshToken: string) {
+    customLog("Token Recibido", refreshToken)
     await RefreshTokenModel.findOneAndDelete({ token: refreshToken });
     return { message: "Sesión cerrada exitosamente" };
   }

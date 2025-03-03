@@ -89,6 +89,41 @@ class BoxProductionController {
 
   /**
    * @swagger
+   * /api/boxes/shed/{shedId}:
+   *   get:
+   *     summary: Obtiene todas las cajas de producción asignadas a un Shed
+   *     description: Devuelve la lista de códigos de producción para un Shed específico
+   *     tags: [BoxProduction]
+   *     parameters:
+   *       - in: path
+   *         name: shedId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: ID del Shed en MongoDB
+   *     responses:
+   *       200:
+   *         description: Lista de códigos de producción asignados al Shed
+   *       400:
+   *         description: ID del Shed no válido
+   *       404:
+   *         description: No se encontraron códigos para el Shed
+   */
+  public async getByShedId(req: Request, res: Response) {
+    const { shedId } = req.params;
+    try {
+      const response = await boxProductionService.getByShedId(shedId);
+      return res.status(200).json(response);
+    } catch (error) {
+      customLog(`❌ Error en getByShedId: ${String(error)}`);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+
+  /**
+   * @swagger
    * /api/boxes/summary:
    *   get:
    *     summary: Obtiene un resumen de tipos de huevo

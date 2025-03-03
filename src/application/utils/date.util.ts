@@ -115,3 +115,20 @@ export function calculateWeeksFromDate(startDate: string | Date): number {
   }
   return moment().diff(start, "weeks");
 }
+
+/**
+ * 🔄 Obtiene la semana administrativa actual (miércoles - martes)
+ */
+export function getAdminWeekRange(): { weekStart: Date; weekEnd: Date } {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  let weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - ((dayOfWeek + 4) % 7));
+  weekStart.setHours(0, 0, 0, 0);
+
+  let weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return { weekStart, weekEnd };
+}

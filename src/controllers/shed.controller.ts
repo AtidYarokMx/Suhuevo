@@ -1,64 +1,52 @@
 import type { Request, Response } from 'express';
 import { startSession } from 'mongoose';
+import shedService from '@services/shed.service';
+import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
+import { validateObjectId } from '@app/utils/validate.util';
+import { AppLocals } from '@app/interfaces/auth.dto';
 import { customLog } from '@app/utils/util.util';
-
-/* repos */
 import { AppMainMongooseRepo } from '@app/repositories/mongoose';
 
-/* services */
-import shedService from '@services/shed.service';
-
-/* handlers */
-import { appErrorResponseHandler, AppErrorResponse } from '@app/handlers/response/error.handler';
-
-/* validation utils */
-import { validateObjectId } from '@app/utils/validate.util';
-
-/* dtos */
-import {
-  createShed,
-  createShedBody,
-  ShedStatus,
-  initializeShed
-} from '@app/dtos/shed.dto';
-import { AppLocals } from '@app/interfaces/auth.dto';
-
 /**
- * 📌 Controlador para la gestión de casetas (Sheds)
+ * @swagger
+ * tags:
+ *   name: Sheds
+ *   description: Gestión de casetas (Sheds)
  */
 class ShedController {
 
   /**
-   * 🏗️ Crea una nueva caseta
-   * @route POST /api/shed
-   */
-  /**
- * 🏗️ Crea una nueva caseta
- * @route POST /api/sheds
- */
+    * @swagger
+    * /api/sheds:
+    *   post:
+    *     summary: Crea una nueva caseta
+    *     tags: [Sheds]
+    *     requestBody:
+    *       required: true
+    *       content:
+    *         application/json:
+    *           schema:
+    *             type: object
+    *     responses:
+    *       201:
+    *         description: Caseta creada exitosamente
+    *       400:
+    *         description: Datos inválidos proporcionados
+    *       500:
+    *         description: Error interno del servidor
+    */
   public async create(req: Request, res: Response): Promise<Response> {
-    const body = req.body as createShedBody;
-    const locals = res.locals as AppLocals;
+    customLog("Enter into create shed")
     const session = await AppMainMongooseRepo.startSession();
-
+    session.startTransaction();
     try {
-      customLog(`📌 ShedController.create: Creando caseta con datos: ${JSON.stringify(body)}`);
-
-      // Verificar si la transacción ya está en progreso
-      if (!session.inTransaction()) {
-        session.startTransaction();
-      }
-
-      // Validar los datos antes de enviarlos al servicio
-      const validatedBody = createShed.parse(body);
-      const response = await shedService.create(validatedBody, session, locals);
-
+      const body = req.body;
+      const locals = res.locals as AppLocals;
+      const response = await shedService.create(body, session, locals);
       await session.commitTransaction();
-      customLog(`✅ ShedController.create: Caseta creada exitosamente - ID: ${response._id}`);
       return res.status(201).json(response);
     } catch (error) {
       await session.abortTransaction();
-      customLog(`❌ ShedController.create: Error al crear caseta - ${String(error)}`);
       const { statusCode, error: err } = appErrorResponseHandler(error);
       return res.status(statusCode).json(err);
     } finally {
@@ -66,164 +54,304 @@ class ShedController {
     }
   }
 
-
   /**
-   * 🚀 Inicializa una caseta con los datos obligatorios
-   * @route PUT /api/shed/:id/initialize
+   * @swagger
+   * /api/sheds/{id}/initialize:
+   *   put:
+   *     summary: Inicializa una caseta con datos
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *     responses:
+   *       200:
+   *         description: Caseta inicializada exitosamente
+   *       400:
+   *         description: Datos inválidos o estado incorrecto
+   *       500:
+   *         description: Error interno del servidor
    */
   public async initializeShed(req: Request, res: Response): Promise<Response> {
     const session = await AppMainMongooseRepo.startSession();
-    // Verificar si la transacción ya está en progreso
-    if (!session.inTransaction()) {
-      session.startTransaction();
-    }
+    session.startTransaction();
     try {
       validateObjectId(req.params.id);
-      const body = initializeShed.parse(req.body);
-      const updatedShed = await shedService.initializeShed(req.params.id, body, session, res.locals as AppLocals);
-
+      const body = req.body;
+      const response = await shedService.initializeShed(req.params.id, body, session, res.locals as AppLocals);
       await session.commitTransaction();
-      customLog(`✅ ShedController.initializeShed: Caseta inicializada - ID: ${req.params.id}`);
-      return res.status(200).json(updatedShed);
-    } catch (error: any) {
-      customLog(`❌ ShedController.initializeShed: Error al inicializar caseta - ${error.message}`);
+      return res.status(200).json(response);
+    } catch (error) {
       await session.abortTransaction();
-      return res.status(error.statusCode || 500).json({ message: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
     } finally {
       await session.endSession();
     }
   }
 
   /**
-   * 🔄 Cambia el estado de una caseta
-   * @route PUT /api/shed/:id/status
+   * @swagger
+   * /api/sheds/{id}/status:
+   *   put:
+   *     summary: Cambia el estado de una caseta
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *       - in: body
+   *         name: status
+   *         required: true
+   *         description: Nuevo estado de la caseta
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Estado de caseta actualizado exitosamente
    */
   public async changeShedStatus(req: Request, res: Response): Promise<Response> {
     const session = await AppMainMongooseRepo.startSession();
-    // Verificar si la transacción ya está en progreso
-    if (!session.inTransaction()) {
-      session.startTransaction();
-    }
+    session.startTransaction();
     try {
-      customLog(`📌 ShedController.changeShedStatus: Recibida solicitud para ID ${req.params.id}`);
-
       validateObjectId(req.params.id);
-
-      if (!req.body || !req.body.status) {
-        throw new AppErrorResponse({ statusCode: 400, name: "BadRequest", message: "Falta el parámetro 'status'." });
-      }
       const { status } = req.body;
-      if (!Object.values(ShedStatus).includes(status)) {
-        throw new AppErrorResponse({ statusCode: 400, name: "InvalidStatus", message: "Estado no válido." });
-      }
-
-      customLog(`📌 ShedController.changeShedStatus: Llamando a shedService.changeShedStatus para ID ${req.params.id}`);
-      const updatedShed = await shedService.changeShedStatus(req.params.id, status, session, res.locals as AppLocals);
-
-      if (!updatedShed) {
-        throw new AppErrorResponse({ statusCode: 404, name: "NotFound", message: "Caseta no encontrada." });
-      }
-
+      const response = await shedService.changeShedStatus(req.params.id, status, session, res.locals as AppLocals);
       await session.commitTransaction();
-      customLog(`✅ ShedController.changeShedStatus: Estado actualizado - ID: ${req.params.id}`);
-      return res.status(200).json(updatedShed);
-    } catch (error: any) {
-      if (session) {
-        await session.abortTransaction().catch(() => { });
-      }
-      customLog(`❌ ShedController.changeShedStatus: Error - ${error.message}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
-    } finally {
-      if (session) {
-        await session.endSession().catch(() => { });
-      }
-    }
-  }
-
-  /**
-   * 🛠️ Actualiza una caseta
-   * @route PUT /api/shed/:id
-   */
-  public async updateShed(req: Request, res: Response): Promise<Response> {
-    const session = await AppMainMongooseRepo.startSession();
-    // Verificar si la transacción ya está en progreso
-    if (!session.inTransaction()) {
-      session.startTransaction();
-    }
-    try {
-      validateObjectId(req.params.id);
-      const updatedShed = await shedService.updateShedData(req.params.id, req.body, session, res.locals as AppLocals);
-
-      await session.commitTransaction();
-      customLog(`✅ ShedController.updateShed: Caseta actualizada con id: ${req.params.id}`);
-      return res.status(200).json(updatedShed);
-    } catch (error: any) {
+      return res.status(200).json(response);
+    } catch (error) {
       await session.abortTransaction();
-      customLog(`❌ ShedController.updateShed: Error al actualizar caseta: ${error.message}`);
-      return res.status(error.statusCode || 500).json({ message: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
     } finally {
       await session.endSession();
     }
   }
 
   /**
-   * 📜 Obtiene el historial de una caseta con filtro de fechas opcional
-   * @route GET /api/shed/:id/history?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
+   * @swagger
+   * /api/sheds/{id}/daily:
+   *   post:
+   *     summary: Captura datos diarios de la caseta
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *     responses:
+   *       200:
+   *         description: Datos capturados exitosamente
+   *       400:
+   *         description: Datos inválidos o fuera de rango
+   *       500:
+   *         description: Error interno del servidor
    */
-  public async getShedHistory(req: Request, res: Response): Promise<Response> {
+  public async captureDailyData(req: Request, res: Response): Promise<Response> {
+    const session = await AppMainMongooseRepo.startSession();
+    session.startTransaction();
     try {
-      validateObjectId(req.params.id);
-      const { startDate, endDate } = req.query;
-
-      const history = await shedService.getShedHistory(
-        req.params.id,
-        startDate as string,
-        endDate as string
-      );
-
-      customLog(`✅ ShedController.getShedHistory: Historial obtenido para caseta con id: ${req.params.id}`);
-      return res.status(200).json(history);
-    } catch (error: any) {
-      customLog(`❌ ShedController.getShedHistory: Error al obtener historial: ${error.message}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
+      const response = await shedService.captureDailyData(req.params.id, req.body, session, res.locals as AppLocals);
+      await session.commitTransaction();
+      return res.status(200).json(response);
+    } catch (error) {
+      await session.abortTransaction();
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
+    } finally {
+      await session.endSession();
     }
   }
 
   /**
-   * 🔍 Obtiene una caseta por su identificador
-   * @route GET /api/shed/:id
+   * @swagger
+   * /api/sheds/{id}/summary:
+   *   get:
+   *     summary: Obtiene el resumen de la semana actual
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Resumen semanal obtenido exitosamente
+   *       404:
+   *         description: Caseta no encontrada
+   *       500:
+   *         description: Error interno del servidor
+   */
+  public async getWeeklySummary(req: Request, res: Response): Promise<Response> {
+    try {
+      const response = await shedService.getWeeklySummary(req.params.id);
+      return res.status(200).json(response);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/sheds/{id}/total-summary:
+   *   get:
+   *     summary: Obtiene el resumen total de la generación actual
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Resumen total obtenido exitosamente
+   *       404:
+   *         description: Caseta no encontrada
+   *       500:
+   *         description: Error interno del servidor
+   */
+  public async getTotalSummary(req: Request, res: Response): Promise<Response> {
+    try {
+      const response = await shedService.getTotalSummary(req.params.id);
+      return res.status(200).json(response);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/sheds/{id}/generations-history:
+   *   get:
+   *     summary: Obtiene el historial de generaciones
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Historial de generaciones obtenido exitosamente
+   *       404:
+   *         description: Caseta no encontrada
+   *       500:
+   *         description: Error interno del servidor
+   */
+  public async getGenerationsHistory(req: Request, res: Response): Promise<Response> {
+    try {
+      const response = await shedService.getShedHistory(req.params.id);
+      return res.status(200).json(response);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/sheds/{id}/production-trends:
+   *   get:
+   *     summary: Obtiene tendencias de producción
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Tendencias de producción obtenidas exitosamente
+   *       404:
+   *         description: Caseta no encontrada
+   *       500:
+   *         description: Error interno del servidor
+   */
+  public async getProductionTrends(req: Request, res: Response): Promise<Response> {
+    try {
+      const response = await shedService.getProductionTrends(req.params.id);
+      return res.status(200).json(response);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
+    }
+  }
+
+  /**
+   * @swagger
+   * /api/sheds/{id}:
+   *   get:
+   *     summary: Obtiene una caseta por su identificador
+   *     tags: [Sheds]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         description: ID de la caseta
+   *         schema:
+   *           type: string
+   *     responses:
+   *       200:
+   *         description: Caseta obtenida exitosamente
    */
   public async getOne(req: Request, res: Response): Promise<Response> {
-    const id = req.params.id;
-    customLog(`📌 ShedController.getOne: Consultando caseta con id: ${id}`);
-
     try {
-      validateObjectId(id);
-      const response = await shedService.getOne(id);
-      customLog(`✅ ShedController.getOne: Caseta encontrada con id: ${id}`);
+      validateObjectId(req.params.id);
+      const response = await shedService.getOne(req.params.id);
       return res.status(200).json(response);
-    } catch (error: any) {
-      customLog(`❌ ShedController.getOne: Error al obtener caseta: ${error.message}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
     }
   }
 
   /**
-   * 📢 Obtiene todas las casetas activas
-   * @route GET /api/sheds
+   * @swagger
+   * /api/sheds:
+   *   get:
+   *     summary: Obtiene todas las casetas
+   *     tags: [Sheds]
+   *     responses:
+   *       200:
+   *         description: Lista de casetas obtenida exitosamente
    */
   public async getAll(req: Request, res: Response): Promise<Response> {
     try {
       const response = await shedService.getAll();
-      customLog(`✅ ShedController.getAll: Se obtuvieron ${response.length} casetas`);
       return res.status(200).json(response);
-    } catch (error: any) {
-      customLog(`❌ ShedController.getAll: Error al obtener casetas: ${error.message}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return res.status(500).json({ message: errorMessage });
     }
   }
 }

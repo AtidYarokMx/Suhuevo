@@ -5,6 +5,7 @@ import authService from "../services/auth.service";
 import { appErrorResponseHandler } from "@app/handlers/response/error.handler";
 import { IResetPasswordBody, IUpdatePasswordBody } from "@app/dtos/reset-pass.dto";
 import { customLog } from "@app/utils/util.util";
+import { refreshExpiresIn } from "@app/constants/auth.constants";
 
 class AuthController {
   /**
@@ -120,7 +121,8 @@ class AuthController {
           message: "Token renovado exitosamente",
           token: response.token,
           refreshToken: response.refreshToken,
-          expiresIn: response.expiresIn
+          expiresIn: response.expiresIn,
+          refreshExpiresIn: response.refreshExpiresIn
         });
 
     } catch (error) {

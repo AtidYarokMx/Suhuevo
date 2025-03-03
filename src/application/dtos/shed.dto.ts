@@ -5,6 +5,89 @@ import { IInventory } from "@app/dtos/inventory.dto";
 import { ICommonFields } from "@app/dtos/common.dto";
 
 /**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ShedStatus:
+ *       type: string
+ *       enum: [inactive, cleaning, readyToProduction, production]
+ *       description: Estados de una caseta en el sistema
+ *
+ *     CreateShed:
+ *       type: object
+ *       required:
+ *         - name
+ *         - description
+ *         - shedNumber
+ *         - farm
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Caseta Norte"
+ *         description:
+ *           type: string
+ *           example: "Caseta ubicada en la zona norte de la granja"
+ *         shedNumber:
+ *           type: number
+ *           example: 1
+ *           description: Número de la caseta dentro de la granja
+ *         farm:
+ *           type: string
+ *           example: "65fbf3214abc9876def91235"
+ *           description: ID de la granja a la que pertenece la caseta
+ *
+ *     InitializeShed:
+ *       type: object
+ *       required:
+ *         - initialHensCount
+ *         - birthDate
+ *         - avgHensWeight
+ *       properties:
+ *         initialHensCount:
+ *           type: number
+ *           example: 20000
+ *           description: Cantidad de gallinas iniciales en la caseta
+ *         birthDate:
+ *           type: string
+ *           format: date
+ *           example: "2024-02-21"
+ *           description: Fecha de nacimiento de las gallinas
+ *         avgHensWeight:
+ *           type: number
+ *           example: 1.5
+ *           description: Peso promedio de las gallinas en kg
+ *
+ *     UpdateShed:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           example: "Caseta Sur"
+ *         description:
+ *           type: string
+ *           example: "Caseta en la zona sur de la granja"
+ *         ageWeeks:
+ *           type: number
+ *           example: 12
+ *           description: Edad en semanas de la parvada
+ *         avgHensWeight:
+ *           type: number
+ *           example: 1.8
+ *           description: Peso promedio de las gallinas en kg
+ *         farm:
+ *           type: string
+ *           example: "65fbf3214abc9876def91235"
+ *         shedNumber:
+ *           type: number
+ *           example: 2
+ *         status:
+ *           $ref: "#/components/schemas/ShedStatus"
+ *         generationId:
+ *           type: string
+ *           example: "20240221"
+ */
+
+/**
  * Enumeración de los estados permitidos para las casetas (Sheds)
  */
 export enum ShedStatus {
@@ -19,25 +102,18 @@ export enum ShedStatus {
  */
 export type IShed = ICommonFields & {
   _id: Types.ObjectId;
-  /* fields */
+  shedNumber?: number;
   name: string;
+  farm: Types.ObjectId;
   description: string;
   week: number;
-  period: number;
-  chickenWeight: number;
-  initialChicken: number;
-  avgEggWeight: number;
-  foodConsumed: number;
-  waterConsumed: number;
-  mortality: number;
-  eggProduction: number;
-  shedNumber?: number;
-  generationId: string;
   ageWeeks: number;
-  /* enums */
+  initialHensCount: number;
+  avgHensWeight: number,
+  generationId: string;
   status: ShedStatus;
-  /* relations */
-  farm: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 
@@ -45,7 +121,6 @@ export type IShed = ICommonFields & {
  * Virtuals para una caseta
  */
 export type IShedVirtuals = {
-  chickenAge: number;
   inventory: IInventory[];
 };
 
@@ -75,10 +150,10 @@ export const createShed = z.object({
  * DTO para inicializar una caseta con datos de producción
  */
 export const initializeShed = z.object({
-  initialChicken: z.number().min(1, "Debe haber al menos una gallina"),
-  avgHenWeight: z.number().min(1, "Debe de pesar mas de 1 gramo"),
-  ageWeeks: z.number().default(0),
-  generationId: z.string().optional(),
+  initialHensCount: z.number().min(1, "Debe haber al menos una gallina"),
+  birthDate: z.string().refine((val) => !isNaN(Date.parse(val))),
+  avgHensWeight: z.number().min(1, "Debe de pesar mas de 1 gramo"),
+
 });
 
 /**
@@ -87,12 +162,8 @@ export const initializeShed = z.object({
 export const updateShed = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
-  weeksChicken: z.number().gt(0, "weeksChicken debe ser mayor a 0").optional(),
-  chickenWeight: z.number().gt(0, "chickenWeight debe ser mayor a 0").optional(),
-  avgEggWeight: z.number().gt(0, "avgEggWeight debe ser mayor a 0").optional(),
-  foodConsumed: z.number().gt(0, "foodConsumed debe ser mayor a 0").optional(),
-  waterConsumed: z.number().gt(0, "waterConsumed debe ser mayor a 0").optional(),
-  mortality: z.number().gt(0, "mortality debe ser mayor a 0").optional(),
+  ageWeeks: z.number().gt(0, "ageWeeks debe ser mayor a 0").optional(),
+  avgHensWeight: z.number().gt(0, "avgHensWeight debe ser mayor a 0").optional(),
   farm: z.string()
     .refine((val) => Types.ObjectId.isValid(val), (val) => ({ message: `${val} debe ser un ObjectId válido` }))
     .optional(),

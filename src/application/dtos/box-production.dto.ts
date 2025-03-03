@@ -13,8 +13,11 @@ export type IBoxProduction = {
   farm: Types.ObjectId
   shed: Types.ObjectId
   code: string
-  weight: number
+  grossWeight: number
+  netWeight: number
+  avgEggWeight: number
   type: Types.ObjectId
+  totalEggs: Number
   status: number
   /* defaults */
   active: boolean
@@ -53,4 +56,5 @@ export const createBoxTypeBody = z.object({
   id: z.string().trim().min(1, "El ID es requerido"),
   name: z.string().trim().min(1, "El nombre es requerido"),
   description: z.string().trim().optional(),
+  tare: z.number().min(0, "El peso de tara debe ser un numero positivo")
 })

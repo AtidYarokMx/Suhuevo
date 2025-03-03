@@ -4,25 +4,78 @@ import { type AppShedModel, type IShed, type IShedVirtuals, ShedStatus } from '@
 import type { ICommonHistoryFields, IShedHistory } from '@app/dtos/common.dto';
 import { isValidStatusChange } from '@app/utils/validate.util';
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ShedSchema:
+ *       type: object
+ *       required:
+ *         - shedNumber
+ *         - name
+ *         - farm
+ *         - description
+ *         - week
+ *         - ageWeeks
+ *         - initialHensCount
+ *         - avgHensWeight
+ *         - generationId
+ *         - status
+ *         - createdAt
+ *         - updatedAt
+ *       properties:
+ *         shedNumber:
+ *           type: number
+ *           example: 1
+ *           description: Número de la caseta dentro de la granja
+ *         name:
+ *           type: string
+ *           example: "Caseta Norte"
+ *         farm:
+ *           type: string
+ *           example: "65fbf3214abc9876def91235"
+ *         description:
+ *           type: string
+ *           example: "Caseta ubicada en la zona norte de la granja"
+ *         week:
+ *           type: number
+ *           example: 5
+ *           description: Semana actual de producción
+ *         ageWeeks:
+ *           type: number
+ *           example: 10
+ *           description: Edad en semanas de la parvada en producción
+ *         initialHensCount:
+ *           type: number
+ *           example: 20000
+ *         avgHensWeight:
+ *           type: number
+ *           example: 1.5
+ *         generationId:
+ *           type: string
+ *           example: "20240221"
+ *         status:
+ *           $ref: "#/components/schemas/ShedStatus"
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
 export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>({
+  shedNumber: { type: Number, required: true, immutable: true },
   name: { type: String, trim: true, required: true },
+  farm: { type: Schema.Types.ObjectId, ref: "farm", required: true },
   description: { type: String, trim: true, required: true },
   week: { type: Number, default: 1 },
-  period: { type: Number, default: 1 },
-  initialChicken: { type: Number, required: true, default: 0 },
-  chickenWeight: { type: Number, required: true, default: 0 },
-  avgEggWeight: { type: Number, default: 0 },
-  foodConsumed: { type: Number, default: 0 },
-  waterConsumed: { type: Number, default: 0 },
-  mortality: { type: Number, default: 0 },
-  eggProduction: { type: Number, default: 0 },
-  shedNumber: { type: Number, required: true, immutable: true },
+  ageWeeks: { type: Number, default: 0 },
+  initialHensCount: { type: Number, required: true, default: 0 },
+  avgHensWeight: { type: Number, required: true, default: 0 },
   generationId: {
     type: String,
     default: () => `${new Date().getFullYear()}${(new Date().getMonth() + 1).toString().padStart(2, "0")}${new Date().getDate().toString().padStart(2, "0")}`
   },
-  ageWeeks: { type: Number, default: 0 },
-  /* enums */
   status: {
     type: String,
     enum: Object.values(ShedStatus),
@@ -37,11 +90,6 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
     },
     lastUpdateBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
-
-  /* relations */
-  farm: { type: Schema.Types.ObjectId, ref: "farm", required: true },
-
-  /* defaults */
   active: { type: Boolean, default: true },
   createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true, immutable: true },
   lastUpdateBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },
@@ -50,8 +98,36 @@ export const ShedSchema = new Schema<IShed, AppShedModel, {}, {}, IShedVirtuals>
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 /**
- * Historial de cambios en casetas
+ * @swagger
+ * components:
+ *   schemas:
+ *     ShedHistory:
+ *       type: object
+ *       required:
+ *         - shedId
+ *         - generationId
+ *         - change
+ *         - updatedAt
+ *         - updatedBy
+ *       properties:
+ *         shedId:
+ *           type: string
+ *           example: "65fbf3214abc9876def91234"
+ *         generationId:
+ *           type: string
+ *           example: "20240221"
+ *         change:
+ *           type: object
+ *           example: { "status": "production", "totalProducedEggs": 100000 }
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ *           example: "2024-02-28T14:00:00Z"
+ *         updatedBy:
+ *           type: string
+ *           example: "65fbf3214abc9876def91238"
  */
+
 export const ShedHistorySchema = new Schema<IShedHistory>({
   shedId: { type: Schema.Types.ObjectId, ref: "shed" },
   generationId: { type: String },

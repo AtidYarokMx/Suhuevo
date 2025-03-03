@@ -23,8 +23,6 @@ class CatalogRoutes extends ServerRouter {
     this.router.get('/rule', authenticateUser, this.controller.getRules as RequestHandler)
     this.router.put('/rule', authenticateUser, this.controller.bulkCatalogRule as RequestHandler)
     this.router.post('/rule', authenticateUser, this.controller.createCatalogRule as RequestHandler)
-    /* egg type catalog */
-    this.router.post('/egg', authenticateUser, this.controller.createCatalogEggType as RequestHandler)
     /* payment methods */
     this.router.get('/payment-method', authenticateUser, this.controller.getPaymentMethods as RequestHandler)
     this.router.post('/payment-method', authenticateUser, this.controller.createPaymentMethod as RequestHandler)

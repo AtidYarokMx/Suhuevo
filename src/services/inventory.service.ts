@@ -120,7 +120,7 @@ class InventoryService {
 
     const inventory = await InventoryModel.aggregate([
       { $match: { shed: new Types.ObjectId(shedId), active: true } },
-      { $addFields: { initialChicken: shed.initialChicken } },
+      { $addFields: { initialChicken: shed.initialHensCount } },
       {
         $group: {
           _id: {

@@ -54,7 +54,7 @@ class BoxProductionService {
       farm: box.farm && !(box.farm instanceof ObjectId) ? (box.farm as { name: string }).name : "Desconocida",
       shed: box.shed && !(box.shed instanceof ObjectId) ? (box.shed as { name: string }).name : "Desconocida",
       type: box.type && !(box.type instanceof ObjectId) ? (box.type as { name: string }).name : "Desconocida",
-      weight: box.weight,
+      weight: box.netWeight,
       status: box.status,
       createdAt: box.createdAt,
       updatedAt: box.updatedAt,
@@ -95,6 +95,22 @@ class BoxProductionService {
   async getOne(code: string) {
     const box = await BoxProductionModel.find({ active: true, code })
     return box
+  }
+
+  async getByShedId(shedId: string) {
+    customLog(`📌 Buscando códigos asignados al Shed ID: ${shedId}`);
+
+    if (!ObjectId.isValid(shedId)) {
+      throw new AppErrorResponse({ statusCode: 400, name: "Invalid Shed ID", message: "El ID del shed no es válido." });
+    }
+
+    const boxes = await BoxProductionModel.find({ shed: new ObjectId(shedId), active: true })
+      .select("code shed status createdAt updatedAt")
+      .lean();
+
+    customLog(`📦 Códigos encontrados en el Shed ID ${shedId}: ${boxes.length}`);
+
+    return { shedId, boxes };
   }
 
   /**
@@ -139,24 +155,35 @@ class BoxProductionService {
 
     const farms = Object.fromEntries((await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map(f => [f.farmNumber, f._id]));
     const sheds = Object.fromEntries((await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map(s => [`${s.farm}-${s.shedNumber}`, s._id]));
-    const boxTypes = Object.fromEntries(
-      (await CatalogBoxModel.find({}, { _id: 1, id: 1 })).map(b => [b.id.toString(), b._id])
-    );
-    customLog(`📦 BoxTypes cargados: ${JSON.stringify(boxTypes)}`);
 
-    let bulkOperations: AnyBulkWriteOperation<IBoxProduction>[] = validBoxes.map(box => {
+    const catalogBoxList = await CatalogBoxModel.find({}, { _id: 1, id: 1, count: 1, tare: 1 });
+    const boxTypes = new Map(catalogBoxList.map(b => [b.id.toString(), { _id: b._id, count: b.count, tare: b.tare }]));
+
+    customLog(`📦 BoxTypes cargados: ${JSON.stringify(Object.fromEntries(boxTypes))}`);
+
+    let bulkOperations = validBoxes.map(box => {
       let objectId = existingCodes.get(box.codigo) || new ObjectId();
       const farmId = farms[box.id_granja] || new ObjectId();
       const shedId = sheds[`${farmId}-${box.id_caceta}`] || new ObjectId();
+      const boxTypeId = boxTypes.get(box.tipo.toString())?._id || null;
+      const boxType = boxTypes.get(box.tipo.toString()) ?? null;
 
-      const boxTypeId = boxTypes[box.tipo.toString()] ?? null;
-
-      if (!boxTypeId) {
+      if (!boxType) {
         customLog(`⚠️ Tipo de caja no encontrado para tipo: ${box.tipo} en código: ${box.codigo}`);
       }
 
-      customLog(`🔹 Código: ${box.codigo} | Tipo: ${box.tipo} | Mapeado a ID: ${boxTypeId}`);
+      const totalEggs = boxType ? boxType.count : 0;
+      const grossWeight = Number(box.peso) * 10 || 0;
+      const tareWeight = boxType ? Number(boxType.tare) : 0;
+      const netWeight = grossWeight - tareWeight;
 
+      customLog(`🔹 Código: ${box.codigo} | Tipo: ${box.tipo} | ID Mapeado: ${boxTypeId} | Count: ${boxType ? boxType.count : 'N/A'} | Tare: ${boxType ? boxType.tare : 'N/A'}`);
+
+      if (boxType) {
+        console.log(`✔️ Tipo encontrado: ${box.tipo} | Count: ${boxType.count} | Tare: ${boxType.tare}`);
+      } else {
+        console.warn(`⚠️ Tipo de caja no encontrado para tipo: ${box.tipo}`);
+      }
       return {
         updateOne: {
           filter: { code: box.codigo },
@@ -166,9 +193,11 @@ class BoxProductionService {
               code: box.codigo,
               farm: farmId,
               shed: shedId,
-              type: boxTypeId,
-              weight: box.peso,
+              type: boxType ? boxType._id : null,
+              grossWeight,
+              netWeight,
               status: box.status,
+              totalEggs,
               createdAt: box.creacion,
               updatedAt: box.actualizacion
             }
@@ -180,66 +209,18 @@ class BoxProductionService {
 
     if (!bulkOperations.length) throw new AppErrorResponse({ statusCode: 400, name: "No Valid Records", message: "No hay registros válidos para sincronizar." });
 
-    let session: ClientSession | null = null;
+    let session = await BoxProductionModel.startSession();
     try {
-      session = await BoxProductionModel.startSession();
       session.startTransaction();
-
       const result = await BoxProductionModel.bulkWrite(bulkOperations, { session });
       await session.commitTransaction();
       session.endSession();
 
-      if (result.upsertedCount === 0) {
-        customLog("⚠️ Ningún código fue insertado. Revisando posibles errores...");
-      } else {
-        customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos añadidos.`);
-        // Eliminar `upsertedIds` antes de devolver la respuesta
-        const { upsertedIds, ...resultWithoutUpsertedIds } = result;
-        return resultWithoutUpsertedIds;
-      }
-    } catch (error: any) {
-      if (session) await session.abortTransaction().catch(() => { });
-      if (session) session.endSession().catch(() => { });
-
-      if (error.code === 11000) {
-        customLog("⚠️ Error de clave duplicada detectado. Generando nuevos IDs y reintentando...");
-        bulkOperations = bulkOperations.map(op => {
-          if ('updateOne' in op) {
-            return {
-              updateOne: {
-                filter: op.updateOne.filter,
-                update: {
-                  ...op.updateOne.update,
-                  $setOnInsert: { ...op.updateOne.update.$setOnInsert, _id: new ObjectId() }
-                }
-              },
-              upsert: true
-            };
-          }
-          return op;
-        });
-
-        try {
-          session = await BoxProductionModel.startSession();
-          session.startTransaction();
-          const retryResult = await BoxProductionModel.bulkWrite(bulkOperations, { session });
-          await session.commitTransaction();
-          session.endSession();
-
-          if (retryResult.upsertedCount === 0) {
-            customLog("⚠️ Reintento realizado, pero ningún código nuevo fue insertado.");
-          } else {
-            customLog(`✅ Reintento exitoso: ${retryResult.upsertedCount} códigos añadidos.`);
-          }
-
-          const { upsertedIds, ...resultWithoutUpsertedIds } = retryResult;
-          return resultWithoutUpsertedIds;
-        } catch (retryError) {
-          if (session) await session.abortTransaction().catch(() => { });
-          if (session) session.endSession().catch(() => { });
-          throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error en reintento de sincronización: ${String(retryError)}` });
-        }
-      }
+      customLog(`✅ Sincronización completada: ${result.upsertedCount} códigos añadidos.`);
+      return result;
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
       throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error al sincronizar: ${String(error)}` });
     }
   }
@@ -292,6 +273,7 @@ class BoxProductionService {
           name: { $first: "$boxInfo.name" },
           description: { $first: "$boxInfo.description" },
           quantity: { $sum: 1 },
+          totalEggs: { $sum: "$totalEggs" }
         },
       },
       {
@@ -301,6 +283,7 @@ class BoxProductionService {
           name: 1,
           description: 1,
           quantity: 1,
+          totalEggs: 1,
         },
       },
     ]).exec();

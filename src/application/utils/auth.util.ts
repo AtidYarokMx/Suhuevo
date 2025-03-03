@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 /* consts */
-import { rounds } from '@app/constants/auth.constants'
+import { refreshExpiresIn, rounds } from '@app/constants/auth.constants'
 import { customLog } from './util.util'
 
 export function generatePasswordHash(password: string): string {
@@ -15,21 +15,30 @@ export function comparePassword(password: string, hashPassword: string): boolean
 }
 
 export const generateUserToken = (user: any) => {
-  const token = jwt.sign(
-    { id: user._id.toString(), role: user.roleId.toString() },
-    process.env.JWT_SECRET || "supersecreto",
-    { expiresIn: "1h" }
-  );
+  const payload = {
+    id: user._id.toString(),
+    role: user.roleId.toString(),
+  };
 
-  customLog("🔵 Token generado:", token); // <-- Agregar este log
+  const token = jwt.sign(payload, process.env.JWT_SECRET || "supersecreto", {
+    expiresIn: "1h",
+  });
+
+  customLog("🔵 Token generado:", token);
+
+  const refreshTokenPayload = {
+    id: user._id.toString(),
+  };
 
   const refreshToken = jwt.sign(
-    { id: user._id.toString() },
-    process.env.JWT_REFRESH_SECRET || "refresh supersecreto",
+    refreshTokenPayload,
+    process.env.JWT_REFRESH_SECRET || "refreshsupersecreto",
     { expiresIn: "7d" }
   );
+
   customLog("🔵 RefreshToken generado:", refreshToken);
-  return { token, refreshToken, expiresIn: 3600 };
+
+  return { token, refreshToken, expiresIn: 3600, refreshExpiresIn: 604800 };
 };
 
 

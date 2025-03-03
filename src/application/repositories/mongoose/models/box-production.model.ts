@@ -14,9 +14,12 @@ export const BoxProductionSchema = new Schema<IBoxProduction>({
   farm: { type: Schema.Types.ObjectId, ref: "farm" },
   shed: { type: Schema.Types.ObjectId, ref: "shed" },
   code: { type: String, required: true, unique: true },
-  weight: { type: Number, required: true },
+  grossWeight: { type: Number, required: true },
+  netWeight: { type: Number, required: true },
+  avgEggWeight: { type: Number, required: true },
   status: { type: Number, required: true },
   type: { type: Schema.Types.ObjectId, required: true },
+  totalEggs: { type: Number, required: true, default: 0 },
   /* defaults */
   active: { type: Boolean, default: true },
   createdAt: { type: Date, default: () => Date.now(), immutable: true },
