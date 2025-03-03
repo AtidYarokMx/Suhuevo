@@ -485,6 +485,7 @@ class ShedService {
           totalProducedEggs: 1,
           totalProducedBoxes: 1,
           totalMortality: 1,
+          totalHensWeight: 1,
           avgEggWeight: 1,
           boxesByType: 1,
           weekStart: 1,
@@ -502,6 +503,7 @@ class ShedService {
         totalProducedBoxes: 0,
         totalMortality: 0,
         avgEggWeight: 0,
+        totalHensWeight: 0,
         boxesByType: [],
         weekStart: "",
         weekEnd: ""
