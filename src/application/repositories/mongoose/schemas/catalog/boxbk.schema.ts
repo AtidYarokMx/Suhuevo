@@ -17,7 +17,6 @@ export const CatalogBoxSchema = new Schema<ICommonCatalogFields>({
   name: { type: String, trim: true, required: true },
   description: { type: String, trim: true },
   count: { type: Number, default: 0 },
-  /* defaults */
   active: { type: Boolean, default: true },
   createdBy: { type: SchemaTypes.ObjectId, ref: "user", required: true, immutable: true },
   lastUpdateBy: { type: SchemaTypes.ObjectId, ref: "user", required: true },

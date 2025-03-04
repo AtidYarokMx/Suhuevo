@@ -56,5 +56,16 @@ export const createBoxTypeBody = z.object({
   id: z.string().trim().min(1, "El ID es requerido"),
   name: z.string().trim().min(1, "El nombre es requerido"),
   description: z.string().trim().optional(),
-  tare: z.number().min(0, "El peso de tara debe ser un numero positivo")
+  tare: z.number().min(0, "El peso de tara debe ser un número positivo"),
+  count: z.number().min(1, "La cantidad de huevos por caja es requerida y debe ser mayor a 0"),
+  category: z.string().trim().min(1, "La categoría es requerida") // Se validará como ObjectId en la función
+});
+
+
+/**
+ * 📌 DTO para crear tipos de caja
+ */
+export const createBoxCategoryBody = z.object({
+  name: z.string().trim().min(1, "El nombre es requerido"),
+  description: z.string().trim().optional(),
 })

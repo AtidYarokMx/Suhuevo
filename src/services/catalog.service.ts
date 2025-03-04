@@ -13,7 +13,10 @@ import { ICatalogRule, ICreateBody as ICreateCatalogRuleBody } from '@app/dtos/c
 import { createPaymentMethodBody } from '@app/dtos/payment-method.dto'
 import { createEggType } from '@app/dtos/egg.dto'
 import { AppLocals } from '@app/interfaces/auth.dto'
-import { createBoxTypeBody } from '@app/dtos/box-production.dto'
+import { createBoxCategoryBody, createBoxTypeBody } from '@app/dtos/box-production.dto'
+import { BoxCategoryModel } from '@app/repositories/mongoose/catalogs/box-category.catalog'
+import { ObjectId } from 'mongodb'
+import { AppErrorResponse } from '@app/models/app.response'
 
 
 class CatalogService {
@@ -96,10 +99,44 @@ class CatalogService {
   }
 
   async createBoxType(body: z.infer<typeof createBoxTypeBody>, session: ClientSession, locals: AppLocals) {
-    const user = locals.user._id
-    const catalog = new CatalogBoxModel({ ...body, active: true, createdBy: user, lastUpdateBy: user })
-    const savedCatalog = await catalog.save({ session, validateBeforeSave: true })
-    return savedCatalog.toJSON()
+    const user = locals.user._id;
+
+    // Validar que la categoría es un ObjectId válido
+    if (!ObjectId.isValid(body.category)) {
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "Invalid Category",
+        message: "El ID de la categoría proporcionado no es válido."
+      });
+    }
+
+    // Validar que el count está presente y es un número válido
+    if (typeof body.count !== "number" || isNaN(body.count) || body.count <= 0) {
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "Invalid Count",
+        message: "La cantidad de huevos por caja (count) debe ser un número válido mayor que 0."
+      });
+    }
+
+    // Crear el nuevo tipo de caja
+    const catalog = new CatalogBoxModel({
+      ...body,
+      category: new ObjectId(body.category), // Asegurar que category es ObjectId
+      active: true,
+      createdBy: user,
+      lastUpdateBy: user
+    });
+
+    const savedCatalog = await catalog.save({ session, validateBeforeSave: true });
+    return savedCatalog.toJSON();
+  }
+
+  async createBoxCategory(body: z.infer<typeof createBoxCategoryBody>, session: ClientSession, locals: AppLocals) {
+    const user = locals.user._id;
+    const category = new BoxCategoryModel({ ...body, active: true, createdBy: user, lastUpdateBy: user });
+    const savedCategory = await category.save({ session, validateBeforeSave: true });
+    return savedCategory.toJSON();
   }
 }
 

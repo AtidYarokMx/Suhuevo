@@ -18,6 +18,7 @@ import { z } from 'zod'
 import { IShipmentCode } from '@app/dtos/shipment.dto'
 import { ObjectId } from 'mongodb'
 import { CatalogBoxModel } from '@app/repositories/mongoose/catalogs/box.catalog'
+import { BoxCategoryModel } from '@app/repositories/mongoose/catalogs/box-category.catalog'
 
 class BoxProductionService {
 
@@ -99,42 +100,70 @@ class BoxProductionService {
 
   async getSummary(shedId?: string, startDate?: string, endDate?: string, type?: string) {
     customLog("📌 Generando resumen de producción...");
-
     const matchConditions: any = { active: true };
-
-    if (shedId && ObjectId.isValid(shedId)) {
-      matchConditions.shed = new ObjectId(shedId);
-    }
-
+    if (shedId && ObjectId.isValid(shedId)) matchConditions.shed = new ObjectId(shedId);
     if (startDate || endDate) {
       matchConditions.createdAt = {};
       if (startDate) matchConditions.createdAt.$gte = new Date(startDate);
       if (endDate) matchConditions.createdAt.$lte = new Date(endDate);
     }
+    if (type && type !== "all" && ObjectId.isValid(type)) matchConditions.type = new ObjectId(type);
 
-    if (type && type !== "all" && ObjectId.isValid(type)) {
-      matchConditions.type = new ObjectId(type);
-    }
-
-    const boxes = await BoxProductionModel.find(matchConditions).select("type").lean();
-
-    const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1 }).lean();
-
-    const countByType = boxes.reduce((acc: Record<string, number>, box) => {
-      const typeName = allTypes.find(t => t._id.toString() === box.type?.toString())?.name || "Desconocido";
-      acc[typeName] = (acc[typeName] || 0) + 1;
-      return acc;
-    }, {});
-
-    let summaryData = Object.entries(countByType).map(([type, count]) => ({ type, count }));
-
+    const summary = await BoxProductionModel.aggregate([
+      { $match: matchConditions },
+      {
+        $lookup: {
+          from: "catalog-boxes",
+          localField: "type",
+          foreignField: "_id",
+          as: "boxType"
+        }
+      },
+      { $unwind: "$boxType" },
+      {
+        $lookup: {
+          from: "box-categories",
+          localField: "boxType.category",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      { $unwind: "$category" },
+      {
+        $group: {
+          _id: "$category._id",
+          category: { $first: "$category.name" },
+          count: { $sum: 1 },
+          totalGrossWeight: { $sum: "$grossWeight" },
+          totalNetWeight: { $sum: "$netWeight" },
+          totalEggs: { $sum: "$totalEggs" }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          category: 1,
+          count: 1,
+          totalGrossWeight: 1,
+          totalNetWeight: 1,
+          totalEggs: 1
+        }
+      }
+    ]).exec();
     if (type === "all") {
-      summaryData = allTypes.map(t => ({ type: t.name, count: countByType[t.name] || 0 }));
+      const allCategories = await BoxCategoryModel.find({}, { name: 1 }).lean();
+      const categoryMap = new Map(summary.map(({ category, count, totalGrossWeight, totalNetWeight, totalEggs }) => [category, { count, totalGrossWeight, totalNetWeight, totalEggs }]));
+      return {
+        summary: allCategories.map(({ name }) => ({
+          category: name,
+          count: categoryMap.get(name)?.count || 0,
+          totalGrossWeight: categoryMap.get(name)?.totalGrossWeight || 0,
+          totalNetWeight: categoryMap.get(name)?.totalNetWeight || 0,
+          totalEggs: categoryMap.get(name)?.totalEggs || 0
+        }))
+      };
     }
-
-    summaryData.sort((a, b) => a.type.localeCompare(b.type, "es", { numeric: true }));
-
-    return { shedId, startDate, endDate, type, summary: summaryData };
+    return { summary };
   }
 
   async getByShedId(shedId: string, startDate?: string, endDate?: string, type?: string, summary?: boolean) {
@@ -157,26 +186,62 @@ class BoxProductionService {
     }
 
     const boxes = await BoxProductionModel.find(matchConditions)
-      .select("code shed type status createdAt updatedAt")
-      .lean();
+      .select("_id code shed type status createdAt updatedAt")
+      .populate({
+        path: "type",
+        model: "catalog-box",
+        select: "name category",
+        populate: {
+          path: "category",
+          model: "box-category",
+          select: "name"
+        }
+      })
+      .lean(); // 🔹 Convierte los resultados en objetos JSON puros
 
     customLog(`📦 Códigos encontrados en el Shed ID ${shedId}: ${boxes.length}`);
 
-    let summaryData: { type: string; count: number }[] = [];
+    let summaryData: { category: string; type: string; count: number }[] = [];
 
     if (summary) {
-      const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1 }).lean();
-      const countByType = boxes.reduce((acc: Record<string, number>, box) => {
-        const typeName = allTypes.find(t => t._id.toString() === box.type?.toString())?.name || "Desconocido";
-        acc[typeName] = (acc[typeName] || 0) + 1;
+      const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1, category: 1 })
+        .populate("category", "name")
+        .lean();
+
+      const countByType = boxes.reduce((acc: Record<string, { category: string; count: number }>, box) => {
+        const type = box.type as { name?: string; category?: { name?: string } }; // 🔹 Forzar tipado de `type`
+        const typeName = type?.name || "Desconocido";
+        const categoryName = type?.category?.name || "Sin Categoría";
+
+        if (!acc[typeName]) {
+          acc[typeName] = { category: categoryName, count: 0 };
+        }
+        acc[typeName].count += 1;
+
         return acc;
       }, {});
 
-      summaryData = Object.entries(countByType).map(([type, count]) => ({ type, count }));
-      summaryData.sort((a, b) => a.type.localeCompare(b.type, "es", { numeric: true }));
+      summaryData = Object.entries(countByType).map(([type, { category, count }]) => ({ category, type, count }));
+
+      if (type === "all") {
+        summaryData = allTypes.map(t => ({
+          category: (t.category as { name?: string })?.name || "Sin Categoría",
+          type: t.name,
+          count: countByType[t.name]?.count || 0
+        }));
+      }
+
+      summaryData.sort((a, b) => a.category.localeCompare(b.category, "es", { numeric: true }) || a.type.localeCompare(b.type, "es", { numeric: true }));
     }
 
-    return { shedId, startDate, endDate, type, boxes, summary: summary ? summaryData : undefined };
+    return {
+      shedId,
+      startDate,
+      endDate,
+      type,
+      boxes,
+      ...(summary ? { summary: summaryData } : {}) // 🔹 Solo agrega `summary` si se solicitó
+    };
   }
 
   /**
@@ -222,8 +287,8 @@ class BoxProductionService {
     const farms = Object.fromEntries((await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map(f => [f.farmNumber, f._id]));
     const sheds = Object.fromEntries((await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map(s => [`${s.farm}-${s.shedNumber}`, s._id]));
 
-    const catalogBoxList = await CatalogBoxModel.find({}, { _id: 1, id: 1, count: 1, tare: 1 });
-    const boxTypes = new Map(catalogBoxList.map(b => [b.id.toString(), { _id: b._id, count: b.count, tare: b.tare }]));
+    const catalogBoxList = await CatalogBoxModel.find({}, { _id: 1, id: 1, category: 1, count: 1, tare: 1 });
+    const boxTypes = new Map(catalogBoxList.map(b => [b.id.toString(), { _id: b._id, category: b.category, count: b.count, tare: b.tare }]));
 
     customLog(`📦 BoxTypes cargados: ${JSON.stringify(Object.fromEntries(boxTypes))}`);
 
@@ -260,6 +325,7 @@ class BoxProductionService {
               farm: farmId,
               shed: shedId,
               type: boxType ? boxType._id : null,
+              category: boxType ? boxType?.category : null,
               grossWeight,
               netWeight,
               status: box.status,

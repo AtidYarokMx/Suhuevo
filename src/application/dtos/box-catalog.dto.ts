@@ -7,9 +7,10 @@ export interface ICatalogBox {
   _id?: ObjectId;
   id: string
   name: string;
+  category: ObjectId;
   description?: string;
-  count: number; // Cantidad de huevos por caja
-  tare: number; // Peso tara de la caja
+  count: number;
+  tare: number;
   active: boolean;
   createdAt?: Date;
   updatedAt?: Date;

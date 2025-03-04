@@ -163,8 +163,17 @@ class BoxProductionController {
    */
   public async getByShedId(req: Request, res: Response) {
     const { shedId } = req.params;
+    const { startDate, endDate, type, summary } = req.query;
+
     try {
-      const response = await boxProductionService.getByShedId(shedId);
+      const response = await boxProductionService.getByShedId(
+        shedId,
+        startDate ? String(startDate) : undefined,
+        endDate ? String(endDate) : undefined,
+        type ? String(type) : undefined,
+        summary === "true" // Convierte el parámetro a booleano
+      );
+
       return res.status(200).json(response);
     } catch (error) {
       customLog(`❌ Error en getByShedId: ${String(error)}`);
