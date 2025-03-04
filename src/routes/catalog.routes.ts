@@ -30,7 +30,7 @@ class CatalogRoutes extends ServerRouter {
     this.router.get('/box', authenticateUser, this.controller.getBoxTypes as RequestHandler)
     this.router.post('/box', authenticateUser, this.controller.createBoxType as RequestHandler)
     /* tipos de categorias de caja de huevo */
-    //this.router.get('/box/category', authenticateUser, this.controller.getBoxTypes as RequestHandler)
+    this.router.get('/box/category', authenticateUser, this.controller.getBoxTypes as RequestHandler)
     this.router.post('/box/category', authenticateUser, this.controller.createCategoryBoxType as RequestHandler)
   }
 }

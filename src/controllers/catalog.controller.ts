@@ -186,12 +186,22 @@ class CatalogController {
     try {
       session.startTransaction()
       const validatedBody = createBoxCategoryBody.parse(body)
-      const response = await catalogService.createBoxCategory(validatedBody, session, locals)
+      const response = await catalogService.createCategoryBox(validatedBody, session, locals)
       await session.commitTransaction()
       await session.endSession()
       return res.status(200).json(response)
     } catch (error) {
       await session.abortTransaction()
+      const { statusCode, error: err } = appErrorResponseHandler(error)
+      return res.status(statusCode).json(err)
+    }
+  }
+
+  public async getCategoryBox(req: Request, res: Response) {
+    try {
+      const response = await catalogService.getCategoryBox()
+      return res.status(200).json(response)
+    } catch (error) {
       const { statusCode, error: err } = appErrorResponseHandler(error)
       return res.status(statusCode).json(err)
     }

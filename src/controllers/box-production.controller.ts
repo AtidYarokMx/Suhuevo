@@ -129,15 +129,22 @@ class BoxProductionController {
    */
   public async getAll(req: Request, res: Response) {
     try {
-      const summary = req.query.summary === "true";
-      const response = await boxProductionService.getAll(summary)
-      return res.status(200).json(response)
+      const limit = req.query.limit ? Math.max(Number(req.query.limit), 1) : 50; // Mínimo 1
+      const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+      const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+      const includeStatus99 = req.query.includeStatus99 === "true"; // Convertir a booleano
+      const status = req.query.status ? Number(req.query.status) : undefined; // Convertir a número
+
+      const response = await boxProductionService.getAll(limit, startDate, endDate, status, includeStatus99);
+
+      return res.status(200).json(response);
     } catch (error) {
       customLog(`❌ Error en getAll: ${String(error)}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
     }
   }
+
 
   /**
    * @swagger

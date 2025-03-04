@@ -27,66 +27,98 @@ class BoxProductionService {
    * @param summary - Si es `true`, devuelve un resumen del tipo de huevo producido.
    * @returns Lista de cajas y, opcionalmente, el resumen.
    */
-  async getAll(summary: boolean = false) {
-    const boxes = await BoxProductionModel.find({ active: true, status: 1 })
-      .populate({
-        path: "farm",
-        select: "name",
-        strictPopulate: false,
-      })
-      .populate({
-        path: "shed",
-        select: "name",
-        strictPopulate: false,
-      })
+  async getAll(
+    limit: number = 1000,
+    startDate?: string,
+    endDate?: string,
+    status?: number,
+    includeStatus99: boolean = false
+  ) {
+    customLog("📌 Iniciando consulta de códigos de producción...");
+
+    const matchConditions: any = { active: true };
+
+    // 🔹 Excluir `status = 99` por defecto
+    if (!includeStatus99) {
+      matchConditions.status = { $ne: 99 };
+    }
+
+    if (status !== undefined) {
+      matchConditions.status = status; // 🔹 Filtrar por un estado específico
+    }
+
+    // 🔹 Filtro por rango de fechas
+    if (startDate || endDate) {
+      matchConditions.createdAt = {};
+      if (startDate) matchConditions.createdAt.$gte = new Date(startDate);
+      if (endDate) matchConditions.createdAt.$lte = new Date(endDate);
+    }
+
+    // 🔹 Consulta a la base de datos
+    const boxes = await BoxProductionModel.find(matchConditions)
+      .populate({ path: "farm", select: "name" })
+      .populate({ path: "shed", select: "name" })
       .populate({
         path: "type",
         model: "catalog-box",
-        select: "name",
-        strictPopulate: false,
+        select: "name category",
+        populate: {
+          path: "category",
+          model: "box-category",
+          select: "name"
+        }
       })
+      .limit(limit) // 🔹 Limita los resultados según el parámetro recibido
       .lean();
 
-    customLog("📦 Cajas encontradas:", boxes.length);
+    customLog(`📦 Códigos encontrados: ${boxes.length}`);
+
 
     const formattedBoxes = boxes.map(box => ({
       _id: box._id,
       code: box.code,
-      farm: box.farm && !(box.farm instanceof ObjectId) ? (box.farm as { name: string }).name : "Desconocida",
-      shed: box.shed && !(box.shed instanceof ObjectId) ? (box.shed as { name: string }).name : "Desconocida",
-      type: box.type && !(box.type instanceof ObjectId) ? (box.type as { name: string }).name : "Desconocida",
+      farm: typeof box.farm === 'object' && 'name' in box.farm ? box.farm.name : "Desconocida",
+      shed: typeof box.shed === 'object' && 'name' in box.shed ? box.shed.name : "Desconocida",
+      type: typeof box.type === 'object' && 'name' in box.type ? box.type.name : "Desconocido",
+      category: typeof box.type === 'object' && 'category' in box.type && box.type.category && typeof box.type.category === 'object' && 'name' in box.type.category ? box.type.category.name : "Sin Categoría",
       weight: box.netWeight,
       status: box.status,
       createdAt: box.createdAt,
-      updatedAt: box.updatedAt,
+      updatedAt: box.updatedAt
     }));
 
-    if (!summary) {
-      return { boxes: formattedBoxes }
+    // 🔹 Obtener todas las categorías y tipos de caja
+    const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1, category: 1 })
+      .populate("category", "name")
+      .lean();
+
+    const countByType = new Map<string, { category: string; count: number }>();
+
+    for (const box of boxes) {
+      const typeName = typeof box.type === 'object' && 'name' in box.type ? String(box.type.name) : "Desconocido";
+      const categoryName = typeof box.type === 'object' && 'category' in box.type && box.type.category && typeof box.type.category === 'object' && 'name' in box.type.category ? String(box.type.category.name) : "Sin Categoría";
+
+      if (!countByType.has(typeName)) {
+        countByType.set(typeName, { category: categoryName, count: 0 });
+      }
+
+      countByType.get(typeName)!.count++;
     }
 
-    const allTypes = await CatalogBoxModel.find({}, { name: 1 }).lean();
-
-    const summaryData = formattedBoxes.reduce((acc: Record<string, number>, box) => {
-      const typeName = box.type || "Desconocida";
-      acc[typeName] = (acc[typeName] || 0) + 1;
-      return acc;
-    }, {});
-
-    const uniqueSummary = new Map<string, number>();
-
-    allTypes.forEach(type => {
-      uniqueSummary.set(type.name, summaryData[type.name] || 0);
-    });
-
-    const finalSummary = Array.from(uniqueSummary, ([type, value]) => ({ type, value }));
-    finalSummary.sort((a, b) => a.type.localeCompare(b.type, "es", { numeric: true }));
+    // 🔹 Asegurar que el `summary` incluya todos los tipos de cajas, incluso los no encontrados en la consulta
+    const summaryData = allTypes.map(t => ({
+      category: t.category && typeof t.category === "object" && 'name' in t.category ? t.category.name : "Sin Categoría",
+      type: t.name,
+      count: countByType.get(t.name)?.count || 0
+    }));
 
     return {
+      totalRecords: boxes.length,
       boxes: formattedBoxes,
-      summary: finalSummary
+      summary: summaryData
     };
   }
+
 
   /**
    * Obtiene una caja por su código.

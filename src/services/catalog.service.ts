@@ -132,11 +132,16 @@ class CatalogService {
     return savedCatalog.toJSON();
   }
 
-  async createBoxCategory(body: z.infer<typeof createBoxCategoryBody>, session: ClientSession, locals: AppLocals) {
+  async createCategoryBox(body: z.infer<typeof createBoxCategoryBody>, session: ClientSession, locals: AppLocals) {
     const user = locals.user._id;
     const category = new BoxCategoryModel({ ...body, active: true, createdBy: user, lastUpdateBy: user });
     const savedCategory = await category.save({ session, validateBeforeSave: true });
     return savedCategory.toJSON();
+  }
+
+  async getCategoryBox() {
+    const catalog = await BoxCategoryModel.find({ active: true }).exec()
+    return catalog
   }
 }
 
