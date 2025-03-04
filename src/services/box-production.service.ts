@@ -166,7 +166,7 @@ class BoxProductionService {
     return { summary };
   }
 
-  async getByShedId(shedId: string, startDate?: string, endDate?: string, type?: string, summary?: boolean) {
+  async getByShedId(shedId: string, startDate?: string, endDate?: string, type?: string, category?: string, summary?: boolean) {
     customLog(`📌 Buscando códigos asignados al Shed ID: ${shedId}`);
 
     if (!ObjectId.isValid(shedId)) {
@@ -185,6 +185,11 @@ class BoxProductionService {
       matchConditions.type = new ObjectId(type);
     }
 
+    if (category && ObjectId.isValid(category)) {
+      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) }).select("_id").lean();
+      matchConditions.type = { $in: categoryTypes.map(t => t._id) };
+    }
+
     const boxes = await BoxProductionModel.find(matchConditions)
       .select("_id code shed type status createdAt updatedAt")
       .populate({
@@ -197,7 +202,7 @@ class BoxProductionService {
           select: "name"
         }
       })
-      .lean(); // 🔹 Convierte los resultados en objetos JSON puros
+      .lean();
 
     customLog(`📦 Códigos encontrados en el Shed ID ${shedId}: ${boxes.length}`);
 
@@ -209,9 +214,9 @@ class BoxProductionService {
         .lean();
 
       const countByType = boxes.reduce((acc: Record<string, { category: string; count: number }>, box) => {
-        const type = box.type as { name?: string; category?: { name?: string } }; // 🔹 Forzar tipado de `type`
-        const typeName = type?.name || "Desconocido";
-        const categoryName = type?.category?.name || "Sin Categoría";
+        const type = box.type as { name?: string; category?: { name?: string } } | undefined;
+        const typeName = type?.name ?? "Desconocido";
+        const categoryName = type?.category?.name ?? "Sin Categoría";
 
         if (!acc[typeName]) {
           acc[typeName] = { category: categoryName, count: 0 };
@@ -221,17 +226,24 @@ class BoxProductionService {
         return acc;
       }, {});
 
-      summaryData = Object.entries(countByType).map(([type, { category, count }]) => ({ category, type, count }));
+      summaryData = Object.entries(countByType).map(([type, { category, count }]) => ({
+        category,
+        type,
+        count
+      }));
 
       if (type === "all") {
         summaryData = allTypes.map(t => ({
-          category: (t.category as { name?: string })?.name || "Sin Categoría",
+          category: (t.category as { name?: string })?.name ?? "Sin Categoría",
           type: t.name,
-          count: countByType[t.name]?.count || 0
+          count: countByType[t.name]?.count ?? 0
         }));
       }
 
-      summaryData.sort((a, b) => a.category.localeCompare(b.category, "es", { numeric: true }) || a.type.localeCompare(b.type, "es", { numeric: true }));
+      summaryData.sort((a, b) =>
+        a.category.localeCompare(b.category, "es", { numeric: true }) ||
+        a.type.localeCompare(b.type, "es", { numeric: true })
+      );
     }
 
     return {
@@ -239,10 +251,12 @@ class BoxProductionService {
       startDate,
       endDate,
       type,
+      category,
       boxes,
-      ...(summary ? { summary: summaryData } : {}) // 🔹 Solo agrega `summary` si se solicitó
+      ...(summary ? { summary: summaryData } : {})
     };
   }
+
 
   /**
    * Envía cajas a ventas y actualiza su estado.

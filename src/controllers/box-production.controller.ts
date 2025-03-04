@@ -163,7 +163,7 @@ class BoxProductionController {
    */
   public async getByShedId(req: Request, res: Response) {
     const { shedId } = req.params;
-    const { startDate, endDate, type, summary } = req.query;
+    const { startDate, endDate, type, category, summary } = req.query;
 
     try {
       const response = await boxProductionService.getByShedId(
@@ -171,7 +171,8 @@ class BoxProductionController {
         startDate ? String(startDate) : undefined,
         endDate ? String(endDate) : undefined,
         type ? String(type) : undefined,
-        summary === "true" // Convierte el parámetro a booleano
+        category ? String(category) : undefined,
+        summary === "true"
       );
 
       return res.status(200).json(response);
@@ -181,6 +182,7 @@ class BoxProductionController {
       return res.status(statusCode).json(err);
     }
   }
+
 
 
   /**
