@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 /* consts */
-import { refreshExpiresIn, rounds } from '@app/constants/auth.constants'
+import { rounds } from '@app/constants/auth.constants'
 import { customLog } from './util.util'
 
 export function generatePasswordHash(password: string): string {

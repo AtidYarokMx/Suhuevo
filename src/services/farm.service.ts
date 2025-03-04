@@ -9,6 +9,7 @@ import { createFarmBody, updateFarmBody } from '@app/dtos/farm.dto'
 import { Types } from '@app/repositories/mongoose'
 import { AppLocals } from '@app/interfaces/auth.dto'
 import { customLog } from '@app/utils/util.util'
+import { WeeklyRecordModel } from '@app/repositories/mongoose/models/weeklyRecord.model'
 
 
 class FarmService {
@@ -38,249 +39,189 @@ class FarmService {
 
 
   async getOne(_id: string) {
-    const farms = await FarmModel.findOne({ _id, active: true }).populate({
-      path: "sheds",
-      match: { active: true },
-      populate: { path: "inventory" }
-    }).exec()
-    return farms
+    const farm = await FarmModel.findOne({ _id, active: true })
+      .select('-sheds')
+      .exec();
+    if (!farm) {
+      throw new AppErrorResponse({
+        name: 'Farm Not Found',
+        statusCode: 404,
+        code: 'FarmNotFound',
+        description: 'No se encontró la granja solicitada',
+        message: 'No se encontró la granja solicitada',
+      });
+    }
+
+    const weeklyRecords = await WeeklyRecordModel.aggregate([
+      {
+        $match: { farm: farm._id, active: true },
+      },
+      {
+        $sort: { week: -1 },
+      },
+      {
+        $group: {
+          _id: null,
+          weekStart: { $first: '$weekStart' },
+          weekEnd: { $first: '$weekEnd' },
+          totalHensAlive: { $sum: '$totalHensAlive' },
+          totalFoodConsumedKg: { $sum: '$foodConsumed' },
+          totalProducedBoxes: { $sum: '$producedBoxes' },
+          totalProducedEggs: { $sum: '$producedEggs' },
+          totalMortality: { $sum: '$mortality' },
+          avgEggWeight: { $avg: '$avgEggWeight' },
+          avgHensWeight: { $avg: '$avgHensWeight' },
+        },
+      },
+    ]).exec();
+
+    const summary = weeklyRecords.length > 0 ? weeklyRecords[0] : {
+      weekStart: null,
+      weekEnd: null,
+      totalHensAlive: 0,
+      totalFoodConsumedKg: 0,
+      totalProducedBoxes: 0,
+      totalProducedEggs: 0,
+      totalMortality: 0,
+      avgEggWeight: null,
+      avgHensWeight: null,
+    };
+
+    return { ...farm.toObject(), summary };
   }
+
 
   async getAll() {
     const farms = await FarmModel.aggregate([
       {
-        $match: {
-          active: true
-        }
+        $match: { active: true },
       },
       {
         $lookup: {
-          from: "sheds",
-          localField: "_id",
-          foreignField: "farm",
-          as: "sheds"
-        }
-      },
-      {
-        $unwind: {
-          path: "$sheds",
-          preserveNullAndEmptyArrays: true
-        }
+          from: 'sheds',
+          localField: '_id',
+          foreignField: 'farm',
+          as: 'sheds',
+        },
       },
       {
         $lookup: {
-          from: "inventories",
-          localField: "sheds._id",
-          foreignField: "shed",
-          as: "inventory"
-        }
-      },
-      {
-        $unwind: {
-          path: "$inventory",
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $group: {
-          _id: {
-            farm: "$_id"
-          },
-          initialChickenTotal: {
-            $sum: {
-              $ifNull: ["$sheds.initialChicken", 0]
-            }
-          },
-          mortality: {
-            $sum: {
-              $ifNull: ["$inventory.mortality", 0]
-            }
-          },
-          water: {
-            $sum: {
-              $ifNull: ["$inventory.water", 0]
-            }
-          },
-          food: {
-            $sum: {
-              $ifNull: ["$inventory.food", 0]
-            }
-          },
-          original: {
-            $push: "$$ROOT"
-          }
-        }
+          from: 'weeklyRecords',
+          let: { shedIds: '$sheds._id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$shed', '$$shedIds'] } } },
+            { $sort: { week: -1 } },
+            {
+              $group: {
+                _id: '$shed',
+                latestRecord: { $first: '$$ROOT' }
+              }
+            },
+            { $replaceRoot: { newRoot: '$latestRecord' } }
+          ],
+          as: 'weeklyRecords',
+        },
       },
       {
         $addFields: {
           summary: {
-            food: "$food",
-            water: "$water",
-            mortality: "$mortality",
-            initialChickenTotal: "$initialChickenTotal",
-            totalChicken: {
-              $subtract: [
-                "$initialChickenTotal",
-                "$mortality"
-              ]
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          summary: 1,
-          original: {
-            $arrayElemAt: ["$original", 0]
-          }
-        }
-      },
-      {
-        $replaceRoot: {
-          newRoot: {
-            $mergeObjects: [
-              "$original",
-              {
-                summary: "$summary"
-              }
-            ]
-          }
-        }
+            weekStart: { $max: '$weeklyRecords.weekStart' },
+            weekEnd: { $max: '$weeklyRecords.weekEnd' },
+            totalHensAlive: { $sum: '$weeklyRecords.totalHensAlive' },
+            totalFoodConsumedKg: { $sum: '$weeklyRecords.foodConsumed' },
+            totalProducedBoxes: { $sum: '$weeklyRecords.producedBoxes' },
+            totalProducedEggs: { $sum: '$weeklyRecords.producedEggs' },
+            totalMortality: { $sum: '$weeklyRecords.mortality' },
+            avgEggWeight: { $avg: '$weeklyRecords.avgEggWeight' },
+            avgHensWeight: { $avg: '$weeklyRecords.avgHensWeight' },
+          },
+          chartsData: {
+            $map: {
+              input: '$weeklyRecords',
+              as: 'record',
+              in: {
+                week: '$$record.weekStart',
+                foodConsumedKG: '$$record.foodConsumed',
+                hensAlive: '$$record.totalHensAlive',
+                producedEggs: '$$record.producedEggs',
+                producedBoxes: '$$record.producedBoxes',
+              },
+            },
+          },
+        },
       },
       {
         $project: {
           sheds: 0,
-          inventory: 0
-        }
-      }
-    ]).exec()
-    return farms
+          weeklyRecords: 0,
+        },
+      },
+    ]).exec();
+
+    return farms;
   }
+
 
   async getOneWithSheds(_id: string) {
     const farms = await FarmModel.aggregate([
       {
-        $match: {
-          _id: new Types.ObjectId(_id),
-          active: true // Consideramos solo granjas activas
-        }
+        $match: { _id: new Types.ObjectId(_id), active: true },
       },
       {
         $lookup: {
-          from: "sheds",
-          localField: "_id",
-          foreignField: "farm",
-          as: "sheds"
-        }
+          from: 'sheds',
+          localField: '_id',
+          foreignField: 'farm',
+          as: 'sheds',
+        },
       },
       {
         $lookup: {
-          from: "inventories",
-          localField: "sheds._id",
-          foreignField: "shed",
-          as: "inventories"
-        }
+          from: 'weeklyRecords',
+          let: { shedIds: '$sheds._id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$shed', '$$shedIds'] } } },
+            { $sort: { week: -1 } },
+            {
+              $group: {
+                _id: '$shed',
+                latestRecord: { $first: '$$ROOT' }
+              }
+            },
+            { $replaceRoot: { newRoot: '$latestRecord' } }
+          ],
+          as: 'weeklyRecords',
+        },
       },
       {
         $addFields: {
-          // Calculamos el summary global de la granja
           summary: {
-            initialChickenTotal: {
-              $sum: "$sheds.initialChicken"
-            },
-            mortality: {
-              $sum: "$inventories.mortality"
-            },
-            water: {
-              $sum: "$inventories.water"
-            },
-            food: {
-              $sum: "$inventories.food"
-            },
-            totalChicken: {
-              $subtract: [
-                { $sum: "$sheds.initialChicken" },
-                { $sum: "$inventories.mortality" }
-              ]
-            }
+            weekStart: { $max: '$weeklyRecords.weekStart' },
+            weekEnd: { $max: '$weeklyRecords.weekEnd' },
+            totalHensAlive: { $sum: '$weeklyRecords.totalHensAlive' },
+            totalFoodConsumedKg: { $sum: '$weeklyRecords.foodConsumed' },
+            totalProducedBoxes: { $sum: '$weeklyRecords.producedBoxes' },
+            totalProducedEggs: { $sum: '$weeklyRecords.producedEggs' },
+            totalMortality: { $sum: '$weeklyRecords.mortality' },
+            avgEggWeight: { $avg: '$weeklyRecords.avgEggWeight' },
+            avgHensWeight: { $avg: '$weeklyRecords.avgHensWeight' },
           },
-          // Agregamos un summary a cada shed
           sheds: {
             $map: {
-              input: "$sheds",
-              as: "shed",
+              input: '$sheds',
+              as: 'shed',
               in: {
                 $mergeObjects: [
-                  "$$shed",
+                  '$$shed',
                   {
-                    summary: {
-                      initialChicken: "$$shed.initialChicken",
-                      mortality: {
-                        $sum: {
-                          $map: {
-                            input: {
-                              $filter: {
-                                input: "$inventories",
-                                as: "inventory",
-                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                              }
-                            },
-                            as: "inv",
-                            in: "$$inv.mortality"
-                          }
-                        }
-                      },
-                      water: {
-                        $sum: {
-                          $map: {
-                            input: {
-                              $filter: {
-                                input: "$inventories",
-                                as: "inventory",
-                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                              }
-                            },
-                            as: "inv",
-                            in: "$$inv.water"
-                          }
-                        }
-                      },
-                      food: {
-                        $sum: {
-                          $map: {
-                            input: {
-                              $filter: {
-                                input: "$inventories",
-                                as: "inventory",
-                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                              }
-                            },
-                            as: "inv",
-                            in: "$$inv.food"
-                          }
-                        }
-                      },
-                      totalChicken: {
-                        $subtract: [
-                          "$$shed.initialChicken",
-                          {
-                            $sum: {
-                              $map: {
-                                input: {
-                                  $filter: {
-                                    input: "$inventories",
-                                    as: "inventory",
-                                    cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                                  }
-                                },
-                                as: "inv",
-                                in: "$$inv.mortality"
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
+                    week: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.week', 0] }, null] },
+                    period: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.period', 0] }, null] },
+                    foodConsumed: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.foodConsumed', 0] }, 0] },
+                    waterConsumed: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.waterConsumed', 0] }, 0] },
+                    mortality: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.mortality', 0] }, 0] },
+                    eggProduction: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.producedEggs', 0] }, 0] },
+                    avgEggWeight: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.avgEggWeight', 0] }, null] },
+                    avgHensWeight: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.avgHensWeight', 0] }, null] }
                   }
                 ]
               }
@@ -290,140 +231,77 @@ class FarmService {
       },
       {
         $project: {
-          inventories: 0 // Excluimos los inventarios del resultado final
-        }
-      }
-    ]).exec()
+          weeklyRecords: 0,
+        },
+      },
+    ]).exec();
 
     if (farms.length <= 0)
-      throw new AppErrorResponse({ name: "Farm Not Found", statusCode: 404, code: "FarmNotFound", description: "No se encontró la granja solicitada", message: "No se encontró la granja solicitada" })
+      throw new AppErrorResponse({ name: 'Farm Not Found', statusCode: 404, code: 'FarmNotFound', description: 'No se encontró la granja solicitada', message: 'No se encontró la granja solicitada' });
 
-    return farms[0]
+    return farms[0];
   }
 
   async getAllWithSheds() {
-    const farm = await FarmModel.aggregate([
+    const farms = await FarmModel.aggregate([
       {
-        $match: {
-          active: true // Consideramos solo granjas activas
-        }
+        $match: { active: true },
       },
       {
         $lookup: {
-          from: "sheds",
-          localField: "_id",
-          foreignField: "farm",
-          as: "sheds"
-        }
+          from: 'sheds',
+          localField: '_id',
+          foreignField: 'farm',
+          as: 'sheds',
+        },
       },
       {
         $lookup: {
-          from: "inventories",
-          localField: "sheds._id",
-          foreignField: "shed",
-          as: "inventories"
-        }
+          from: 'weeklyRecords',
+          let: { shedIds: '$sheds._id' },
+          pipeline: [
+            { $match: { $expr: { $in: ['$shed', '$$shedIds'] } } },
+            { $sort: { week: -1 } },
+            {
+              $group: {
+                _id: '$shed',
+                latestRecord: { $first: '$$ROOT' }
+              }
+            },
+            { $replaceRoot: { newRoot: '$latestRecord' } }
+          ],
+          as: 'weeklyRecords',
+        },
       },
       {
         $addFields: {
-          // Calculamos el summary global de la granja
           summary: {
-            initialChickenTotal: {
-              $sum: "$sheds.initialChicken"
-            },
-            mortality: {
-              $sum: "$inventories.mortality"
-            },
-            water: {
-              $sum: "$inventories.water"
-            },
-            food: {
-              $sum: "$inventories.food"
-            },
-            totalChicken: {
-              $subtract: [
-                { $sum: "$sheds.initialChicken" },
-                { $sum: "$inventories.mortality" }
-              ]
-            }
+            weekStart: { $max: '$weeklyRecords.weekStart' },
+            weekEnd: { $max: '$weeklyRecords.weekEnd' },
+            totalHensAlive: { $sum: '$weeklyRecords.totalHensAlive' },
+            totalFoodConsumedKg: { $sum: '$weeklyRecords.foodConsumed' },
+            totalProducedBoxes: { $sum: '$weeklyRecords.producedBoxes' },
+            totalProducedEggs: { $sum: '$weeklyRecords.producedEggs' },
+            totalMortality: { $sum: '$weeklyRecords.mortality' },
+            avgEggWeight: { $avg: '$weeklyRecords.avgEggWeight' },
+            avgHensWeight: { $avg: '$weeklyRecords.avgHensWeight' },
           },
-          // Agregamos un summary a cada shed
           sheds: {
             $map: {
-              input: "$sheds",
-              as: "shed",
+              input: '$sheds',
+              as: 'shed',
               in: {
                 $mergeObjects: [
-                  "$$shed",
+                  '$$shed',
                   {
-                    summary: {
-                      initialChicken: "$$shed.initialChicken",
-                      mortality: {
-                        $sum: {
-                          $map: {
-                            input: {
-                              $filter: {
-                                input: "$inventories",
-                                as: "inventory",
-                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                              }
-                            },
-                            as: "inv",
-                            in: "$$inv.mortality"
-                          }
-                        }
-                      },
-                      water: {
-                        $sum: {
-                          $map: {
-                            input: {
-                              $filter: {
-                                input: "$inventories",
-                                as: "inventory",
-                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                              }
-                            },
-                            as: "inv",
-                            in: "$$inv.water"
-                          }
-                        }
-                      },
-                      food: {
-                        $sum: {
-                          $map: {
-                            input: {
-                              $filter: {
-                                input: "$inventories",
-                                as: "inventory",
-                                cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                              }
-                            },
-                            as: "inv",
-                            in: "$$inv.food"
-                          }
-                        }
-                      },
-                      totalChicken: {
-                        $subtract: [
-                          "$$shed.initialChicken",
-                          {
-                            $sum: {
-                              $map: {
-                                input: {
-                                  $filter: {
-                                    input: "$inventories",
-                                    as: "inventory",
-                                    cond: { $eq: ["$$inventory.shed", "$$shed._id"] }
-                                  }
-                                },
-                                as: "inv",
-                                in: "$$inv.mortality"
-                              }
-                            }
-                          }
-                        ]
-                      }
-                    }
+                    week: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.week', 0] }, null] },
+                    period: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.period', 0] }, null] },
+                    foodConsumed: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.foodConsumed', 0] }, 0] },
+                    waterConsumed: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.waterConsumed', 0] }, 0] },
+                    mortality: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.mortality', 0] }, 0] },
+                    eggProduction: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.producedEggs', 0] }, 0] },
+                    avgEggWeight: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.avgEggWeight', 0] }, null] },
+                    avgHensWeight: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.avgHensWeight', 0] }, null] }
                   }
                 ]
               }
@@ -433,11 +311,12 @@ class FarmService {
       },
       {
         $project: {
-          inventories: 0 // Excluimos los inventarios del resultado final
-        }
-      }
-    ]).exec()
-    return farm
+          weeklyRecords: 0,
+        },
+      },
+    ]).exec();
+
+    return farms;
   }
 
   /**
