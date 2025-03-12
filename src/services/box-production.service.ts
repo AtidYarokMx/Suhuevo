@@ -28,7 +28,7 @@ class BoxProductionService {
    * @returns Lista de cajas y, opcionalmente, el resumen.
    */
   async getAll(
-    limit: number = 1000,
+    limit?: number,
     startDate?: string,
     endDate?: string,
     status?: number,
@@ -68,8 +68,9 @@ class BoxProductionService {
           select: "name"
         }
       })
-      .limit(limit) // 🔹 Limita los resultados según el parámetro recibido
-      .lean();
+      .limit(limit ?? 1000000) // 🔹 Limita los resultados según el parámetro recibido
+      .lean()
+      .exec();
 
     customLog(`📦 Códigos encontrados: ${boxes.length}`);
 

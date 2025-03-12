@@ -129,7 +129,7 @@ class BoxProductionController {
    */
   public async getAll(req: Request, res: Response) {
     try {
-      const limit = req.query.limit ? Math.max(Number(req.query.limit), 1) : 50; // Mínimo 1
+      const limit = req.query.limit ? Math.max(Number(req.query.limit), 1) : undefined; // Mínimo 1
       const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
       const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
       const includeStatus99 = req.query.includeStatus99 === "true"; // Convertir a booleano
