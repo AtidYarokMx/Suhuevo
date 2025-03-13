@@ -25,12 +25,12 @@ export const generateUserToken = async (user: any) => {
   customLog("🔵 Token generado:", token);
 
   const refreshToken = jwt.sign(
-    { id: user._id.toString() },
+    { id: user._id.toString(), sessionId: new Date().getTime().toString() }, // 🔹 Se agrega un `sessionId` único
     process.env.JWT_REFRESH_SECRET || "refreshsupersecreto",
     { expiresIn: "7d" }
   );
 
-  // ✅ Insertar en BD sin eliminar otros tokens
+  // ✅ Insertar un nuevo refreshToken en la BD sin eliminar otros tokens del usuario
   await RefreshTokenModel.create({
     userId: user._id,
     token: refreshToken,
@@ -41,7 +41,6 @@ export const generateUserToken = async (user: any) => {
 
   return { token, refreshToken, expiresIn: 3600, refreshExpiresIn: 604800 };
 };
-
 
 
 
