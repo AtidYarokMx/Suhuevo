@@ -16,39 +16,34 @@ export function comparePassword(password: string, hashPassword: string): boolean
 }
 
 export const generateUserToken = async (user: any) => {
-  try {
-    const expiresIn = 3600; // 1 hora
-    const refreshExpiresIn = 604800; // 7 días
+  const token = jwt.sign(
+    { id: user._id.toString(), role: user.roleId.toString() },
+    process.env.JWT_SECRET || "supersecreto",
+    { expiresIn: "1h" }
+  );
 
-    const token = jwt.sign(
-      { id: user._id.toString(), role: user.roleId.toString() },
-      process.env.JWT_SECRET || "supersecreto",
-      { expiresIn }
-    );
+  customLog("🔵 Token generado:", token);
 
-    customLog("🔵 Token generado:", token);
+  const refreshToken = jwt.sign(
+    { id: user._id.toString() },
+    process.env.JWT_REFRESH_SECRET || "refreshsupersecreto",
+    { expiresIn: "7d" }
+  );
 
-    const refreshToken = jwt.sign(
-      { id: user._id.toString() },
-      process.env.JWT_REFRESH_SECRET || "refreshsupersecreto",
-      { expiresIn: refreshExpiresIn }
-    );
+  // ✅ Insertar en BD sin eliminar otros tokens
+  await RefreshTokenModel.create({
+    userId: user._id,
+    token: refreshToken,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  });
 
-    // ✅ Guardar o actualizar el refresh token en la base de datos
-    await RefreshTokenModel.findOneAndUpdate(
-      { userId: user._id },
-      { token: refreshToken, expiresAt: new Date(Date.now() + refreshExpiresIn * 1000) },
-      { upsert: true, new: true, maxTimeMS: 10000 }
-    );
+  customLog("🔵 RefreshToken generado y almacenado en la BD:", refreshToken);
 
-    customLog("🔵 RefreshToken generado y almacenado en la BD:", refreshToken);
-
-    return { token, refreshToken, expiresIn, refreshExpiresIn };
-  } catch (error) {
-    customLog("🔴 ERROR al generar token:", error);
-    throw new Error("Error al generar los tokens");
-  }
+  return { token, refreshToken, expiresIn: 3600, refreshExpiresIn: 604800 };
 };
+
+
+
 
 
 
