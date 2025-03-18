@@ -152,30 +152,29 @@ class AuthController {
    *         description: Token no proporcionado.
    */
   public logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const refreshToken = req.headers["x-refresh-token"] as string;
+    const refreshToken = req.cookies["refresh-token"] || req.headers["x-refresh-token"];
 
     if (!refreshToken) {
-      res.status(401)
-        .json({
-          success: false,
-          message: "No se proporcionó un token de refresco"
-        });
+      res.status(401).json({ success: false, message: "No se proporcionó un token de refresco" });
       return;
     }
 
     try {
+      // 🔥 Eliminar el token de la base de datos
       await authService.logout(refreshToken);
-      res
-        .clearCookie("session")
-        .clearCookie("refresh-token")
-        .status(200)
-        .json({
-          success: true,
-          message: "Sesión cerrada exitosamente"
-        });
+
+      // ❌ Borrar cookies del navegador
+      res.clearCookie("refresh-token", { httpOnly: true, secure: true, sameSite: "strict", path: "/api" });
+      res.clearCookie("session", { httpOnly: true, secure: true, sameSite: "strict", path: "/api" });
+
+      customLog("✅ Cookies de sesión eliminadas correctamente.");
+
+      res.status(200).json({
+        success: true,
+        message: "Sesión cerrada exitosamente",
+      });
     } catch (error) {
       customLog("🔴 Error en logout:", error);
-
       const { statusCode, error: err } = appErrorResponseHandler(error);
       res.status(statusCode).json({ success: false, error: err });
     }

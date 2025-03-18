@@ -25,11 +25,9 @@ class AuthService {
    *    
    */
   async login(body: any, locals: any, session: any): Promise<any> {
-    customLog("🛠️ Iniciando autenticación para:", body.email);
-    const userName = body.email
+    customLog("🛠️ Iniciando Login para:", body.email);
 
     try {
-      // ✅ Si no se proporciona email o contraseña, devolver error de validación
       if (!body.email || !body.password) {
         throw new AppErrorResponse({
           statusCode: 400,
@@ -39,25 +37,9 @@ class AuthService {
         });
       }
 
-      const rt = await RefreshTokenModel.findOne({
-        token: "testToken"
-      },
-        null,
-        { session });
-
-      customLog("test", rt)
-
-
-      // ✅ Buscar usuario en la base de datos
-      const user = await UserModel.findOne({
-        userName: userName,
-        active: true
-      },
-        null,
-        { session });
+      const user = await UserModel.findOne({ userName: body.email, active: true }, null, { session });
 
       if (!user) {
-        customLog("❌ Usuario no encontrado.");
         throw new AppErrorResponse({
           statusCode: 401,
           name: "Credenciales incorrectas",
@@ -66,13 +48,7 @@ class AuthService {
         });
       }
 
-      customLog("📡 Usuario encontrado:", user);
-
-      const valid = comparePassword(body.password, user.password);
-      customLog("🔍 ¿Contraseña válida?", valid);
-
-      if (!valid) {
-        customLog("❌ Contraseña incorrecta.");
+      if (!comparePassword(body.password, user.password)) {
         throw new AppErrorResponse({
           statusCode: 401,
           name: "Credenciales incorrectas",
@@ -83,30 +59,23 @@ class AuthService {
 
       customLog("✅ Autenticación exitosa. Generando token...");
 
-      const { token, refreshToken, expiresIn, refreshExpiresIn } = generateUserToken(user);
+      // Generar nuevos tokens
+      const { token, refreshToken, expiresIn, refreshExpiresIn } = await generateUserToken(user);
 
-      const existingToken = await RefreshTokenModel.findOne({ userId: user._id });
-
-      if (existingToken) {
-        await RefreshTokenModel.updateOne(
-          { userId: user._id },
-          { token: refreshToken, expiresAt: refreshExpiresIn },
-          { upsert: true }
-        );
-      } else {
-        await RefreshTokenModel.create({
-          userId: user._id,
-          token: refreshToken,
-          expiresAt: refreshExpiresIn
-        });
-      }
+      // 🔍 Buscar si ya existe un token de refresco para este usuario
+      await RefreshTokenModel.findOneAndUpdate(
+        { userId: user._id }, // Si ya existe un refreshToken para este usuario, lo actualiza
+        { token: refreshToken, expiresAt: new Date(Date.now() + refreshExpiresIn * 1000) },
+        { upsert: true, new: true } // Si no existe, lo crea
+      );
 
       return { token, refreshToken, expiresIn, refreshExpiresIn };
     } catch (error) {
       customLog("🔴 ERROR en login:", error);
-      throw error
+      throw error;
     }
   }
+
 
 
   /**
@@ -120,7 +89,7 @@ class AuthService {
     try {
       customLog("🔍 Verificando Refresh Token...");
 
-      // ✅ 1. Verificar si el refreshToken es válido y obtener `decoded`
+      // ✅ 1. Verificar si el token es válido
       let decoded: JwtPayload;
       try {
         decoded = verify(refreshToken, process.env.JWT_REFRESH_SECRET || "refreshsupersecreto") as JwtPayload;
@@ -129,36 +98,28 @@ class AuthService {
         throw new AppErrorResponse({ statusCode: 401, name: "Refresh token inválido o expirado" });
       }
 
-      // ✅ 2. Verificar si el refreshToken ha expirado
-      if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
-        throw new AppErrorResponse({ statusCode: 401, name: "Refresh token expirado" });
+      // ✅ 2. Buscar el Refresh Token en la BD específico de esta sesión
+      customLog("🔍 Buscando token en la base de datos...");
+      const storedToken = await RefreshTokenModel.findOne({ token: refreshToken }).session(session);
+
+      if (!storedToken) {
+        throw new AppErrorResponse({ statusCode: 403, name: "Refresh token no encontrado en la base de datos" });
       }
 
-      // ✅ 3. Buscar el usuario
+      // ✅ 3. Eliminar solo el refreshToken actual antes de generar uno nuevo
+      customLog("🔥 Eliminando refresh token anterior...");
+      await RefreshTokenModel.deleteOne({ token: refreshToken }).session(session);
+
+      // ✅ 4. Buscar el usuario en la BD
       customLog("✅ Token válido. Buscando usuario...");
       const user = await UserModel.findById(decoded.id).session(session);
       if (!user) {
         throw new AppErrorResponse({ statusCode: 403, name: "Usuario no encontrado" });
       }
 
-      // ✅ 4. Buscar el Refresh Token en la BD
-      customLog("🔍 Buscando token en la base de datos...");
-      const storedToken = await RefreshTokenModel.findOne({ userId: decoded.id, token: refreshToken }).session(session);
-      if (!storedToken) {
-        throw new AppErrorResponse({ statusCode: 403, name: "Refresh token no encontrado en la base de datos" });
-      }
-
       // ✅ 5. Generar nuevos tokens
       customLog("🔄 Generando nuevo token...");
-      const { token, refreshToken: newRefreshToken, expiresIn, refreshExpiresIn } = generateUserToken(user);
-
-      // ✅ 6. Actualizar el Refresh Token en la BD en una sola operación
-      customLog("🔄 Actualizando refreshToken en la base de datos...");
-      await RefreshTokenModel.findOneAndUpdate(
-        { token: refreshToken },
-        { token: newRefreshToken, expiresAt: new Date(Date.now() + refreshExpiresIn * 1000) },
-        { upsert: true, new: true, session, maxTimeMS: 15000 }
-      );
+      const { token, refreshToken: newRefreshToken, expiresIn, refreshExpiresIn } = await generateUserToken(user);
 
       return { token, refreshToken: newRefreshToken, expiresIn, refreshExpiresIn };
     } catch (error) {
@@ -168,14 +129,25 @@ class AuthService {
   }
 
 
+
+
+
   /**
    * Cerrar sesión y eliminar Refresh Token
    */
   async logout(refreshToken: string) {
-    customLog("Token Recibido", refreshToken)
-    await RefreshTokenModel.findOneAndDelete({ token: refreshToken });
+    customLog("🔴 Cerrando sesión para el token:", refreshToken);
+
+    // 🔥 Eliminar solo el refreshToken actual de la base de datos
+    const deleted = await RefreshTokenModel.deleteOne({ token: refreshToken });
+
+    if (deleted.deletedCount === 0) {
+      throw new AppErrorResponse({ statusCode: 400, name: "Token no válido o ya eliminado" });
+    }
+
     return { message: "Sesión cerrada exitosamente" };
   }
+
 
   /**
    * Enviar correo para restablecer contraseña

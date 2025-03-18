@@ -153,6 +153,7 @@ export const initializeShed = z.object({
   initialHensCount: z.number().min(1, "Debe haber al menos una gallina"),
   birthDate: z.string().refine((val) => !isNaN(Date.parse(val))),
   avgHensWeight: z.number().min(1, "Debe de pesar mas de 1 gramo"),
+  uniformity: z.number().min(0, "Debe ser un número positivo"),
 
 });
 

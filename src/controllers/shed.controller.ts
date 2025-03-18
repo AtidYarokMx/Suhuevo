@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { startSession } from 'mongoose';
+import { startSession, Types } from 'mongoose';
 import shedService from '@services/shed.service';
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
 import { validateObjectId } from '@app/utils/validate.util';
@@ -168,20 +168,41 @@ class ShedController {
    *         description: Error interno del servidor
    */
   public async captureDailyData(req: Request, res: Response): Promise<Response> {
+    const { id } = req.params;
+    const requestBody = req.body;
+
+    // Validación básica del ID antes de iniciar la transacción
+    if (!Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID de la caseta inválido" });
+    }
+
+    // Validación de los datos requeridos en el body
+    const requiredFields = ["captureDate", "foodConsumedKg", "mortality", "avgHensWeight", "uniformity"];
+    for (const field of requiredFields) {
+      if (requestBody[field] === undefined || requestBody[field] === null) {
+        return res.status(400).json({ message: `Falta el campo obligatorio: ${field}` });
+      }
+    }
+
     const session = await AppMainMongooseRepo.startSession();
     session.startTransaction();
     try {
-      const response = await shedService.captureDailyData(req.params.id, req.body, session, res.locals as AppLocals);
+      console.log(`📌 Capturando datos diarios para shedId: ${id}`);
+
+      const response = await shedService.captureDailyData(id, requestBody, session, res.locals as AppLocals);
+
       await session.commitTransaction();
       return res.status(200).json(response);
     } catch (error) {
       await session.abortTransaction();
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error(`❌ Error en captureDailyData: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : "Ocurrió un error desconocido";
       return res.status(500).json({ message: errorMessage });
     } finally {
       await session.endSession();
     }
   }
+
 
   /**
    * @swagger
