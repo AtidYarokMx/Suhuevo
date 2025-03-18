@@ -78,8 +78,9 @@ class JobService {
 
     customLog(`Creando puesto ${String(record.id)} (${String(record.name)})`)
     await record.save({ session })
+    const { name, departmentId, active } = record
 
-    return { id: record.id }
+    return { id: record.id, name, departmentId, active }
   }
 
   /**
