@@ -69,13 +69,13 @@ class EmployeeService {
   }
 
   async create(body: any, session: ClientSession): Promise<any> {
-    const id = String(await consumeSequence('employees', session)).padStart(6, '0')
-    const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
+    const id = String(await consumeSequence('employees', session)).padStart(6, '0');
+    const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture);
 
     /* Create user */
-    let userId = undefined
+    let userId = undefined;
     if (body.createUser == null) {
-      const allowedRoles = ['employee.hr', 'employee']
+      const allowedRoles = ['employee.hr', 'employee'];
       const user = await userService.create({
         userName: body.email,
         name: body.name,
@@ -84,16 +84,26 @@ class EmployeeService {
         role: allowedRoles.includes(body.role) ? body.role : 'employee',
         phone: body.phone,
         email: body.email
-      }, session)
-      userId = user.id
+      }, session);
+      userId = user.id;
     }
 
-    const record = new EmployeeModel({ ...body, id, schedule, userId })
-    customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`)
-    await record.save({ session })
+    // 🔹 Asignar `roleId` por defecto si no se proporciona
+    const defaultRoleId = "67bf6ea470d366194e1a28cd";
+    const record = new EmployeeModel({
+      ...body,
+      id,
+      schedule,
+      userId,
+      roleId: body.roleId ?? defaultRoleId
+    });
 
-    return { id: record.id }
+    customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`);
+    await record.save({ session });
+
+    return { id: record.id };
   }
+
 
   async update(body: AppUpdateBody, session: ClientSession): Promise<any> {
     const record = await EmployeeModel.findOne({ id: body.id })
