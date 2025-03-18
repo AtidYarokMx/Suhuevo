@@ -470,7 +470,40 @@ class BoxProductionService {
     return summary;
   }
 
+  async markBoxAsInvalid(code: string, password: string): Promise<{ success: boolean; message: string }> {
+    const correctPassword = process.env.BOX_INVALIDATION_PASSWORD || "defaultpassword"; // 🔹 Usa una variable de entorno
+
+    if (password !== correctPassword) {
+      throw new AppErrorResponse({
+        statusCode: 403,
+        name: "Unauthorized",
+        message: "Contraseña incorrecta"
+      });
+    }
+
+    const box = await BoxProductionModel.findOne({ code, active: true }).exec();
+
+    if (!box) {
+      throw new AppErrorResponse({
+        statusCode: 404,
+        name: "NotFound",
+        message: "No se encontró el código"
+      });
+    }
+
+    box.status = 99;
+    await box.save();
+
+    return {
+      success: true,
+      message: `El código ${code} ha sido marcado como inválido (status = 99).`
+    };
+  }
+
+
 }
+
+
 
 const boxProductionService: BoxProductionService = new BoxProductionService()
 export default boxProductionService

@@ -313,6 +313,25 @@ class BoxProductionController {
       return res.status(statusCode).json(err);
     }
   }
+
+  public async markBoxAsInvalid(req: Request, res: Response) {
+    try {
+      const { code, password } = req.body;
+
+      if (!code || !password) {
+        return res.status(400).json({ success: false, message: "Código y contraseña son requeridos" });
+      }
+
+      const response = await boxProductionService.markBoxAsInvalid(code, password);
+
+      return res.status(200).json(response);
+    } catch (error) {
+      customLog(`❌ Error en markBoxAsInvalid: ${String(error)}`);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
 }
 
 export const boxProductionController: BoxProductionController = new BoxProductionController()

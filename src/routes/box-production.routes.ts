@@ -83,7 +83,12 @@ class BoxProductionRoutes extends ServerRouter {
      * @returns Lista de códigos de producción asignados al Shed.
      */
     this.router.get('/shed/:shedId', authenticateUser, this.wrapWithLogging(this.controller.getByShedId))
+
+    this.router.post('/invalidate', authenticateUser, this.wrapWithLogging(this.controller.markBoxAsInvalid));
+
   }
+
+
 
   /**
    * Envuelve un controlador para agregar logs de inicio y fin de cada solicitud.
