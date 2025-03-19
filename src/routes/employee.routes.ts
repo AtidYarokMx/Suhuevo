@@ -16,6 +16,12 @@ class EmployeeRoutes extends ServerRouter {
     this.router.post('/create', [authenticateUser], this.controller.create as RequestHandler)
     this.router.patch('/update', [authenticateUser], this.controller.update as RequestHandler)
     this.router.get('/search', [authenticateUser], this.controller.search as RequestHandler)
+    // ✅ Ruta para listar archivos de un empleado
+    this.router.get("/:id/files", [authenticateUser], this.controller.listFiles as RequestHandler);
+
+    // ✅ Ruta para ver o descargar un archivo específico de un empleado
+    this.router.get("/:id/files/:fileName", [authenticateUser], this.controller.getFile as RequestHandler);
+
   }
 }
 

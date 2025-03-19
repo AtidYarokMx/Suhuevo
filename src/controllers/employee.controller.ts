@@ -16,18 +16,19 @@ class EmployeeController {
   }
 
   public async create(req: Request, res: Response): Promise<any> {
-    const body: any = req.body
-    const session = await AppMainMongooseRepo.startSession()
+    const { tempFiles, ...body } = req.body; // Extraemos archivos temporales
+    const session = await AppMainMongooseRepo.startSession();
+
     try {
-      session.startTransaction()
-      const response = await employeeService.create(body, session)
-      await session.commitTransaction()
-      await session.endSession()
-      return res.status(200).json(response)
+      session.startTransaction();
+      const response = await employeeService.create(body, tempFiles, session); // Pasamos tempFiles
+      await session.commitTransaction();
+      await session.endSession();
+      return res.status(200).json(response);
     } catch (error) {
-      await session.abortTransaction()
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
+      await session.abortTransaction();
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
     }
   }
 
@@ -57,6 +58,28 @@ class EmployeeController {
       console.log(error)
       const { statusCode, error: err } = appErrorResponseHandler(error)
       return res.status(statusCode).json(err)
+    }
+  }
+
+  public async listFiles(req: Request, res: Response): Promise<any> {
+    const { id } = req.params;
+
+    try {
+      const files = await employeeService.getEmployeeFiles(id);
+      return res.status(200).json({ files });
+    } catch (error) {
+      return res.status(500).json({ message: "Error al listar archivos", error });
+    }
+  }
+
+  public async getFile(req: Request, res: Response): Promise<any> {
+    const { id, fileName } = req.params;
+
+    try {
+      const filePath = await employeeService.getEmployeeFilePath(id, fileName);
+      return res.sendFile(filePath);
+    } catch (error) {
+      return res.status(404).json({ message: "Archivo no encontrado", error });
     }
   }
 }
