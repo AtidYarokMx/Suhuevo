@@ -473,6 +473,7 @@ class BoxProductionService {
 
   async markBoxAsInvalid(code: string, password: string): Promise<{ success: boolean; message: string }> {
     const correctPassword = process.env.BOX_INVALIDATION_PASSWORD || "defaultpassword"; // 🔹 Usa una variable de entorno
+    customLog(`🔒 Contraseña de invalidación recibida: ${password}`);
 
     if (password !== correctPassword) {
       throw new AppErrorResponse({
