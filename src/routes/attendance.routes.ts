@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express'
 import { ServerRouter } from './models/route'
 import { authenticateUser } from '@app/middlewares/auth.middleware'
 import { attendanceController } from '@controllers/attendance.controller'
-import { uploadFileMiddleware } from '@app/middlewares/upload.middleware'
+import { uploadAttendanceFileMiddleware } from '@app/middlewares/upload.middleware'
 
 
 class AttendanceRoutes extends ServerRouter {
@@ -20,7 +20,7 @@ class AttendanceRoutes extends ServerRouter {
     this.router.get('/search', [authenticateUser], this.controller.search as RequestHandler)
     // this.router.get('/csv', this.controller.startCalculations as RequestHandler)
 
-    this.router.post('/import-csv', authenticateUser, uploadFileMiddleware.single('file'), this.controller.importFromCsv as RequestHandler)
+    this.router.post('/import-csv', authenticateUser, uploadAttendanceFileMiddleware.single('file'), this.controller.importFromCsv as RequestHandler)
   }
 }
 

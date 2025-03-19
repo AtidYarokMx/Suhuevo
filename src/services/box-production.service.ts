@@ -32,27 +32,53 @@ class BoxProductionService {
     startDate?: string,
     endDate?: string,
     status?: number,
-    includeStatus99: boolean = false
+    includeStatus99: boolean = false,
+    farm?: string,
+    shed?: string,
+    type?: string,
+    category?: string
   ) {
     customLog("📌 Iniciando consulta de códigos de producción...");
 
     const matchConditions: any = { active: true };
 
-    // 🔹 Excluir `status = 99` por defecto
-    if (!includeStatus99) {
-      matchConditions.status = { $ne: 99 };
-    }
-
+    // 🔹 Filtrado por status
     if (status !== undefined) {
-      matchConditions.status = status; // 🔹 Filtrar por un estado específico
+      matchConditions.status = status;
+    } else if (!includeStatus99) {
+      matchConditions.status = { $ne: 99 }; // Excluir status 99 si no se indica lo contrario
     }
 
-    // 🔹 Filtro por rango de fechas
+    // 🔹 Filtrado por rango de fechas
     if (startDate || endDate) {
       matchConditions.createdAt = {};
       if (startDate) matchConditions.createdAt.$gte = new Date(startDate);
       if (endDate) matchConditions.createdAt.$lte = new Date(endDate);
     }
+
+    // 🔹 Filtrado por Granja (farm)
+    if (farm && ObjectId.isValid(farm)) {
+      matchConditions.farm = new ObjectId(farm);
+    }
+
+    // 🔹 Filtrado por Caseta (shed)
+    if (shed && ObjectId.isValid(shed)) {
+      matchConditions.shed = new ObjectId(shed);
+    }
+
+    // 🔹 Filtrado por Tipo de Caja (type)
+    if (type && ObjectId.isValid(type)) {
+      matchConditions.type = new ObjectId(type);
+    }
+
+    // 🔹 Filtrado por Categoría (category)
+    if (category && ObjectId.isValid(category)) {
+      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) }).select("_id").lean();
+      matchConditions.type = { $in: categoryTypes.map(t => t._id) };
+    }
+
+    // 🔹 LOGS: Mostrar condiciones de filtrado
+    customLog("🔍 Condiciones de filtrado:", JSON.stringify(matchConditions, null, 2));
 
     // 🔹 Consulta a la base de datos
     const boxes = await BoxProductionModel.find(matchConditions)
@@ -74,7 +100,7 @@ class BoxProductionService {
 
     customLog(`📦 Códigos encontrados: ${boxes.length}`);
 
-
+    // 🔹 Formatear los resultados
     const formattedBoxes = boxes.map(box => ({
       _id: box._id,
       code: box.code,
@@ -92,6 +118,9 @@ class BoxProductionService {
     const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1, category: 1 })
       .populate("category", "name")
       .lean();
+
+    // 🔹 LOGS: Mostrar tipos de caja y categorías
+    customLog(`📦 Tipos de caja encontrados: ${allTypes.length}`);
 
     const countByType = new Map<string, { category: string; count: number }>();
 
@@ -113,12 +142,17 @@ class BoxProductionService {
       count: countByType.get(t.name)?.count || 0
     }));
 
+    // 🔹 LOGS: Mostrar el resumen generado
+    customLog("📊 Resumen generado:", JSON.stringify(summaryData, null, 2));
+
     return {
       totalRecords: boxes.length,
       boxes: formattedBoxes,
       summary: summaryData
     };
   }
+
+
 
 
   /**
@@ -292,25 +326,84 @@ class BoxProductionService {
 
 
   /**
-   * Envía cajas a ventas y actualiza su estado.
-   * @param payload - Información de los códigos, placas y conductor.
-   * @param session - Sesión de transacción de MongoDB.
-   * @param locals - Información del usuario autenticado.
-   * @returns Resultado de la actualización.
-   */
-  async sendBoxesToSells({ codes, plates, driver }: z.infer<typeof sendBoxesToSellsBody>, session: ClientSession, locals: AppLocals) {
-    const ids = await BoxProductionModel.find({ active: true, status: 1, code: { $in: codes } }, { _id: true }, { session }).exec()
+ * Envía cajas a ventas y actualiza su estado.
+ * @param payload - Información de los códigos, placas y conductor.
+ * @param session - Sesión de transacción de MongoDB.
+ * @param locals - Información del usuario autenticado.
+ * @returns Resultado de la actualización.
+ */
+  async sendBoxesToSells(
+    { codes, plates, driver }: z.infer<typeof sendBoxesToSellsBody>,
+    session: ClientSession,
+    locals: AppLocals
+  ) {
+    customLog(`📌 Iniciando envío de cajas a ventas. Placas: ${plates}, Conductor: ${driver}`);
+    customLog(`🔍 Códigos recibidos: ${codes.length}`);
 
-    if (ids.length <= 0)
-      throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", description: "No se encontró ningún código", code: "CodesNotFound", message: "No se encontraron códigos con los parámetros seleccionados" })
+    if (!codes || codes.length === 0) {
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "EmptyCodesArray",
+        message: "No se proporcionaron códigos para enviar.",
+      });
+    }
 
-    const updated = await BoxProductionModel.updateMany({ active: true, status: 1, code: { $in: codes } }, { status: 2 }, { session, runValidators: true }).exec()
-    const user = locals.user._id
-    const codeItems = ids.map<IShipmentCode>((item, index) => ({ code: item._id }))
-    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeItems, vehiclePlates: plates, driver, createdBy: user, lastUpdateBy: user })
-    await shipment.save({ session, validateBeforeSave: true })
-    return updated
+    // 🔹 Buscar los códigos en la base de datos (status 1 = Producción)
+    const boxRecords = await BoxProductionModel.find(
+      { active: true, status: 1, code: { $in: codes } },
+      { _id: true, code: true, shed: true }, // Incluye shed para agrupar
+      { session }
+    ).exec();
+
+    if (boxRecords.length === 0) {
+      throw new AppErrorResponse({
+        statusCode: 404,
+        name: "CodesNotFound",
+        message: "No se encontraron códigos con los parámetros seleccionados.",
+      });
+    }
+
+    // 🔹 Agrupar códigos por `shedId`
+    const groupedCodes = boxRecords.reduce((acc, box) => {
+      const shedId = box.shed.toString();
+      if (!acc[shedId]) {
+        acc[shedId] = [];
+      }
+      acc[shedId].push(box.code);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    customLog(`✅ Cajas encontradas: ${boxRecords.length}`);
+    Object.entries(groupedCodes).forEach(([shedId, codes]) => {
+      customLog(`   🏠 Caseta ${shedId}: ${codes.length} códigos.`);
+    });
+
+    // 🔹 Actualizar el estado de las cajas en producción
+    const updated = await BoxProductionModel.updateMany(
+      { active: true, status: 1, code: { $in: codes } },
+      { status: 2 }, // Cambia el estado a `2` (Enviado a ventas)
+      { session, runValidators: true }
+    ).exec();
+
+    // 🔹 Crear el envío en `ShipmentModel`
+    const user = locals.user._id;
+    const shipment = new ShipmentModel({
+      name: "Envío de Producción a Ventas",
+      codes: boxRecords.map((box) => ({ code: box.code })), // Incluir todos los códigos enviados
+      groupedCodes, // Asignar la agrupación de códigos por caseta
+      vehiclePlates: plates,
+      driver,
+      createdBy: user,
+      lastUpdateBy: user,
+    });
+
+    await shipment.save({ session, validateBeforeSave: true });
+
+    customLog(`🚛 Envío registrado con éxito. Placas: ${plates}, Conductor: ${driver}, Total Cajas: ${boxRecords.length}`);
+
+    return updated;
   }
+
 
   /**
    * Sincroniza los códigos de producción desde SQL Server a MongoDB.
@@ -470,6 +563,39 @@ class BoxProductionService {
 
     return summary;
   }
+
+  async markBoxAsInvalid(code: string, password: string): Promise<{ success: boolean; message: string }> {
+    const correctPassword = process.env.BOX_INVALIDATION_PASSWORD || "defaultpassword"; // 🔹 Usa una variable de entorno
+    customLog(`🔒 Contraseña de invalidación recibida: ${password}`);
+
+    if (password !== correctPassword) {
+      throw new AppErrorResponse({
+        statusCode: 403,
+        name: "Unauthorized",
+        message: "Contraseña incorrecta"
+      });
+    }
+
+    const box = await BoxProductionModel.findOne({ code, active: true }).exec();
+
+    if (!box) {
+      throw new AppErrorResponse({
+        statusCode: 404,
+        name: "NotFound",
+        message: "No se encontró el código"
+      });
+    }
+
+    // 🔹 Actualiza solo el `status` sin afectar otros campos
+    await BoxProductionModel.updateOne({ _id: box._id }, { $set: { status: 99 } }).exec();
+
+    return {
+      success: true,
+      message: `El código ${code} ha sido marcado como inválido (status = 99).`
+    };
+  }
+
+
 
 }
 

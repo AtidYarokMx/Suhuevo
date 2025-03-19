@@ -1,5 +1,5 @@
 /* lib */
-import fs from 'node:fs'
+import fs from 'fs-extra'
 import path from 'node:path'
 import { type ClientSession } from 'mongoose'
 /* models */
@@ -19,9 +19,13 @@ import { docsDir, tempDocsDir } from '@app/constants/file.constants'
 import { Types } from '@app/repositories/mongoose'
 /* dtos */
 import { AppUpdateBody, IEmployee } from '@app/dtos/employee.dto'
+import fileService from './file.service'
 
+const tempStorageDir = path.join(__dirname, "../../../uploads/temp");
+const employeeStorageDir = path.join(__dirname, "../../../uploads/employees");
 
 class EmployeeService {
+
   private allowedUpdateFields = ['status', 'biometricId', 'name', 'lastName', 'secondLastName', 'email', 'phone', 'address', 'birthdate', 'bloodType', 'departmentId', 'jobId', 'hireDate', 'bankAccountNumber', 'dailySalary', 'schedule', 'mxCurp', 'mxRfc', 'mxNss', 'emergencyContact', 'emergencyPhone', 'jobScheme', 'ineFront', 'ineBack', 'contract', 'bankName', 'attendanceScheme', 'minOvertimeMinutes'] as (keyof AppUpdateBody)[]
 
   /* methods */
@@ -33,6 +37,26 @@ class EmployeeService {
     for (const record of records) result[record.id] = record
     return result
   }
+
+  async moveAndSaveFiles(employeeId: string, tempFiles: string[]): Promise<string[]> {
+    customLog(`Moving files to employee ${employeeId}`);
+    customLog(`Temp files: ${tempFiles.join(", ")}`);
+    customLog(`Temp storage dir: ${tempStorageDir}`);
+    customLog(`Employee storage dir: ${employeeStorageDir}`);
+
+    if (!employeeId || !Array.isArray(tempFiles)) {
+      throw new Error("Invalid request: employeeId or tempFiles missing");
+    }
+
+    // 🔹 Mover archivos al directorio final
+    const filePaths = await fileService.moveFilesToEmployee(employeeId, tempFiles);
+
+    // 🔹 Actualizar el modelo del empleado
+    await EmployeeModel.findByIdAndUpdate(employeeId, { $push: { documents: { $each: filePaths } } });
+
+    return filePaths;
+  }
+
 
   async search(query: any): Promise<any> {
     const { limit = 100, size, sortField, ...queryFields } = query
@@ -68,14 +92,36 @@ class EmployeeService {
     return await this.populateResults(records)
   }
 
-  async create(body: any, session: ClientSession): Promise<any> {
-    const id = String(await consumeSequence('employees', session)).padStart(6, '0')
-    const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture)
+  async getEmployeeFiles(employeeId: string): Promise<string[]> {
+    const employeeDir = path.join(employeeStorageDir, employeeId);
 
-    /* Create user */
-    let userId = undefined
-    if (body.createUser == null) {
-      const allowedRoles = ['employee.hr', 'employee']
+    if (!fs.existsSync(employeeDir)) {
+      throw new Error("No se encontraron archivos para este empleado");
+    }
+
+    const files = await fs.readdir(employeeDir);
+    return files;
+  }
+
+  async getEmployeeFilePath(employeeId: string, fileName: string): Promise<string> {
+    const filePath = path.join(employeeStorageDir, employeeId, fileName);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error("Archivo no encontrado");
+    }
+
+    return filePath;
+  }
+
+  async create(body: any, tempFiles: string[], session: ClientSession): Promise<any> {
+    customLog('Creando empleado...');
+    customLog('Datos:', body);
+    const id = String(await consumeSequence('employees', session)).padStart(6, '0');
+    const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture);
+
+    let userId = undefined;
+    if (!body.createUser) {
+      const allowedRoles = ['employee.hr', 'employee'];
       const user = await userService.create({
         userName: body.email,
         name: body.name,
@@ -83,17 +129,43 @@ class EmployeeService {
         secondLastName: body.secondLastName,
         role: allowedRoles.includes(body.role) ? body.role : 'employee',
         phone: body.phone,
-        email: body.email
-      }, session)
-      userId = user.id
+        email: body.email,
+      }, session);
+      userId = user.id;
     }
 
-    const record = new EmployeeModel({ ...body, id, schedule, userId })
-    customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`)
-    await record.save({ session })
+    // ✅ Mover archivos temporales al directorio final del empleado
+    const filePaths = await fileService.moveFilesToEmployee(id, tempFiles);
 
-    return { id: record.id }
+    customLog(`Archivos movidos con éxito: ${filePaths.length} archivos.`);
+    // ✅ Crear el registro del empleado con los archivos
+    const record = new EmployeeModel({
+      ...body,
+      id,
+      schedule,
+      userId,
+      roleId: body.roleId ?? "67bf6ea470d366194e1a28cd",
+      documents: filePaths,  // ✅ Guardar rutas en el array `documents`
+      ineFront: body.ineFront,
+      ineBack: body.ineBack,
+      contract: body.contract,
+      jobApplication: body.jobApplication,
+      csf: body.csf,
+      nss: body.nss,
+      curpFile: body.curpFile,
+      bankFile: body.bankFile,
+      addressDoc: body.addressDoc,
+      resume: body.resume,
+      birthFile: body.birthFile,
+    });
+
+    customLog(`Empleado ${record.id} creado con éxito con ${filePaths.length} documentos.`);
+    await record.save({ session });
+
+    return { id: record.id, documentPaths: filePaths };
   }
+
+
 
   async update(body: AppUpdateBody, session: ClientSession): Promise<any> {
     const record = await EmployeeModel.findOne({ id: body.id })

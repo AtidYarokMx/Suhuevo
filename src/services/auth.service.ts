@@ -25,7 +25,7 @@ class AuthService {
    *    
    */
   async login(body: any, locals: any, session: any): Promise<any> {
-    customLog("🛠️ Iniciando autenticación para:", body.email);
+    customLog("🛠️ Iniciando Login para:", body.email);
 
     try {
       if (!body.email || !body.password) {

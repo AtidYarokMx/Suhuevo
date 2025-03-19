@@ -1,12 +1,16 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { AppErrorResponse } from "@app/models/app.response";
 import { UserModel } from "@app/repositories/mongoose/models/user.model";
 import { Role } from "@app/repositories/mongoose/models/role.model";
 
-const SECRET_KEY = process.env.JWT_SECRET || "supersecreto";
+const SECRET_KEY = process.env.JWT_SECRET;
 
-// 🛑 Rutas públicas (no requieren autenticación)
+if (!SECRET_KEY) {
+  console.error("❌ ERROR: No se ha definido JWT_SECRET en las variables de entorno.");
+  process.exit(1); // 🚀 Detener la ejecución si no hay una clave segura
+}
+
+// 🛑 Rutas públicas (sin autenticación)
 const PUBLIC_ROUTES = [
   "/api/auth/login",
   "/api/auth/register",
@@ -18,15 +22,14 @@ const PUBLIC_ROUTES = [
 
 /**
  * Middleware de Autenticación 🔒
- * Verifica si el usuario está autenticado, excepto en rutas públicas.
+ * Permite autenticación vía `Authorization` o `Cookies`
  */
 export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
   if (PUBLIC_ROUTES.includes(req.path)) {
     return next(); // ✅ Saltar autenticación en rutas públicas
   }
 
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1];
+  let token = req.headers.authorization?.split(" ")[1] || req.cookies?.user; // 🔹 Permitir autenticación por header y cookies
 
   if (!token) {
     return res.status(401).json({ message: "Token no proporcionado" });
@@ -43,6 +46,7 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
     res.locals.user = user; // Guardar usuario en `res.locals`
     next();
   } catch (error) {
+    console.error("❌ Error de autenticación:", error);
     return res.status(401).json({ message: "Token inválido o expirado" });
   }
 };
@@ -66,7 +70,7 @@ export const authorizeRoles = (...allowedRoles: string[]) => {
 
       next();
     } catch (error) {
-      console.error("🔴 Error en autorización de roles:", error);
+      console.error("❌ Error en autorización de roles:", error);
       return res.status(403).json({ message: "Error al verificar rol" });
     }
   };
@@ -84,13 +88,13 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
     }
 
     try {
-      // 🚀 Poblar rol y permisos solo cuando se necesita
+      // 🚀 Obtener el rol y permisos en una sola consulta para optimizar
       const userWithRole = await UserModel.findById(user.id)
         .populate({
           path: "roleId",
           populate: { path: "permissions", model: "Permission" }
         })
-        .exec();
+        .lean();
 
       if (!userWithRole || !userWithRole.roleId) {
         return res.status(403).json({ message: "No tienes un rol asignado" });
@@ -105,7 +109,7 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
       const userPermissions = role.permissions.map((p: any) => p.code);
       console.log("🔹 Permisos del usuario:", userPermissions);
 
-      // ✅ Verificar permisos requeridos
+      // ✅ Verificar si el usuario tiene TODOS los permisos requeridos
       const hasPermission = requiredPermissions.every(perm => userPermissions.includes(perm));
 
       if (!hasPermission) {
@@ -114,7 +118,7 @@ export const authorizePermissions = (requiredPermissions: string[]) => {
 
       next();
     } catch (error) {
-      console.error("🔴 Error en autorización de permisos:", error);
+      console.error("❌ Error en autorización de permisos:", error);
       return res.status(403).json({ message: "Error al verificar permisos" });
     }
   };

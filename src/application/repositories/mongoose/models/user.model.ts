@@ -78,7 +78,7 @@ export const UserSchema = new Schema<IUser, AppUserModel, {}, {}, IUserVirtuals>
   name: { type: String, trim: true, required: true },
   firstLastName: { type: String, trim: true, default: '' },
   secondLastName: { type: String, trim: true, default: '' },
-  roleId: { type: Schema.Types.ObjectId, ref: "Role", required: true },
+  roleId: { type: Schema.Types.ObjectId, ref: "Role", default: "67bf6ea470d366194e1a28cd" },
 
   userName: { type: String, trim: true, unique: true, required: true },
   phone: {

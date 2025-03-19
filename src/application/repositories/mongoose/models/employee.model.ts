@@ -52,9 +52,7 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
   userId: { type: String },
 
   /* documents */
-  ineFront: { type: Schema.Types.ObjectId, ref: "file" },
-  ineBack: { type: Schema.Types.ObjectId, ref: "file" },
-  contract: { type: Schema.Types.ObjectId, ref: "file" },
+  documents: [{ type: String, trim: true }],
 
   /* defaults */
   active: { type: Boolean, default: true },

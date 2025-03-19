@@ -1,25 +1,37 @@
-/* lib */
-import multer from 'multer'
-import { v4 as uuidv4 } from 'uuid'
-/* utils */
-import { tempDocsDir } from '@app/constants/file.constants'
-import { getFileExtension } from '@app/utils/file.util'
+import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
+import fs from "fs-extra";
+import path from "path";
 
+const tempStorageDir = path.join(__dirname, "../../../uploads/temp");
+const attendanceStorageDir = path.join(__dirname, "../../../uploads/attendance");
+
+// Configurar almacenamiento en carpeta temporal
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, tempDocsDir ?? 'tmp/docs')
+  destination: async (req, file, cb) => {
+    await fs.ensureDir(tempStorageDir);
+    cb(null, tempStorageDir);
   },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = `${uuidv4()}.${getFileExtension(file.mimetype)}`
-    cb(null, uniqueSuffix)
+  filename: (req, file, cb) => {
+    const uniqueName = `${uuidv4()}_${file.originalname}`;
+    cb(null, uniqueName);
   },
-})
+});
 
-export const uploadFileMiddleware = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // archivo no mayor a 5mb
-})
+// ✅ Configurar almacenamiento para archivos de asistencia (CSV)
+const attendanceStorage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    await fs.ensureDir(attendanceStorageDir);
+    cb(null, attendanceStorageDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `attendance_${Date.now()}_${file.originalname}`;
+    cb(null, uniqueName);
+  },
+});
 
-function getFileName(fieldname: any): string {
-  return fieldname.replaceAll('files', '').replaceAll('[', '').replaceAll(']', '') // .substring(fieldname.indexOf(']') + 2, fieldname.length - 1)
-}
+// ✅ Middleware para carga de archivos temporales (empleados)
+export const uploadTempFileMiddleware = multer({ storage });
+
+// ✅ Middleware para carga de archivos de asistencia (CSV)
+export const uploadAttendanceFileMiddleware = multer({ storage: attendanceStorage });
