@@ -26,9 +26,16 @@ class EmployeeController {
       await session.endSession();
       return res.status(200).json(response);
     } catch (error) {
-      await session.abortTransaction();
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
+      console.error("🔴 Error al crear empleado:", error);
+
+      if (error instanceof Error && error.name === "ValidationError") {
+        return res.status(400).json({
+          message: "Error de validación",
+          errors: (error as any)?.errors || "Detalles no disponibles"
+        });
+      }
+
+      return res.status(500).json({ message: "Error al crear empleado", error });
     }
   }
 

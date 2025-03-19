@@ -40,9 +40,18 @@ export interface IEmployee {
   userId: string
 
   /* files */
-  ineFront: Types.ObjectId
-  ineBack: Types.ObjectId
-  contract: Types.ObjectId
+  documents: String
+  ineFront: string;
+  ineBack: string;
+  contract: string;
+  jobApplication: string;
+  csf: string;
+  nss: string;
+  curpFile: string;
+  bankFile: string;
+  addressDoc: string;
+  resume: string;
+  birthFile: string;
 
   /* defaults */
   active: boolean
