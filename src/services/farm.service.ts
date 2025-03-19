@@ -254,7 +254,7 @@ class FarmService {
           shed: shed._id,
           createdAt: { $gte: weekStart },
         })
-          .select("totalEggs totalNetWeight createdAt")
+          .select("totalEggs netWeight createdAt")
           .lean();
 
         const totalProducedEggs = boxProductions.reduce((sum, box) => sum + (Number(box.totalEggs) || 0), 0);
@@ -271,6 +271,7 @@ class FarmService {
         shed.totalMortality = latestWeeklyRecord?.totalMortality || 0;
         shed.totalProducedBoxes = totalProducedBoxes;
         shed.totalProducedEggs = totalProducedEggs;
+        shed.totalNetWeight = totalNetWeight;
         shed.avgEggWeight = avgEggWeight;
         shed.avgHensWeight = latestWeeklyRecord?.avgHensWeight || 0;
 
@@ -322,6 +323,9 @@ class FarmService {
 
         customLog(`      - Total cajas producidas: ${shed.totalProducedBoxes}`);
         customLog(`      - Total huevos producidos: ${shed.totalProducedEggs}`);
+        customLog(`      - Mortalidad: ${shed.totalMortality}`);
+        customLog(`      - Gallinas vivas: ${shed.totalHensAlive}`);
+        customLog(`      - Peso total de los huevos: ${shed.totalNetWeight}`);
         customLog(`      - Peso promedio del huevo: ${shed.avgEggWeight}`);
       }
 
