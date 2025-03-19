@@ -227,6 +227,8 @@ class FarmService {
       let validHensWeightCount = 0;
       let validEggWeightCount = 0;
 
+      const chartsData: any[] = [];
+
       for (const shed of farm.sheds) {
         customLog(`   🏠 Caseta: ${shed.name}`);
 
@@ -252,7 +254,7 @@ class FarmService {
           shed: shed._id,
           createdAt: { $gte: weekStart },
         })
-          .select("totalEggs totalNetWeight")
+          .select("totalEggs totalNetWeight createdAt")
           .lean();
 
         const totalProducedEggs = boxProductions.reduce((sum, box) => sum + (Number(box.totalEggs) || 0), 0);
@@ -271,6 +273,28 @@ class FarmService {
         shed.totalProducedEggs = totalProducedEggs;
         shed.avgEggWeight = avgEggWeight;
         shed.avgHensWeight = latestWeeklyRecord?.avgHensWeight || 0;
+
+        // 🔹 Agregar datos históricos de producción para chartsData
+        const historicalWeeklyRecords = await WeeklyRecordModel.find(
+          { shedId: shed._id, generationId: shed.generationId },
+          {
+            weekStart: 1,
+            totalFoodConsumedKg: 1,
+            totalHensAlive: 1,
+            totalProducedEggs: 1,
+            totalProducedBoxes: 1
+          }
+        )
+          .sort({ weekStart: 1 }) // Orden cronológico ascendente
+          .lean();
+
+        chartsData.push(...historicalWeeklyRecords.map(record => ({
+          week: record.weekStart ? record.weekStart.toISOString().split("T")[0] : "No data",
+          foodConsumedKG: record.totalFoodConsumedKg,
+          hensAlive: record.totalHensAlive,
+          producedEggs: record.totalProducedEggs,
+          producedBoxes: record.totalProducedBoxes
+        })));
 
         // 🔹 Sumar datos al resumen de la granja
         summary.totalHensAlive += shed.totalHensAlive;
@@ -307,12 +331,13 @@ class FarmService {
 
       customLog(`✅ Resumen de la granja ${farm.name}:`, summary);
 
-      return { ...farm, summary };
+      return { ...farm, summary, chartsData };
     } catch (error: any) {
       customLog(`❌ Error al obtener la granja con id ${_id}: ${error.message}`);
       throw error;
     }
   }
+
 
 
 
