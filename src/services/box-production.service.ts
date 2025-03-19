@@ -32,27 +32,53 @@ class BoxProductionService {
     startDate?: string,
     endDate?: string,
     status?: number,
-    includeStatus99: boolean = false
+    includeStatus99: boolean = false,
+    farm?: string,
+    shed?: string,
+    type?: string,
+    category?: string
   ) {
     customLog("📌 Iniciando consulta de códigos de producción...");
 
     const matchConditions: any = { active: true };
 
-    // 🔹 Excluir `status = 99` por defecto
-    if (!includeStatus99) {
-      matchConditions.status = { $ne: 99 };
-    }
-
+    // 🔹 Filtrado por status
     if (status !== undefined) {
-      matchConditions.status = status; // 🔹 Filtrar por un estado específico
+      matchConditions.status = status;
+    } else if (!includeStatus99) {
+      matchConditions.status = { $ne: 99 }; // Excluir status 99 si no se indica lo contrario
     }
 
-    // 🔹 Filtro por rango de fechas
+    // 🔹 Filtrado por rango de fechas
     if (startDate || endDate) {
       matchConditions.createdAt = {};
       if (startDate) matchConditions.createdAt.$gte = new Date(startDate);
       if (endDate) matchConditions.createdAt.$lte = new Date(endDate);
     }
+
+    // 🔹 Filtrado por Granja (farm)
+    if (farm && ObjectId.isValid(farm)) {
+      matchConditions.farm = new ObjectId(farm);
+    }
+
+    // 🔹 Filtrado por Caseta (shed)
+    if (shed && ObjectId.isValid(shed)) {
+      matchConditions.shed = new ObjectId(shed);
+    }
+
+    // 🔹 Filtrado por Tipo de Caja (type)
+    if (type && ObjectId.isValid(type)) {
+      matchConditions.type = new ObjectId(type);
+    }
+
+    // 🔹 Filtrado por Categoría (category)
+    if (category && ObjectId.isValid(category)) {
+      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) }).select("_id").lean();
+      matchConditions.type = { $in: categoryTypes.map(t => t._id) };
+    }
+
+    // 🔹 LOGS: Mostrar condiciones de filtrado
+    customLog("🔍 Condiciones de filtrado:", JSON.stringify(matchConditions, null, 2));
 
     // 🔹 Consulta a la base de datos
     const boxes = await BoxProductionModel.find(matchConditions)
@@ -74,7 +100,7 @@ class BoxProductionService {
 
     customLog(`📦 Códigos encontrados: ${boxes.length}`);
 
-
+    // 🔹 Formatear los resultados
     const formattedBoxes = boxes.map(box => ({
       _id: box._id,
       code: box.code,
@@ -92,6 +118,9 @@ class BoxProductionService {
     const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1, category: 1 })
       .populate("category", "name")
       .lean();
+
+    // 🔹 LOGS: Mostrar tipos de caja y categorías
+    customLog(`📦 Tipos de caja encontrados: ${allTypes.length}`);
 
     const countByType = new Map<string, { category: string; count: number }>();
 
@@ -113,12 +142,17 @@ class BoxProductionService {
       count: countByType.get(t.name)?.count || 0
     }));
 
+    // 🔹 LOGS: Mostrar el resumen generado
+    customLog("📊 Resumen generado:", JSON.stringify(summaryData, null, 2));
+
     return {
       totalRecords: boxes.length,
       boxes: formattedBoxes,
       summary: summaryData
     };
   }
+
+
 
 
   /**

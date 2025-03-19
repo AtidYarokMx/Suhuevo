@@ -119,24 +119,86 @@ class BoxProductionController {
    *     tags: [BoxProduction]
    *     parameters:
    *       - in: query
-   *         name: summary
+   *         name: limit
+   *         schema:
+   *           type: number
+   *         description: Límite de registros a devolver (por defecto 1000000).
+   *       - in: query
+   *         name: startDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Fecha de inicio (YYYY-MM-DD).
+   *       - in: query
+   *         name: endDate
+   *         schema:
+   *           type: string
+   *           format: date
+   *         description: Fecha de fin (YYYY-MM-DD).
+   *       - in: query
+   *         name: status
+   *         schema:
+   *           type: number
+   *         description: Estado de las cajas.
+   *       - in: query
+   *         name: includeStatus99
    *         schema:
    *           type: boolean
-   *         description: Si es `true`, devuelve un resumen de tipos de huevo.
+   *         description: Si es `true`, incluye cajas con status 99.
+   *       - in: query
+   *         name: farm
+   *         schema:
+   *           type: string
+   *         description: Filtrar por ID de granja.
+   *       - in: query
+   *         name: shed
+   *         schema:
+   *           type: string
+   *         description: Filtrar por ID de caseta.
+   *       - in: query
+   *         name: type
+   *         schema:
+   *           type: string
+   *         description: Filtrar por ID de tipo de caja.
+   *       - in: query
+   *         name: category
+   *         schema:
+   *           type: string
+   *         description: Filtrar por ID de categoría de caja.
    *     responses:
    *       200:
-   *         description: Lista de cajas activas
+   *         description: Lista de cajas activas.
    */
   public async getAll(req: Request, res: Response) {
     try {
-      const limit = req.query.limit ? Math.max(Number(req.query.limit), 1) : undefined; // Mínimo 1
+      customLog(`➡️  GET /api/boxes - Iniciando...`);
+
+      const limit = req.query.limit ? Math.max(Number(req.query.limit), 1) : undefined;
       const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
       const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
-      const includeStatus99 = req.query.includeStatus99 === "true"; // Convertir a booleano
-      const status = req.query.status ? Number(req.query.status) : undefined; // Convertir a número
+      const status = req.query.status ? Number(req.query.status) : undefined;
+      const includeStatus99 = req.query.includeStatus99 === "true";
+      const farm = req.query.farm ? String(req.query.farm) : undefined;
+      const shed = req.query.shed ? String(req.query.shed) : undefined;
+      const type = req.query.type ? String(req.query.type) : undefined;
+      const category = req.query.category ? String(req.query.category) : undefined;
 
-      const response = await boxProductionService.getAll(limit, startDate, endDate, status, includeStatus99);
+      // 🔹 LOG: Mostrar los filtros recibidos
+      customLog(`🔍 Parámetros recibidos: ${JSON.stringify(req.query, null, 2)}`);
 
+      const response = await boxProductionService.getAll(
+        limit,
+        startDate,
+        endDate,
+        status,
+        includeStatus99,
+        farm,
+        shed,
+        type,
+        category
+      );
+
+      customLog(`✅ GET /api/boxes - Finalizado con éxito.`);
       return res.status(200).json(response);
     } catch (error) {
       customLog(`❌ Error en getAll: ${String(error)}`);
