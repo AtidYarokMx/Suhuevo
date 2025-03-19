@@ -1,29 +1,35 @@
-/* lib */
-import { type ClientSession } from 'mongoose'
-/* models */
-import { AppFileModel, AppTemporalFileModel } from '@app/repositories/mongoose/models/file.model'
-/* model response */
-import { AppErrorResponse } from '@app/models/app.response'
-/* dtos */
-import { AppLocals } from '@app/interfaces/auth.dto'
+import fs from "fs-extra";
+import path from "path";
 
+const tempStorageDir = path.join(__dirname, "../../../uploads/temp");
+const employeeStorageDir = path.join(__dirname, "../../../uploads/employees");
 
 class FileService {
-  async uploadSingle(file: Express.Multer.File | undefined, locals: AppLocals, session: ClientSession) {
-    if (typeof file === "undefined") throw new AppErrorResponse({ statusCode: 500, name: "No se mandó un archivo desde el lado del cliente" })
+  async moveFiles(employeeId: string, tempFiles: string[]): Promise<string[]> {
+    const employeeDir = path.join(employeeStorageDir, employeeId);
+    await fs.ensureDir(employeeDir);
 
-    const temporalFile = new AppTemporalFileModel({
-      idUser: locals.user._id,
-      filename: file.filename,
-      mimetype: file.mimetype,
-      path: "/tmp/docs/",
-      size: file.size,
-    })
+    const filePaths: string[] = [];
+    for (const tempFileName of tempFiles) {
+      const tempPath = path.join(tempStorageDir, tempFileName);
+      const newPath = path.join(employeeDir, tempFileName);
 
-    const savedFile = await temporalFile.save({ session })
-    return savedFile.toJSON()
+      if (fs.existsSync(tempPath)) {
+        await fs.rename(tempPath, newPath);
+        filePaths.push(newPath);
+      }
+    }
+
+    return filePaths;
+  }
+
+  async deleteTempFile(tempFileName: string): Promise<void> {
+    const tempPath = path.join(tempStorageDir, tempFileName);
+    if (fs.existsSync(tempPath)) {
+      await fs.remove(tempPath);
+    }
   }
 }
 
-const fileService: FileService = new FileService()
-export default fileService
+const fileService = new FileService();
+export default fileService;

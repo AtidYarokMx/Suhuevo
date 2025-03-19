@@ -292,25 +292,84 @@ class BoxProductionService {
 
 
   /**
-   * Envía cajas a ventas y actualiza su estado.
-   * @param payload - Información de los códigos, placas y conductor.
-   * @param session - Sesión de transacción de MongoDB.
-   * @param locals - Información del usuario autenticado.
-   * @returns Resultado de la actualización.
-   */
-  async sendBoxesToSells({ codes, plates, driver }: z.infer<typeof sendBoxesToSellsBody>, session: ClientSession, locals: AppLocals) {
-    const ids = await BoxProductionModel.find({ active: true, status: 1, code: { $in: codes } }, { _id: true }, { session }).exec()
+ * Envía cajas a ventas y actualiza su estado.
+ * @param payload - Información de los códigos, placas y conductor.
+ * @param session - Sesión de transacción de MongoDB.
+ * @param locals - Información del usuario autenticado.
+ * @returns Resultado de la actualización.
+ */
+  async sendBoxesToSells(
+    { codes, plates, driver }: z.infer<typeof sendBoxesToSellsBody>,
+    session: ClientSession,
+    locals: AppLocals
+  ) {
+    customLog(`📌 Iniciando envío de cajas a ventas. Placas: ${plates}, Conductor: ${driver}`);
+    customLog(`🔍 Códigos recibidos: ${codes.length}`);
 
-    if (ids.length <= 0)
-      throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", description: "No se encontró ningún código", code: "CodesNotFound", message: "No se encontraron códigos con los parámetros seleccionados" })
+    if (!codes || codes.length === 0) {
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "EmptyCodesArray",
+        message: "No se proporcionaron códigos para enviar.",
+      });
+    }
 
-    const updated = await BoxProductionModel.updateMany({ active: true, status: 1, code: { $in: codes } }, { status: 2 }, { session, runValidators: true }).exec()
-    const user = locals.user._id
-    const codeItems = ids.map<IShipmentCode>((item, index) => ({ code: item._id }))
-    const shipment = new ShipmentModel({ name: "Envío de Producción a Ventas", codes: codeItems, vehiclePlates: plates, driver, createdBy: user, lastUpdateBy: user })
-    await shipment.save({ session, validateBeforeSave: true })
-    return updated
+    // 🔹 Buscar los códigos en la base de datos (status 1 = Producción)
+    const boxRecords = await BoxProductionModel.find(
+      { active: true, status: 1, code: { $in: codes } },
+      { _id: true, code: true, shed: true }, // Incluye shed para agrupar
+      { session }
+    ).exec();
+
+    if (boxRecords.length === 0) {
+      throw new AppErrorResponse({
+        statusCode: 404,
+        name: "CodesNotFound",
+        message: "No se encontraron códigos con los parámetros seleccionados.",
+      });
+    }
+
+    // 🔹 Agrupar códigos por `shedId`
+    const groupedCodes = boxRecords.reduce((acc, box) => {
+      const shedId = box.shed.toString();
+      if (!acc[shedId]) {
+        acc[shedId] = [];
+      }
+      acc[shedId].push(box.code);
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    customLog(`✅ Cajas encontradas: ${boxRecords.length}`);
+    Object.entries(groupedCodes).forEach(([shedId, codes]) => {
+      customLog(`   🏠 Caseta ${shedId}: ${codes.length} códigos.`);
+    });
+
+    // 🔹 Actualizar el estado de las cajas en producción
+    const updated = await BoxProductionModel.updateMany(
+      { active: true, status: 1, code: { $in: codes } },
+      { status: 2 }, // Cambia el estado a `2` (Enviado a ventas)
+      { session, runValidators: true }
+    ).exec();
+
+    // 🔹 Crear el envío en `ShipmentModel`
+    const user = locals.user._id;
+    const shipment = new ShipmentModel({
+      name: "Envío de Producción a Ventas",
+      codes: boxRecords.map((box) => ({ code: box.code })), // Incluir todos los códigos enviados
+      groupedCodes, // Asignar la agrupación de códigos por caseta
+      vehiclePlates: plates,
+      driver,
+      createdBy: user,
+      lastUpdateBy: user,
+    });
+
+    await shipment.save({ session, validateBeforeSave: true });
+
+    customLog(`🚛 Envío registrado con éxito. Placas: ${plates}, Conductor: ${driver}, Total Cajas: ${boxRecords.length}`);
+
+    return updated;
   }
+
 
   /**
    * Sincroniza los códigos de producción desde SQL Server a MongoDB.

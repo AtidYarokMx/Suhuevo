@@ -1,27 +1,17 @@
-/* lib */
-import path from 'path'
-import express from 'express'
-import type { RequestHandler } from 'express'
-/* route model */
-import { ServerRouter } from './models/route'
-/* middlewares */
-import { authenticateUser } from '@app/middlewares/auth.middleware'
-import { uploadFileMiddleware } from '@app/middlewares/upload.middleware'
-/* controller */
-import { fileController } from '@controllers/file.controller'
+import express from "express";
+import { authenticateUser } from "@app/middlewares/auth.middleware";
+import { uploadTempFileMiddleware } from "@app/middlewares/upload.middleware";
+import { fileController } from "@controllers/file.controller";
 
-class FileRoutes extends ServerRouter {
-  controller = fileController
+const router = express.Router();
 
-  constructor() {
-    super()
-    this.config()
-  }
+// ✅ Ruta para subir archivos temporalmente
+router.post("/upload-temp", authenticateUser, uploadTempFileMiddleware.single("file"), fileController.uploadTempFile);
 
-  config(): void {
-    this.router.post('/single', authenticateUser, uploadFileMiddleware.single('file'), this.controller.uploadSingle as RequestHandler)
-  }
-}
+// ✅ Ruta para mover archivos a la carpeta del empleado
+router.post("/move-files", authenticateUser, fileController.moveFilesToEmployee);
 
-const fileRoutes: FileRoutes = new FileRoutes()
-export default fileRoutes.router
+// ✅ Ruta para eliminar archivos temporales
+router.post("/delete-temp", authenticateUser, fileController.deleteTempFile);
+
+export default router;

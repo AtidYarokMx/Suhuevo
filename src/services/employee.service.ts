@@ -68,7 +68,7 @@ class EmployeeService {
     return await this.populateResults(records)
   }
 
-  async create(body: any, session: ClientSession): Promise<any> {
+  async create(body: any, files: Express.Multer.File[], session: ClientSession): Promise<any> {
     const id = String(await consumeSequence('employees', session)).padStart(6, '0');
     const schedule = getBaseSchedule(body.jobScheme, body.timeEntry, body.timeDeparture);
 
@@ -88,20 +88,22 @@ class EmployeeService {
       userId = user.id;
     }
 
-    // 🔹 Asignar `roleId` por defecto si no se proporciona
-    const defaultRoleId = "67bf6ea470d366194e1a28cd";
+    // 🔹 Guardar rutas de archivos
+    const filePaths: string[] = files.map(file => file.path);
+
     const record = new EmployeeModel({
       ...body,
       id,
       schedule,
       userId,
-      roleId: body.roleId ?? defaultRoleId
+      roleId: body.roleId ?? "67bf6ea470d366194e1a28cd",
+      documentPaths: filePaths  // 🔹 Guardar rutas en BD
     });
 
-    customLog(`Creando empleado ${String(record.id)} (${String(record.name)})`);
+    customLog(`Creando empleado ${String(record.id)} (${String(record.name)}) con documentos almacenados localmente.`);
     await record.save({ session });
 
-    return { id: record.id };
+    return { id: record.id, documentPaths: filePaths };
   }
 
 
