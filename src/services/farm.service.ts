@@ -41,56 +41,81 @@ class FarmService {
 
 
   async getOne(_id: string) {
-    const farm = await FarmModel.findOne({ _id, active: true })
-      .select('-sheds')
-      .exec();
-    if (!farm) {
-      throw new AppErrorResponse({
-        name: 'Farm Not Found',
-        statusCode: 404,
-        code: 'FarmNotFound',
-        description: 'No se encontró la granja solicitada',
-        message: 'No se encontró la granja solicitada',
-      });
+    try {
+      customLog(`📌 Iniciando búsqueda de granja con id: ${_id}`);
+
+      // 🔹 Buscar la granja
+      const farm = await FarmModel.findOne({ _id, active: true })
+        .select('-sheds')
+        .lean();
+
+      if (!farm) {
+        throw new AppErrorResponse({
+          name: 'FarmNotFound',
+          statusCode: 404,
+          message: 'No se encontró la granja solicitada',
+        });
+      }
+
+      customLog(`🟢 Granja encontrada: ${farm.name}`);
+
+      // 🔹 Obtener el resumen de la semana actual desde WeeklyRecord
+      const latestWeeklyRecord = await WeeklyRecordModel.findOne(
+        { farmId: _id },
+        {
+          totalHensAlive: 1,
+          totalFoodConsumedKg: 1,
+          totalMortality: 1,
+          avgHensWeight: 1,
+          avgEggWeight: 1,
+          weekStart: 1,
+          weekEnd: 1,
+        }
+      )
+        .sort({ weekStart: -1 })
+        .lean();
+
+      // 🔹 Obtener producción de cajas y huevos desde `BoxProductionModel`
+      const { weekStart } = await getCurrentWeekRange();
+      const boxProductionRecords = await BoxProductionModel.find({
+        farm: _id,
+        createdAt: { $gte: weekStart },
+      })
+        .select("totalEggs totalNetWeight")
+        .lean();
+
+      const totalProducedEggs = boxProductionRecords.reduce((sum, box) => sum + (Number(box.totalEggs) || 0), 0);
+      const totalNetWeight = boxProductionRecords.reduce((sum, box) => sum + (box.netWeight || 0), 0);
+      const totalProducedBoxes = boxProductionRecords.length;
+      const avgEggWeight = totalProducedEggs > 0 ? totalNetWeight / totalProducedEggs : 0;
+
+      // 🔹 Verificar si hay datos de resumen o usar valores predeterminados
+      const summary = latestWeeklyRecord || {
+        totalHensAlive: 0,
+        totalFoodConsumedKg: 0,
+        totalMortality: 0,
+        avgHensWeight: 0,
+        avgEggWeight: 0,
+        totalProducedBoxes: 0,
+        totalProducedEggs: 0,
+        weekStart: null,
+        weekEnd: null,
+      };
+
+      // 🔹 Actualizar producción de huevos y cajas en el resumen
+      summary.totalProducedEggs = totalProducedEggs;
+      summary.totalProducedBoxes = totalProducedBoxes;
+      summary.avgEggWeight = avgEggWeight;
+
+      customLog(`✅ Resumen de la granja ${farm.name}:`, summary);
+
+      return { ...farm, summary };
+    } catch (error: any) {
+      customLog(`❌ Error al obtener la granja con id ${_id}: ${error.message}`);
+      throw error;
     }
-
-    const weeklyRecords = await WeeklyRecordModel.aggregate([
-      {
-        $match: { farm: farm._id, active: true },
-      },
-      {
-        $sort: { week: -1 },
-      },
-      {
-        $group: {
-          _id: null,
-          weekStart: { $first: '$weekStart' },
-          weekEnd: { $first: '$weekEnd' },
-          totalHensAlive: { $sum: '$totalHensAlive' },
-          totalFoodConsumedKg: { $sum: '$foodConsumed' },
-          totalProducedBoxes: { $sum: '$producedBoxes' },
-          totalProducedEggs: { $sum: '$producedEggs' },
-          totalMortality: { $sum: '$mortality' },
-          avgEggWeight: { $avg: '$avgEggWeight' },
-          avgHensWeight: { $avg: '$avgHensWeight' },
-        },
-      },
-    ]).exec();
-
-    const summary = weeklyRecords.length > 0 ? weeklyRecords[0] : {
-      weekStart: null,
-      weekEnd: null,
-      totalHensAlive: 0,
-      totalFoodConsumedKg: 0,
-      totalProducedBoxes: 0,
-      totalProducedEggs: 0,
-      totalMortality: 0,
-      avgEggWeight: null,
-      avgHensWeight: null,
-    };
-
-    return { ...farm.toObject(), summary };
   }
+
 
 
   async getAll() {
@@ -165,84 +190,131 @@ class FarmService {
 
 
   async getOneWithSheds(_id: string) {
-    const farms = await FarmModel.aggregate([
-      {
-        $match: { _id: new Types.ObjectId(_id), active: true },
-      },
-      {
-        $lookup: {
-          from: 'sheds',
-          localField: '_id',
-          foreignField: 'farm',
-          as: 'sheds',
-        },
-      },
-      {
-        $lookup: {
-          from: 'weeklyRecords',
-          let: { shedIds: '$sheds._id' },
-          pipeline: [
-            { $match: { $expr: { $in: ['$shed', '$$shedIds'] } } },
-            { $sort: { week: -1 } },
-            {
-              $group: {
-                _id: '$shed',
-                latestRecord: { $first: '$$ROOT' }
-              }
-            },
-            { $replaceRoot: { newRoot: '$latestRecord' } }
-          ],
-          as: 'weeklyRecords',
-        },
-      },
-      {
-        $addFields: {
-          summary: {
-            weekStart: { $max: '$weeklyRecords.weekStart' },
-            weekEnd: { $max: '$weeklyRecords.weekEnd' },
-            totalHensAlive: { $sum: '$weeklyRecords.totalHensAlive' },
-            totalFoodConsumedKg: { $sum: '$weeklyRecords.foodConsumed' },
-            totalProducedBoxes: { $sum: '$weeklyRecords.producedBoxes' },
-            totalProducedEggs: { $sum: '$weeklyRecords.producedEggs' },
-            totalMortality: { $sum: '$weeklyRecords.mortality' },
-            avgEggWeight: { $avg: '$weeklyRecords.avgEggWeight' },
-            avgHensWeight: { $avg: '$weeklyRecords.avgHensWeight' },
-          },
-          sheds: {
-            $map: {
-              input: '$sheds',
-              as: 'shed',
-              in: {
-                $mergeObjects: [
-                  '$$shed',
-                  {
-                    week: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.week', 0] }, null] },
-                    period: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.period', 0] }, null] },
-                    foodConsumed: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.foodConsumed', 0] }, 0] },
-                    waterConsumed: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.waterConsumed', 0] }, 0] },
-                    mortality: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.mortality', 0] }, 0] },
-                    eggProduction: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.producedEggs', 0] }, 0] },
-                    avgEggWeight: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.avgEggWeight', 0] }, null] },
-                    avgHensWeight: { $ifNull: [{ $arrayElemAt: ['$weeklyRecords.avgHensWeight', 0] }, null] }
-                  }
-                ]
-              }
-            }
+    try {
+      customLog(`📌 Iniciando búsqueda de granja con id: ${_id} incluyendo casetas`);
+
+      const farm = await FarmModel.findById(_id)
+        .populate({
+          path: "sheds",
+          select: "name description status ageWeeks generationId initialHensCount",
+        })
+        .lean({ virtuals: true }) as { sheds: any[]; name: string } | null;
+
+      if (!farm) {
+        throw new AppErrorResponse({
+          name: 'FarmNotFound',
+          statusCode: 404,
+          message: 'No se encontró la granja solicitada',
+        });
+      }
+
+      customLog(`🟢 Granja encontrada: ${farm.name} con ${farm.sheds.length} casetas`);
+
+      let summary = {
+        totalHensAlive: 0,
+        totalFoodConsumedKg: 0,
+        totalMortality: 0,
+        avgHensWeight: 0,
+        avgEggWeight: 0,
+        totalProducedBoxes: 0,
+        totalProducedEggs: 0,
+        weekStart: null,
+        weekEnd: null,
+      };
+
+      let totalHensWeight = 0;
+      let totalEggWeight = 0;
+      let validHensWeightCount = 0;
+      let validEggWeightCount = 0;
+
+      for (const shed of farm.sheds) {
+        customLog(`   🏠 Caseta: ${shed.name}`);
+
+        // 🔹 Obtener el último WeeklyRecord
+        const latestWeeklyRecord = await WeeklyRecordModel.findOne(
+          { shedId: shed._id, generationId: shed.generationId },
+          {
+            totalHensAlive: 1,
+            totalFoodConsumedKg: 1,
+            totalMortality: 1,
+            avgHensWeight: 1,
+            avgEggWeight: 1,
+            weekStart: 1,
+            weekEnd: 1,
           }
+        )
+          .sort({ weekStart: -1 })
+          .lean();
+
+        // 🔹 Obtener Producción de Cajas y Huevos
+        const { weekStart } = await getCurrentWeekRange();
+        const boxProductions = await BoxProductionModel.find({
+          shed: shed._id,
+          createdAt: { $gte: weekStart },
+        })
+          .select("totalEggs totalNetWeight")
+          .lean();
+
+        const totalProducedEggs = boxProductions.reduce((sum, box) => sum + (Number(box.totalEggs) || 0), 0);
+        const totalNetWeight = boxProductions.reduce((sum, box) => sum + (box.netWeight || 0), 0);
+        const totalProducedBoxes = boxProductions.length;
+        const avgEggWeight = totalProducedEggs > 0 ? totalNetWeight / totalProducedEggs : 0;
+
+        // 🔹 Actualizar datos en la caseta
+        shed.effectiveWeekStart = latestWeeklyRecord?.weekStart || null;
+        shed.effectiveWeekEnd = latestWeeklyRecord?.weekEnd || null;
+        shed.hasWeeklyData = !!latestWeeklyRecord;
+        shed.totalHensAlive = latestWeeklyRecord?.totalHensAlive || 0;
+        shed.totalFoodConsumedKg = latestWeeklyRecord?.totalFoodConsumedKg || 0;
+        shed.totalMortality = latestWeeklyRecord?.totalMortality || 0;
+        shed.totalProducedBoxes = totalProducedBoxes;
+        shed.totalProducedEggs = totalProducedEggs;
+        shed.avgEggWeight = avgEggWeight;
+        shed.avgHensWeight = latestWeeklyRecord?.avgHensWeight || 0;
+
+        // 🔹 Sumar datos al resumen de la granja
+        summary.totalHensAlive += shed.totalHensAlive;
+        summary.totalFoodConsumedKg += shed.totalFoodConsumedKg;
+        summary.totalMortality += shed.totalMortality;
+        summary.totalProducedBoxes += shed.totalProducedBoxes;
+        summary.totalProducedEggs += shed.totalProducedEggs;
+
+        // 🔹 Acumular datos para calcular promedios solo si hay datos válidos
+        if (shed.avgHensWeight > 0) {
+          totalHensWeight += shed.avgHensWeight;
+          validHensWeightCount++;
         }
-      },
-      {
-        $project: {
-          weeklyRecords: 0,
-        },
-      },
-    ]).exec();
 
-    if (farms.length <= 0)
-      throw new AppErrorResponse({ name: 'Farm Not Found', statusCode: 404, code: 'FarmNotFound', description: 'No se encontró la granja solicitada', message: 'No se encontró la granja solicitada' });
+        if (avgEggWeight > 0) {
+          totalEggWeight += avgEggWeight;
+          validEggWeightCount++;
+        }
 
-    return farms[0];
+        // 🔹 Actualizar la semana efectiva de la granja
+        if (shed.effectiveWeekStart && (!summary.weekStart || shed.effectiveWeekStart > summary.weekStart)) {
+          summary.weekStart = shed.effectiveWeekStart;
+          summary.weekEnd = shed.effectiveWeekEnd;
+        }
+
+        customLog(`      - Total cajas producidas: ${shed.totalProducedBoxes}`);
+        customLog(`      - Total huevos producidos: ${shed.totalProducedEggs}`);
+        customLog(`      - Peso promedio del huevo: ${shed.avgEggWeight}`);
+      }
+
+      // 🔹 Ajustar los promedios evitando división por 0
+      summary.avgHensWeight = validHensWeightCount > 0 ? totalHensWeight / validHensWeightCount : 0;
+      summary.avgEggWeight = validEggWeightCount > 0 ? totalEggWeight / validEggWeightCount : 0;
+
+      customLog(`✅ Resumen de la granja ${farm.name}:`, summary);
+
+      return { ...farm, summary };
+    } catch (error: any) {
+      customLog(`❌ Error al obtener la granja con id ${_id}: ${error.message}`);
+      throw error;
+    }
   }
+
+
 
   async getAllWithSheds() {
     const { weekStart, weekEnd } = await getCurrentWeekRange();
