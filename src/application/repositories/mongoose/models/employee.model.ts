@@ -52,7 +52,9 @@ export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeM
   userId: { type: String },
 
   /* documents */
-  documents: [{ type: String, trim: true }],
+  ineFront: { type: String },
+  ineBack: { type: String },
+  contract: { type: String },
 
   /* defaults */
   active: { type: Boolean, default: true },
