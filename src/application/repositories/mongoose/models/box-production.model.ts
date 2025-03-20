@@ -18,7 +18,7 @@ export const BoxProductionSchema = new Schema<IBoxProduction>({
   netWeight: { type: Number, required: true },
   avgEggWeight: { type: Number, required: true },
   status: { type: Number, required: true },
-  type: { type: Schema.Types.ObjectId, required: true },
+  type: { type: Schema.Types.ObjectId, ref: "catalog-box", required: true },
   totalEggs: { type: Number, required: true, default: 0 },
   /* defaults */
   active: { type: Boolean, default: true },

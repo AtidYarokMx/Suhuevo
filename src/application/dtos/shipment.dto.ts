@@ -25,17 +25,30 @@ export type IShipmentCode = {
   status?: ShipmentCodeStatus
 }
 
+export type IShipmentSummary = {
+  totalBoxes: number;
+  totalNetWeight: number;
+  totalEggs: number;
+  totalByCategory: Record<string, {
+    count: number;
+    totalNetWeight: number;
+    totalEggs: number;
+  }>;
+};
+
 export type IShipment = ICommonFields & {
-  id: string
-  name: string
-  description?: string
-  codes: IShipmentCode[]
-  status: ShipmentStatus
-  vehiclePlates: string
-  driver: string
+  shipmentId: string;
+  id: string;
+  name: string;
+  description?: string;
+  codes: IShipmentCode[];
+  status: ShipmentStatus;
+  vehiclePlates: string;
+  driver: string;
+  summary: IShipmentSummary;
 }
 
 export type IShipmentCounter = {
-  _id: Types.ObjectId
-  value: number
+  _id: Types.ObjectId;
+  value: number;
 }

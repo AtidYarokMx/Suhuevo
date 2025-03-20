@@ -62,14 +62,6 @@ class BoxProductionRoutes extends ServerRouter {
     this.router.get('/:code', authenticateUser, this.wrapWithLogging(this.controller.getOne))
 
     /** 
-     * 🚛 Envía cajas de producción a ventas.
-     * @route POST /api/boxes/sells
-     * @bodyParam {object} body - Contiene los códigos de las cajas y la información del transporte.
-     * @returns Resultado de la actualización del estado de las cajas.
-     */
-    this.router.post('/sells', authenticateUser, this.wrapWithLogging(this.controller.sendBoxesToSells))
-
-    /** 
      * 🔄 Sincroniza los códigos de producción desde la base SQL a MongoDB.
      * @route POST /api/boxes/sync
      * @returns Resultado de la sincronización de datos.

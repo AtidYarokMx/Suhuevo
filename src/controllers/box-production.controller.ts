@@ -316,44 +316,6 @@ class BoxProductionController {
 
   /**
    * @swagger
-   * /api/boxes/sells:
-   *   post:
-   *     summary: Envía cajas a ventas
-   *     description: Actualiza el estado de las cajas y genera un registro de envío.
-   *     tags: [BoxProduction]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             $ref: '#/components/schemas/sendBoxesToSellsBody'
-   *     responses:
-   *       200:
-   *         description: Cajas enviadas exitosamente
-   */
-  public async sendBoxesToSells(req: Request, res: Response) {
-    const body = req.body as z.infer<typeof sendBoxesToSellsBody>
-    const locals = res.locals as AppLocals
-    const session = await AppMainMongooseRepo.startSession()
-
-    try {
-      session.startTransaction();
-      const validatedBody = sendBoxesToSellsBody.parse(body)
-      const response = await boxProductionService.sendBoxesToSells(validatedBody, session, locals)
-      await session.commitTransaction();
-      return res.status(200).json(response)
-    } catch (error) {
-      await session.abortTransaction();
-      customLog(`❌ Error en sendBoxesToSells: ${String(error)}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error);
-      return res.status(statusCode).json(err);
-    } finally {
-      await session.endSession();
-    }
-  }
-
-  /**
-   * @swagger
    * /api/boxes/sync:
    *   post:
    *     summary: Sincroniza datos desde SQL a MongoDB
