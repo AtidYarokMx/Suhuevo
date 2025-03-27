@@ -47,6 +47,7 @@ import jobRoutes from '@routes/job.routes';
 import swaggerRoutes from './config/swagger';
 
 /* cronjobs */
+import automaticSync from '@app/jobs/autosync.job';
 // import { dailyAbsencesCronJob, dailyAutomaticAttendancesCronJob, dailyPayrollCronJob } from './cronjobs/cronjob.controller';
 import overtimeRoutes from '@routes/overtime.routes';
 import { authenticateUser } from '@app/middlewares/auth.middleware';
@@ -174,6 +175,9 @@ export class AppServer {
     this.serverInsecure.listen(this.app.get('port2'), () => {
       ServerLogger.info(`Server listening on \x1b[34mhttp://localhost:${this.app.get('port2')}\x1b[0m`)
     })
+  }
+  crons(): void {
+    automaticSync();
   }
 
   close() {

@@ -347,31 +347,25 @@ class BoxProductionService {
     const boxTypes = new Map(catalogBoxList.map(b => [b.id.toString(), { _id: b._id, category: b.category, count: b.count, tare: b.tare }]));
 
     customLog(`📦 BoxTypes cargados: ${JSON.stringify(Object.fromEntries(boxTypes))}`);
+    let bulkOperations: AnyBulkWriteOperation[] = [];
 
-    let bulkOperations = validBoxes.map(box => {
+    for (const box of validBoxes) {
       let objectId = existingCodes.get(box.codigo) || new ObjectId();
       const farmId = farms[box.id_granja] || new ObjectId();
       const shedId = sheds[`${farmId}-${box.id_caceta}`] || new ObjectId();
-      const boxTypeId = boxTypes.get(box.tipo.toString())?._id || null;
       const boxType = boxTypes.get(box.tipo.toString()) ?? null;
 
       if (!boxType) {
         customLog(`⚠️ Tipo de caja no encontrado para tipo: ${box.tipo} en código: ${box.codigo}`);
+        continue;
       }
 
-      const totalEggs = boxType ? boxType.count : 0;
+      const totalEggs = boxType.count;
       const grossWeight = Number(box.peso) * 10 || 0;
-      const tareWeight = boxType ? Number(boxType.tare) : 0;
+      const tareWeight = boxType.tare || 0;
       const netWeight = grossWeight - tareWeight;
 
-      customLog(`🔹 Código: ${box.codigo} | Tipo: ${box.tipo} | ID Mapeado: ${boxTypeId} | Count: ${boxType ? boxType.count : 'N/A'} | Tare: ${boxType ? boxType.tare : 'N/A'}`);
-
-      if (boxType) {
-        console.log(`✔️ Tipo encontrado: ${box.tipo} | Count: ${boxType.count} | Tare: ${boxType.tare}`);
-      } else {
-        console.warn(`⚠️ Tipo de caja no encontrado para tipo: ${box.tipo}`);
-      }
-      return {
+      bulkOperations.push({
         updateOne: {
           filter: { code: box.codigo },
           update: {
@@ -380,8 +374,8 @@ class BoxProductionService {
               code: box.codigo,
               farm: farmId,
               shed: shedId,
-              type: boxType ? boxType._id : null,
-              category: boxType ? boxType?.category : null,
+              type: boxType._id,
+              category: boxType.category,
               grossWeight,
               netWeight,
               status: box.status,
@@ -392,8 +386,11 @@ class BoxProductionService {
           },
           upsert: true
         }
-      };
-    });
+      });
+
+      // 🔄 Actualizar `dailyRecord` y `weeklyRecord` al mismo tiempo
+      await this.updateRecords(shedId, totalEggs, grossWeight);
+    }
 
     if (!bulkOperations.length) throw new AppErrorResponse({ statusCode: 400, name: "No Valid Records", message: "No hay registros válidos para sincronizar." });
 
@@ -411,6 +408,37 @@ class BoxProductionService {
       session.endSession();
       throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error al sincronizar: ${String(error)}` });
     }
+  }
+
+  /**
+   * 🔄 Actualiza o crea un `dailyRecord` y actualiza el `weeklyRecord` correspondiente.
+   */
+  async updateRecords(shedId: ObjectId, totalEggs: number, grossWeight: number) {
+    const today = new Date().toISOString().split('T')[0]; // Fecha actual sin hora
+    const currentDate = new Date();
+    const currentDay = currentDate.getDay();
+    const isWednesdayOrLater = currentDay >= 3;
+
+    // 🔄 Actualiza el dailyRecord
+    await ShedModel.updateOne(
+      { _id: shedId },
+      {
+        $set: { updatedAt: new Date() },
+        $push: {
+          dailyRecords: {
+            date: today,
+            totalEggsProduced: totalEggs,
+            grossWeight
+          }
+        },
+        $inc: {
+          "weeklyRecord.totalEggsProduced": totalEggs,
+          "weeklyRecord.totalGrossWeight": grossWeight
+        }
+      }
+    );
+
+    customLog(`✅ dailyRecord y weeklyRecord actualizados para la caseta ${shedId}`);
   }
 
   /**
