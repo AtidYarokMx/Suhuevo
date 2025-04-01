@@ -95,7 +95,7 @@ export const createSaleFromInventory = async (dto: CreateSaleDto, user: any) => 
     amountPending: totalWithIva,
     paymentType: dto.paymentType,
     paymentMethod: dto.paymentMethod,
-    reference: dto.reference,
+    reference: folio,
   });
 
   // Actualizar estatus de las cajas a "Vendido" (5)
