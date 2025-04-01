@@ -126,21 +126,37 @@ export class ShipmentService {
     const shipment = await ShipmentModel.findOne({ shipmentId })
       .populate({
         path: 'codes.code',
-        select: 'code netWeight totalEggs type',
-        populate: { path: 'type', select: 'name' }
+        select: 'code netWeight type farm shed farmNumber shedNumber',
+        populate: [
+          { path: 'type', select: 'name' },
+          { path: 'farm', select: 'name' },
+          { path: 'shed', select: 'name' }
+        ]
       })
       .lean();
 
     if (!shipment) throw new Error('Envío no encontrado.');
 
-    // Reemplazar el ObjectId con el código real
-    const codesWithValues = shipment.codes.map((item: any) => ({
-      ...item,
-      code: typeof item.code === 'object' ? item.code.code : item.code
-    }));
+    const codesWithDetails = shipment.codes.map((item: any) => {
+      const box = item.code;
 
-    return { ...shipment, codes: codesWithValues };
+      return {
+        status: item.status,
+        code: box?.code || 'Desconocido',
+        netWeight: box?.netWeight || 0,
+        category: box?.type?.name || 'Sin Categoría',
+        farmName: box?.farm?.name || 'Sin Granja',
+        shedName: box?.shed?.name || 'Sin Caseta'
+      };
+    });
+
+    return {
+      ...shipment,
+      codes: codesWithDetails
+    };
   }
+
+
 
 
 
