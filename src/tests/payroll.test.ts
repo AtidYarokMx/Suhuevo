@@ -1,29 +1,166 @@
-import request from 'supertest'
-import { appServer } from '../index'
-import { executePayrollPreviewExpectedResponse } from './mock/payroll.mock'
-import { AppMainMongooseRepo } from '@app/repositories/mongoose'
+import { PersonalBonusModel } from "@app/repositories/mongoose/models/personal-bonus.model";
+import payrollService from "../services/payroll.service";
+import mongoose from "mongoose";
+import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
+import { OvertimeModel } from "@app/repositories/mongoose/models/overtime.model";
+import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
+import { BonusModel } from "@app/repositories/mongoose/models/bonus.model";
 
-describe("POST /api/payroll/execute-payroll", () => {
-  it("status code is 200", async () => {
-    const response = await request(appServer.app).post("/api/payroll/execute-payroll").send({
-      "weekStartDate": "2024-10-16T06:00:00.000Z",
-      "preview": true
-    }).set({ "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmQ5ZjZlMTdhY2VkMjYzODIxYTU0NTEiLCJpZCI6Ijk2YzIzYTgxLTJiMmYtNDIzNy05Y2I2LXJvb3QiLCJlbWFpbCI6ImVkZ2FyQGF0aWR5YXJvay5jb20iLCJuYW1lIjoiRWRnYXIiLCJmaXJzdExhc3ROYW1lIjoiIiwic2Vjb25kTGFzdE5hbWUiOiJNIiwicm9sZSI6InJvb3QiLCJwaG9uZSI6IjMzMTIzMjUyNTIiLCJpYXQiOjE3Mjk5MTc1NDksImV4cCI6MTczMjUwOTU0OX0.WcHKoYRJVm-YAhh6PSUqXfDQRRiQ6VVO5TOpLyA204o" })
+// Mockear las conexiones a la base de datos
+beforeAll(async () => {
+  await mongoose.connect(process.env.MONGO_URI_TEST || "mongodb://localhost:27017/testdb");
+});
 
-    expect(response.statusCode).toBe(200)
-  })
+afterAll(async () => {
+  await mongoose.connection.close();
+});
 
-  it("expected response", async () => {
-    const response = await request(appServer.app).post("/api/payroll/execute-payroll").send({
-      "weekStartDate": "2024-10-16T06:00:00.000Z",
-      "preview": true
-    }).set({ "authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2NmQ5ZjZlMTdhY2VkMjYzODIxYTU0NTEiLCJpZCI6Ijk2YzIzYTgxLTJiMmYtNDIzNy05Y2I2LXJvb3QiLCJlbWFpbCI6ImVkZ2FyQGF0aWR5YXJvay5jb20iLCJuYW1lIjoiRWRnYXIiLCJmaXJzdExhc3ROYW1lIjoiIiwic2Vjb25kTGFzdE5hbWUiOiJNIiwicm9sZSI6InJvb3QiLCJwaG9uZSI6IjMzMTIzMjUyNTIiLCJpYXQiOjE3Mjk5MTc1NDksImV4cCI6MTczMjUwOTU0OX0.WcHKoYRJVm-YAhh6PSUqXfDQRRiQ6VVO5TOpLyA204o" })
+afterEach(async () => {
+  // Limpiar todos los datos creados durante las pruebas
+  await AttendanceModel.deleteMany({});
+  await OvertimeModel.deleteMany({});
+  await AbsenceModel.deleteMany({});
+  await PersonalBonusModel.deleteMany({});
+});
 
-    expect(response.body).toEqual(executePayrollPreviewExpectedResponse)
-  })
+describe("Payroll Service Testing", () => {
 
-  afterAll(async () => {
-    await AppMainMongooseRepo.close()
-    appServer.close()
-  })
-})
+  test("Caso 1: Empleado con Bonos Generales y sin Personalizados", async () => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result).toBeDefined();
+    expect(result.lines[0].attendanceBonus).toBeGreaterThan(0);
+    expect(result.lines[0].punctualityBonus).toBeGreaterThan(0);
+    expect(result.lines[0].groceryBonus).toBeGreaterThan(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+
+  test("Caso 2: Empleado con Bonos Personalizados", async () => {
+    await PersonalBonusModel.create({
+      active: true,
+      entityType: "bonus",
+      entityId: "horas_extra",
+      idEmployee: "ID_DEL_EMPLEADO",
+      value: 150,
+      type: "AMOUNT",
+      taxable: true,
+      enabled: true,
+    });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result.lines[0].extraHoursPayment).toBeGreaterThan(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+
+  test("Caso 3: Empleado con Asistencia Incompleta", async () => {
+    await AttendanceModel.create({
+      employeeId: "ID_DEL_EMPLEADO",
+      date: "2025-03-20",
+      isLate: false,
+      active: true,
+    });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result.lines[0].attendanceBonus).toBe(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+
+  test("Caso 4: Empleado con Tardanzas", async () => {
+    await AttendanceModel.create({
+      employeeId: "ID_DEL_EMPLEADO",
+      date: "2025-03-20",
+      isLate: true,
+      active: true,
+    });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result.lines[0].punctualityBonus).toBe(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+
+  test("Caso 5: Empleado con Horas Extras", async () => {
+    await OvertimeModel.create({
+      employeeId: "ID_DEL_EMPLEADO",
+      hours: 5,
+      active: true,
+      startTime: "2025-03-20",
+    });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result.lines[0].extraHours).toBe(5);
+    expect(result.lines[0].extraHoursPayment).toBeGreaterThan(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+
+  test("Caso 6: Empleado con Festivo Trabajado", async () => {
+    await AbsenceModel.create({
+      employeeId: "ID_DEL_EMPLEADO",
+      reason: "Festivo Trabajado",
+      active: true,
+      date: "2025-03-20",
+    });
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result.lines[0].holidayBonus).toBeGreaterThan(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+
+  test("Caso 7: Empleado sin ningún bono configurado", async () => {
+    await BonusModel.deleteMany({});
+    await PersonalBonusModel.deleteMany({});
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    const body = { weekStartDate: "2025-03-20" };
+    const result = await payrollService.executeWeeklyPayroll(body, session);
+
+    expect(result.lines[0].attendanceBonus).toBe(0);
+    expect(result.lines[0].punctualityBonus).toBe(0);
+    expect(result.lines[0].groceryBonus).toBe(0);
+
+    await session.abortTransaction();
+    session.endSession();
+  });
+});

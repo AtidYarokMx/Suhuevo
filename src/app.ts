@@ -44,6 +44,7 @@ import { authRoutes } from '@routes/auth.routes';
 import farmRoutes from '@routes/farm.routes';
 import shedRoutes from '@routes/shed.routes';
 import jobRoutes from '@routes/job.routes';
+import saleRoutes from '@routes/sale.routes';
 import swaggerRoutes from './config/swagger';
 
 /* cronjobs */
@@ -153,6 +154,7 @@ export class AppServer {
     this.app.use('/api/farm', farmRoutes)
     this.app.use('/api/shed', shedRoutes)
     this.app.use('/api/job', jobRoutes)
+    this.app.use('/api/sale', saleRoutes)
   }
 
   /**

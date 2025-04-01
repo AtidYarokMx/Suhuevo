@@ -20,6 +20,7 @@ import shedRoutes from "@routes/shed.routes";
 import jobRoutes from "@routes/job.routes";
 import overtimeRoutes from "@routes/overtime.routes";
 import swaggerRoutes from "@config/swagger";
+import saleRoutes from "@routes/sale.routes";
 
 const router = Router();
 
@@ -47,5 +48,6 @@ router.use("/api/rule", ruleRoutes);
 router.use("/api/farm", farmRoutes);
 router.use("/api/shed", shedRoutes);
 router.use("/api/job", jobRoutes);
+router.use("/api/sale", saleRoutes);
 
 export default router;

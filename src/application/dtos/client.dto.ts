@@ -15,6 +15,8 @@ export type IClient = ICommonFields & {
   businessName?: string
   businessAddress?: string
   businessPhone?: string
+  creditLimit?: number
+  creditUsed?: number
 }
 
 /* endpoint dtos */

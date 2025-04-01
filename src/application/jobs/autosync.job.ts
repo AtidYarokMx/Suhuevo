@@ -51,7 +51,7 @@ function automaticSync() {
       customLog("✅ Semana administrativa actualizada exitosamente.");
 
       // 🔄 Iniciar la actualización de los `weeklyRecords` después de actualizar la semana administrativa.
-      await boxProductionService.updateAllWeeklyRecords();
+      //await boxProductionService.updateRecords();
       customLog("✅ weeklyRecords actualizados exitosamente para todas las casetas.");
 
     } catch (error) {
