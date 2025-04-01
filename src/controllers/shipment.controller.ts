@@ -48,9 +48,7 @@ class ShipmentController {
     const { shipmentId } = req.params;
 
     try {
-      const shipment = await ShipmentModel.findOne({ shipmentId });
-      if (!shipment) return res.status(404).json({ message: 'Envío no encontrado.' });
-
+      const shipment = await ShipmentService.getShipmentDetails(shipmentId);
       return res.status(200).json(shipment);
     } catch (error) {
       const { statusCode, error: err } = appErrorResponseHandler(error);

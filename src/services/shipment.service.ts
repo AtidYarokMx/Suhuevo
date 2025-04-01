@@ -122,6 +122,27 @@ export class ShipmentService {
     return ShipmentModel.find({}).exec();
   }
 
+  static async getShipmentDetails(shipmentId: string) {
+    const shipment = await ShipmentModel.findOne({ shipmentId })
+      .populate({
+        path: 'codes.code',
+        select: 'code netWeight totalEggs type',
+        populate: { path: 'type', select: 'name' }
+      })
+      .lean();
+
+    if (!shipment) throw new Error('Envío no encontrado.');
+
+    // Reemplazar el ObjectId con el código real
+    const codesWithValues = shipment.codes.map((item: any) => ({
+      ...item,
+      code: typeof item.code === 'object' ? item.code.code : item.code
+    }));
+
+    return { ...shipment, codes: codesWithValues };
+  }
+
+
 
   static async updateShipmentStatus({ shipmentId, codes, userId }: any, session: ClientSession) {
     const shipment = await ShipmentModel.findOne({ shipmentId }).session(session);
