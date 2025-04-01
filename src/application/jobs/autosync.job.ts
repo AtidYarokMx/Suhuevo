@@ -22,7 +22,7 @@ function automaticSync() {
   customLog(`🕒 Expresión de cron utilizada para sincronización automática: ${cronExpression}`);
 
   // 🔄 Sincronización automática cada X minutos entre las horas configuradas
-  cron.schedule(cronExpression, async () => {
+  /*cron.schedule(cronExpression, async () => {
     const currentTime = new Date().toLocaleTimeString();
     customLog(`🔄 [${currentTime}] Iniciando sincronización automática de códigos...`);
 
@@ -59,7 +59,7 @@ function automaticSync() {
     }
   }, {
     timezone: timezone
-  });
+  });*/
 
   customLog("✅ Crons automáticos configurados correctamente.");
 }
