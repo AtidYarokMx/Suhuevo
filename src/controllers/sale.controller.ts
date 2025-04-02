@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { AppMainMongooseRepo } from '@app/repositories/mongoose';
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
-import { createSaleFromInventory, getAllSales, getOverdueSales, getSaleDetails, registerPayment } from '@services/sale.service';
+import { createSaleFromInventory, createSaleFromShipment, getAllSales, getOverdueSales, getSaleDetails, registerPayment } from '@services/sale.service';
 
 class SaleController {
   public async createFromInventory(req: Request, res: Response): Promise<Response> {
@@ -21,6 +21,35 @@ class SaleController {
       if (!session.inTransaction()) session.startTransaction();
 
       const sale = await createSaleFromInventory(dto, { _id: userId });
+
+      await session.commitTransaction();
+      return res.status(201).json(sale);
+    } catch (error) {
+      await session.abortTransaction();
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  public async createFromShipment(req: Request, res: Response): Promise<Response> {
+    const session = await AppMainMongooseRepo.startSession();
+    const userId = (res.locals as any).user._id;
+    const dto = req.body;
+
+    try {
+      if (!dto.codes || !Array.isArray(dto.codes) || dto.codes.length === 0) {
+        return res.status(400).json({ message: 'Lista de códigos (codes) no válida.' });
+      }
+
+      if (!dto.pricesByCategory || typeof dto.pricesByCategory !== 'object') {
+        return res.status(400).json({ message: 'Debe proporcionar los precios por categoría.' });
+      }
+
+      if (!session.inTransaction()) session.startTransaction();
+
+      const sale = await createSaleFromShipment(dto, { _id: userId });
 
       await session.commitTransaction();
       return res.status(201).json(sale);

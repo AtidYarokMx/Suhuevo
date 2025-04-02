@@ -26,6 +26,13 @@ class SaleRoutes extends ServerRouter {
       this.controller.getAllSales as RequestHandler
     );
 
+    // Crear venta desde un listado de envío
+    this.router.post(
+      '/from-shipment',
+      authenticateUser,
+      this.controller.createFromShipment as RequestHandler
+    );
+
     // Obtener detalles de una venta
     this.router.get(
       '/:saleId',
