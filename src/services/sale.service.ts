@@ -216,7 +216,29 @@ export const getAllSales = async (filters: FilterSaleDto = {}) => {
     if (filters.to) query.saleDate.$lte = filters.to;
   }
 
-  return await SaleModel.find(query).sort({ saleDate: -1 });
+  const sales = await SaleModel.find(query)
+    .populate('clientId', 'name')
+    .populate('sellerUserId', 'name')
+    .sort({ saleDate: -1 })
+    .lean();
+
+  return sales.map((sale) => ({
+    _id: sale._id,
+    folio: sale.folio,
+    saleDate: sale.saleDate,
+    dueDate: sale.dueDate,
+    status: sale.status,
+    client: sale.clientId, // { _id, name }
+    seller: sale.sellerUserId, // { _id, name }
+    paymentType: sale.paymentType,
+    paymentMethod: sale.paymentMethod,
+    reference: sale.reference,
+    totalBoxes: sale.totalBoxes,
+    totalKg: sale.totalKg,
+    totalWithIva: sale.totalWithIva,
+    amountPaid: sale.amountPaid,
+    amountPending: sale.amountPending
+  }));
 };
 
 export const getSaleDetails = async (saleId: string) => {
