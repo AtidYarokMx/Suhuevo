@@ -119,7 +119,7 @@ export class ShipmentService {
     const shipment = await ShipmentModel.findOne({ shipmentId })
       .populate({
         path: 'codes.codeId', // ✅ Cambio aquí
-        select: 'code netWeight type farm shed farmNumber shedNumber',
+        select: 'code netWeight status type farm shed farmNumber shedNumber',
         populate: [
           { path: 'type', select: 'name' },
           { path: 'farm', select: 'name' },
@@ -135,6 +135,7 @@ export class ShipmentService {
 
       return {
         code: item.code, // ✅ El string real del código
+        status: box?.status || 0,
         netWeight: box?.netWeight || 0,
         category: box?.type?.name || 'Sin Categoría',
         farmName: box?.farm?.name || 'Sin Granja',
