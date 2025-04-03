@@ -8,9 +8,8 @@ export const ShipmentSchema = new Schema<IShipment>({
   shipmentId: { type: String, required: true, unique: true },
   description: { type: String },
   codes: [{
-    description: { type: String },
-    code: { type: SchemaTypes.ObjectId, ref: "box-production", required: true },
-    status: { type: Number, enum: ShipmentCodeStatus, default: ShipmentCodeStatus.review }
+    codeId: { type: SchemaTypes.ObjectId, ref: "box-production", required: true },
+    code: { type: String, required: true }
   }],
   vehiclePlates: { type: String, required: true },
   driver: { type: String, required: true },

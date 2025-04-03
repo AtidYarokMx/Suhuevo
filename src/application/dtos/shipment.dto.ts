@@ -20,9 +20,8 @@ export enum ShipmentStatus {
 }
 
 export type IShipmentCode = {
-  description?: string
-  code: Types.ObjectId
-  status?: ShipmentCodeStatus
+  codeId: Types.ObjectId,
+  code: string
 }
 
 export type IShipmentSummary = {
