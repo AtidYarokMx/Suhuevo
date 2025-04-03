@@ -220,9 +220,66 @@ export const getAllSales = async (filters: FilterSaleDto = {}) => {
 };
 
 export const getSaleDetails = async (saleId: string) => {
-  const sale = await SaleModel.findById(saleId);
+  const sale = await SaleModel.findById(saleId)
+    .populate('clientId', 'name creditLimit creditUsed')
+    .populate('sellerUserId', 'name')
+    .lean();
+
   if (!sale) throw new Error('Venta no encontrada');
-  return sale;
+
+  const summaryByCategory: Record<string, {
+    count: number;
+    totalKg: number;
+    totalAmount: number;
+    unitPrice: number;
+  }> = {};
+
+  const detailedBoxes = sale.boxDetails.map((box) => {
+    const total = box.unitPrice * box.weightKg;
+    if (!summaryByCategory[box.type]) {
+      summaryByCategory[box.type] = {
+        count: 0,
+        totalKg: 0,
+        totalAmount: 0,
+        unitPrice: box.unitPrice,
+      };
+    }
+    summaryByCategory[box.type].count++;
+    summaryByCategory[box.type].totalKg += box.weightKg;
+    summaryByCategory[box.type].totalAmount += total;
+    return {
+      ...box,
+      total
+    };
+  });
+
+  return {
+    _id: sale._id,
+    folio: sale.folio,
+    saleDate: sale.saleDate,
+    dueDate: sale.dueDate,
+    status: sale.status,
+    client: sale.clientId,
+    seller: sale.sellerUserId,
+    paymentType: sale.paymentType,
+    paymentMethod: sale.paymentMethod,
+    reference: sale.reference,
+    totals: {
+      totalBoxes: sale.totalBoxes,
+      totalKg: sale.totalKg,
+      subtotal: sale.subtotal,
+      iva: sale.iva,
+      totalWithIva: sale.totalWithIva,
+      amountPaid: sale.amountPaid,
+      amountPending: sale.amountPending
+    },
+    boxDetails: detailedBoxes,
+    summaryByCategory: Object.entries(summaryByCategory).map(([category, data]) => ({
+      category,
+      ...data
+    })),
+    payments: sale.payments
+  };
 };
 
 export const registerPayment = async (saleId: string, dto: SalePaymentDto, user: any) => {

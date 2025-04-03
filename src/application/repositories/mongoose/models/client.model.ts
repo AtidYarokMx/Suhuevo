@@ -38,4 +38,4 @@ ClientSchema.post('save', async function (doc) {
 })
 
 /* model instance */
-export const ClientModel = AppMainMongooseRepo.model<IClient>("client", ClientSchema)
+export const ClientModel = AppMainMongooseRepo.model<IClient>("Client", ClientSchema)
