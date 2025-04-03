@@ -49,7 +49,7 @@ export const createSaleFromInventory = async (dto: CreateSaleDto, user: any) => 
     return {
       code: box.code,
       type: type.name,
-      weightKg: box.netWeight,
+      weightKg: box.netWeight / 1000,
       unitPrice,
     };
   });
@@ -144,7 +144,7 @@ export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
     return {
       code: box.code,
       type: type.name,
-      weightKg: box.netWeight,
+      weightKg: box.netWeight / 1000,
       unitPrice,
     };
   });
@@ -304,7 +304,11 @@ export const getSaleDetails = async (saleId: string) => {
   };
 };
 
-export const registerPayment = async (saleId: string, dto: SalePaymentDto, user: any) => {
+export const registerPayment = async (saleId: string, dto: SalePaymentDto & {
+  invoiceId?: string;
+  invoiceComplementId?: string;
+  cfdiUuid?: string;
+}, user: any) => {
   const sale = await SaleModel.findById(saleId);
   if (!sale) throw new Error('Venta no encontrada');
 
@@ -312,16 +316,42 @@ export const registerPayment = async (saleId: string, dto: SalePaymentDto, user:
     throw new Error('La venta ya ha sido liquidada.');
   }
 
-  sale.payments.push({
+  const duplicate = sale.payments.find(p => p.reference === dto.reference);
+  if (duplicate) {
+    throw new Error('Ya existe un pago con esa referencia.');
+  }
+
+  const isTransferOrDeposit = dto.method === 'transferencia' || dto.method === 'deposito';
+  const isCredito = sale.paymentType === 'credito';
+  const isContado = sale.paymentType === 'contado';
+
+  if (isTransferOrDeposit && !dto.reference) {
+    throw new Error('Debe proporcionar la referencia bancaria para pagos con transferencia o depósito.');
+  }
+
+  if (isCredito && dto.amount < sale.totalWithIva) {
+    if (!dto.invoiceId || !dto.invoiceComplementId || !dto.cfdiUuid) {
+      throw new Error('Para pagos incompletos de crédito, debe enviar el folio de factura y del complemento.');
+    }
+  }
+
+  if (isContado && dto.amount < sale.totalWithIva) {
+    throw new Error('En ventas de contado, el pago debe cubrir el total con IVA.');
+  }
+
+  const payment = {
     date: new Date(),
     amount: dto.amount,
     method: dto.method,
-    reference: dto.reference,
+    reference: dto.reference ?? `PAY-${Date.now()}`,
     userId: user._id,
-  });
+    invoiceComplementId: dto.invoiceComplementId,
+    cfdiUuid: dto.cfdiUuid
+  };
 
+  sale.payments.push(payment);
   sale.amountPaid += dto.amount;
-  sale.amountPending = sale.totalWithIva - sale.amountPaid;
+  sale.amountPending = Math.max(0, sale.totalWithIva - sale.amountPaid);
 
   if (sale.amountPending <= 0) {
     sale.status = 'pagado';
@@ -329,8 +359,15 @@ export const registerPayment = async (saleId: string, dto: SalePaymentDto, user:
 
   await sale.save();
 
-  return sale;
+  return {
+    message: 'Pago registrado exitosamente.',
+    updatedStatus: sale.status,
+    totalPaid: sale.amountPaid,
+    amountPending: sale.amountPending,
+    payment
+  };
 };
+
 
 export const getOverdueSales = async () => {
   const today = new Date();

@@ -27,10 +27,13 @@ export interface FilterSaleDto {
   paymentType?: 'credito' | 'contado';
 }
 
-// DTO para registrar un nuevo pago parcial
+// DTO para registrar un nuevo pago parcial o total
 export interface SalePaymentDto {
   saleId: string;
   amount: number;
   method: 'efectivo' | 'transferencia' | 'deposito';
   reference?: string;
+  invoiceId?: string;
+  invoiceComplementId?: string;
+  cfdiUuid?: string;
 }
