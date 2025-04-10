@@ -40,7 +40,7 @@ class SaleRoutes extends ServerRouter {
       this.controller.getSaleDetails as RequestHandler
     );
 
-    // Registrar un pago parcial
+    // Registrar un pago
     this.router.post(
       '/:saleId/payments',
       authenticateUser,
