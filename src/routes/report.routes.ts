@@ -1,10 +1,29 @@
 import { authenticateUser } from '@app/middlewares/auth.middleware';
-import { getWeeklyProductionReport, getHistoricalProductionReport } from '@controllers/report.controller';
-import { Router } from 'express';
+import { reportController } from '@controllers/report.controller';
+import { RequestHandler, Router } from 'express';
+import { ServerRouter } from './models/route'
 
-const router = Router();
+class ReportRoutes extends ServerRouter {
+  controller = reportController;
 
-router.get('/weekly-production', authenticateUser, getWeeklyProductionReport);
-router.get('/historical-production', authenticateUser, getHistoricalProductionReport);
+  constructor() {
+    super();
+    this.config();
+  }
 
-export default router;
+  config(): void {
+
+    this.router.post('/sales/daily', authenticateUser, this.controller.generateDailySales as RequestHandler);
+    this.router.get('/weekly/:shedId', authenticateUser, this.controller.getWeeklyProductionReport as RequestHandler);
+
+    /**
+     * 📢 Obtiene el reporte histórico de producción
+     * @route GET /api/report/historical/:shedId
+     * @access Admin
+     */
+    this.router.get('/historical/:shedId', authenticateUser, this.controller.getHistoricalProductionReport as RequestHandler);
+  }
+}
+
+const reportRoutes: ReportRoutes = new ReportRoutes();
+export default reportRoutes.router;
