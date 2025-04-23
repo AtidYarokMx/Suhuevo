@@ -11,6 +11,7 @@
     "test": "NODE_ENV=test jest --forceExit --detectOpenHandles"
   },
   "_moduleAliases": {
+    "@": "dist",
     "@app": "dist/application",
     "@controllers": "dist/controllers",
     "@services": "dist/services",
