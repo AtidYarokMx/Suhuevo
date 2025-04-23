@@ -1,13 +1,20 @@
-import type { Request, Response } from 'express';
-import { AppMainMongooseRepo } from '@app/repositories/mongoose';
-import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
-import { createSaleFromInventory, createSaleFromShipment, getAllSales, getOverdueSales, getSaleDetails, registerPayment } from '@services/sale.service';
-import { SaleModel } from '@/application/repositories/mongoose/schemas/sale.schema';
+import type { Request, Response } from "express";
+import { AppMainMongooseRepo } from "@app/repositories/mongoose";
+import { appErrorResponseHandler } from "@app/handlers/response/error.handler";
+import {
+  createSaleFromInventory,
+  createSaleFromShipment,
+  getAllSales,
+  getOverdueSales,
+  getSaleDetails,
+  registerPayment,
+} from "@services/sale.service";
+import { SaleModel } from "@app/repositories/mongoose/schemas/sale.schema";
 
 class SaleController {
   async create(req: Request, res: Response) {
-    const sale = await SaleModel.create(req.body)
-    res.status(201).json(sale)
+    const sale = await SaleModel.create(req.body);
+    res.status(201).json(sale);
   }
 
   public async createFromInventory(req: Request, res: Response): Promise<Response> {
@@ -17,11 +24,11 @@ class SaleController {
 
     try {
       if (!dto.codes || !Array.isArray(dto.codes) || dto.codes.length === 0) {
-        return res.status(400).json({ message: 'Lista de códigos (codes) no válida.' });
+        return res.status(400).json({ message: "Lista de códigos (codes) no válida." });
       }
 
-      if (!dto.pricesByCategory || typeof dto.pricesByCategory !== 'object') {
-        return res.status(400).json({ message: 'Debe proporcionar los precios por categoría.' });
+      if (!dto.pricesByCategory || typeof dto.pricesByCategory !== "object") {
+        return res.status(400).json({ message: "Debe proporcionar los precios por categoría." });
       }
 
       if (!session.inTransaction()) session.startTransaction();
@@ -46,11 +53,11 @@ class SaleController {
 
     try {
       if (!dto.codes || !Array.isArray(dto.codes) || dto.codes.length === 0) {
-        return res.status(400).json({ message: 'Lista de códigos (codes) no válida.' });
+        return res.status(400).json({ message: "Lista de códigos (codes) no válida." });
       }
 
-      if (!dto.pricesByCategory || typeof dto.pricesByCategory !== 'object') {
-        return res.status(400).json({ message: 'Debe proporcionar los precios por categoría.' });
+      if (!dto.pricesByCategory || typeof dto.pricesByCategory !== "object") {
+        return res.status(400).json({ message: "Debe proporcionar los precios por categoría." });
       }
 
       if (!session.inTransaction()) session.startTransaction();
@@ -72,11 +79,11 @@ class SaleController {
     try {
       const filters = {
         clientId: req.query.clientId as string,
-        status: req.query.status as 'pendiente' | 'pagado' | 'cancelado',
+        status: req.query.status as "pendiente" | "pagado" | "cancelado",
         from: req.query.from ? new Date(req.query.from as string) : undefined,
         to: req.query.to ? new Date(req.query.to as string) : undefined,
         folio: req.query.folio as string,
-        paymentType: req.query.paymentType as 'credito' | 'contado',
+        paymentType: req.query.paymentType as "credito" | "contado",
       };
 
       const sales = await getAllSales(filters);
@@ -121,7 +128,6 @@ class SaleController {
       return res.status(statusCode).json(err);
     }
   }
-
 }
 
 export const saleController = new SaleController();
