@@ -2,8 +2,14 @@ import type { Request, Response } from 'express';
 import { AppMainMongooseRepo } from '@app/repositories/mongoose';
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
 import { createSaleFromInventory, createSaleFromShipment, getAllSales, getOverdueSales, getSaleDetails, registerPayment } from '@services/sale.service';
+import { SaleModel } from '@/application/repositories/mongoose/schemas/sale.schema';
 
 class SaleController {
+  async create(req: Request, res: Response) {
+    const sale = await SaleModel.create(req.body)
+    res.status(201).json(sale)
+  }
+
   public async createFromInventory(req: Request, res: Response): Promise<Response> {
     const session = await AppMainMongooseRepo.startSession();
     const userId = (res.locals as any).user._id;

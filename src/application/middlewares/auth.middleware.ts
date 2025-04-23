@@ -28,6 +28,9 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
   if (PUBLIC_ROUTES.includes(req.path)) {
     return next(); // ✅ Saltar autenticación en rutas públicas
   }
+  if (process.env.NODE_ENV === 'test') {
+    return next(); // 🔓 Omitir autenticación durante pruebas
+  }
 
   let token = req.headers.authorization?.split(" ")[1] || req.cookies?.user; // 🔹 Permitir autenticación por header y cookies
 

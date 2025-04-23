@@ -2,9 +2,14 @@ import type { Request, Response } from 'express';
 import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
 import { customLog } from '@app/utils/util.util';
 import {
+  generateClientDailySalesReport,
   generateDailySalesReport,
+  generateFinancialSalesSummary,
   generateHistoricalProductionReport,
-  generateWeeklyProductionReport
+  generatePaymentsReport,
+  generateSalesTicket,
+  generateWeeklyProductionReport,
+  generateWeeklySalesByClassification
 } from '@services/report.service';
 
 class ReportController {
@@ -42,6 +47,8 @@ class ReportController {
     }
   };
 
+
+
   public async getHistoricalProductionReport(req: Request, res: Response): Promise<any> {
     try {
       const user = res.locals.user;
@@ -54,6 +61,121 @@ class ReportController {
       return res.status(500).json({ message: 'Error generating historical report', error: (error as Error).message });
     }
   };
+
+  /**
+   * 📄 Generar nota de remisión en PDF por venta
+   * @route GET /api/report/sales/ticket/:saleId
+   */
+  public async getSalesTicket(req: Request, res: Response): Promise<any> {
+    const { saleId } = req.params;
+
+    try {
+      await generateSalesTicket(saleId, res);
+      // PDF se envía directamente desde el servicio
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+  public async generatePaymentsReport(req: Request, res: Response): Promise<any> {
+    try {
+      const { from, to, format } = req.body;
+
+      if (!from || !to || !format) {
+        return res.status(400).json({
+          message: 'Debe proporcionar los campos "from", "to" y "format".'
+        });
+      }
+
+      await generatePaymentsReport(
+        { from: new Date(from), to: new Date(to) },
+        format,
+        res
+      );
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+  /**
+ * 🧮 Generar reporte de ventas por cliente por día
+ * @route POST /api/report/sales/by-client
+ * @body { from, to, format }
+ */
+  public async generateClientDailySalesReport(req: Request, res: Response): Promise<any> {
+    try {
+      const { from, to, format } = req.body;
+
+      if (!from || !to || !format) {
+        return res.status(400).json({
+          message: 'Debe proporcionar los campos "from", "to" y "format".'
+        });
+      }
+
+      await generateClientDailySalesReport(
+        { from: new Date(from), to: new Date(to) },
+        format,
+        res
+      );
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+  /**
+ * 📊 Generar reporte semanal por clasificación
+ * @route POST /api/report/sales/weekly-by-classification
+ */
+  public async generateWeeklySalesByClassification(req: Request, res: Response): Promise<any> {
+    try {
+      const { from, to, format } = req.body;
+
+      if (!from || !to || !format) {
+        return res.status(400).json({
+          message: 'Debe proporcionar los campos "from", "to" y "format".'
+        });
+      }
+
+      await generateWeeklySalesByClassification(
+        { from: new Date(from), to: new Date(to) },
+        format,
+        res
+      );
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+  /**
+ * 💰 Generar resumen financiero de ventas
+ * @route POST /api/report/sales/financial-summary
+ */
+  public async generateFinancialSalesSummary(req: Request, res: Response): Promise<any> {
+    try {
+      const { from, to, format } = req.body;
+
+      if (!from || !to || !format) {
+        return res.status(400).json({
+          message: 'Debe proporcionar los campos \"from\", \"to\" y \"format\".'
+        });
+      }
+
+      await generateFinancialSalesSummary(
+        { from: new Date(from), to: new Date(to) },
+        format,
+        res
+      );
+    } catch (error) {
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+
 }
 
 export const reportController = new ReportController();

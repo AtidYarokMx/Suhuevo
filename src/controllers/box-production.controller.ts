@@ -14,6 +14,7 @@ import { validateBarcode } from '@app/utils/validate.util'
 import { sendBoxesToSellsBody } from '@app/dtos/box-production.dto'
 import { AppLocals } from '@app/interfaces/auth.dto'
 import { customLog } from '@app/utils/util.util'
+import { BoxProductionModel } from '@/application/repositories/mongoose/models/box-production.model'
 
 /**
  * @swagger
@@ -355,6 +356,12 @@ class BoxProductionController {
       return res.status(statusCode).json(err);
     }
   }
+
+  async create(req: Request, res: Response) {
+    const box = await BoxProductionModel.create(req.body)
+    res.status(201).json(box)
+  }
+
 
 }
 

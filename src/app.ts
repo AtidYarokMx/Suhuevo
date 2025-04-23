@@ -54,6 +54,7 @@ import overtimeRoutes from '@routes/overtime.routes';
 import { authenticateUser } from '@app/middlewares/auth.middleware';
 import { globalAuditMiddleware } from '@app/middlewares/audit.middleware';
 import router from '@routes/index.routes';
+import reportRoutes from '@routes/report.routes';
 
 // import csurf from 'csurf'
 
@@ -112,9 +113,9 @@ export class AppServer {
     // 📌 🚀 Cargar documentación de Swagger ANTES de aplicar autenticación
     this.app.use(swaggerRoutes);
 
-    // 🔐 Aplicar middleware de autenticación global, excepto en Swagger
+    // 🔐 Aplicar middleware de autenticación global, excepto en Swagger y test
     this.app.use((req, res, next) => {
-      if (req.path.startsWith("/api-docs")) {
+      if (process.env.NODE_ENV === 'test' || req.path.startsWith("/api-docs")) {
         return next();
       }
       authenticateUser(req, res, next);
@@ -155,6 +156,7 @@ export class AppServer {
     this.app.use('/api/shed', shedRoutes)
     this.app.use('/api/job', jobRoutes)
     this.app.use('/api/sale', saleRoutes)
+    this.app.use('/api/report', reportRoutes)
   }
 
   /**

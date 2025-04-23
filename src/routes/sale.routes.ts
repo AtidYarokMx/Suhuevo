@@ -12,6 +12,8 @@ class SaleRoutes extends ServerRouter {
   }
 
   config(): void {
+    this.router.post('/', authenticateUser, this.controller.create as RequestHandler);
+
     // Crear venta desde el inventario de ventas
     this.router.post(
       '/from-inventory',

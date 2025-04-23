@@ -26,6 +26,8 @@ class BoxProductionRoutes extends ServerRouter {
  */
   private config(): void {
     customLog("🔧 Configurando rutas de BoxProduction...");
+    this.router.post('/', authenticateUser, this.wrapWithLogging(this.controller.create))
+
 
     /** 
      * 📢 Obtiene todas las cajas activas.

@@ -1,0 +1,1 @@
+// Test para recepción parcial
