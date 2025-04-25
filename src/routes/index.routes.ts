@@ -21,6 +21,11 @@ import jobRoutes from "@routes/job.routes";
 import overtimeRoutes from "@routes/overtime.routes";
 import swaggerRoutes from "@config/swagger";
 import saleRoutes from "@routes/sale.routes";
+import deparmentRoutes from "@routes/deparment.routes";
+import boxProductionRoutes from "./box-production.routes";
+import serverRoutes from "./server.routes";
+import downloadRoutes from "./download.routes";
+import reportRoutes from "./report.routes";
 
 const router = Router();
 
@@ -28,26 +33,30 @@ const router = Router();
 router.use("/docs", swaggerRoutes);
 
 // ✅ Rutas de API organizadas
-router.use("/api/auth", authRoutes);
-router.use("/api/personal-bonus", personalBonusRoutes);
-router.use("/api/attendance", attendanceRoutes);
-router.use("/api/department", departmentRoutes);
-router.use("/api/inventory", inventoryRoutes);
-router.use("/api/employee", employeeRoutes);
-router.use("/api/schedule", scheduleRoutes);
-router.use("/api/overtime", overtimeRoutes);
-router.use("/api/shipment", shipmentRoutes);
-router.use("/api/absence", absenceRoutes);
-router.use("/api/payroll", payrollRoutes);
-router.use("/api/catalog", catalogRoutes);
-router.use("/api/holiday", holidayRoutes);
-router.use("/api/client", clientRoutes);
-router.use("/api/bonus", bonusRoutes);
-router.use("/api/file", fileRoutes);
-router.use("/api/rule", ruleRoutes);
-router.use("/api/farm", farmRoutes);
-router.use("/api/shed", shedRoutes);
-router.use("/api/job", jobRoutes);
-router.use("/api/sale", saleRoutes);
+router.use('/api/personal-bonus', personalBonusRoutes)
+router.use('/api/attendance', attendanceRoutes)
+router.use('/api/department', deparmentRoutes)
+router.use('/api/inventory', inventoryRoutes)
+router.use('/api/boxes', boxProductionRoutes)
+router.use('/api/employee', employeeRoutes)
+router.use('/api/schedule', scheduleRoutes)
+router.use('/api/overtime', overtimeRoutes)
+router.use('/api/shipment', shipmentRoutes)
+router.use('/api/absence', absenceRoutes)
+router.use('/api/payroll', payrollRoutes)
+router.use('/api/catalog', catalogRoutes)
+router.use('/api/holiday', holidayRoutes)
+router.use('/api/server', serverRoutes)
+router.use('/api/client', clientRoutes)
+router.use('/api/bonus', bonusRoutes)
+router.use('/docs', downloadRoutes)
+router.use('/api/auth', authRoutes)
+router.use('/api/rule', ruleRoutes)
+router.use('/api/file', fileRoutes)
+router.use('/api/farm', farmRoutes)
+router.use('/api/shed', shedRoutes)
+router.use('/api/job', jobRoutes)
+router.use('/api/sale', saleRoutes)
+router.use('/api/report', reportRoutes)
 
 export default router;

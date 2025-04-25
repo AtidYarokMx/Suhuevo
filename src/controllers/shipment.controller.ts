@@ -82,6 +82,10 @@ class ShipmentController {
     }
   }
 
+  async create(req: Request, res: Response) {
+    const shipment = await ShipmentModel.create(req.body)
+    res.status(201).json(shipment)
+  }
 
 
 }

@@ -539,7 +539,7 @@ class PayrollService {
       cell.border = { top: { style: "thin" }, bottom: { style: "double" } };
     });
 
-    const excelBuffer = (await workbook.xlsx.writeBuffer()) as Buffer;
+    const excelBuffer = (await workbook.xlsx.writeBuffer()) as unknown as Buffer;
     return { file: excelBuffer, fileName: `${payroll.name || "Nomina"}.xlsx` };
   }
 }

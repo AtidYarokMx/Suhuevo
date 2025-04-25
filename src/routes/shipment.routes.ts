@@ -12,6 +12,8 @@ class ShipmentRoutes extends ServerRouter {
   }
 
   config(): void {
+    this.router.post('/', authenticateUser, this.controller.create as RequestHandler);
+
     // Crear un nuevo envío
     this.router.post('/send', authenticateUser, this.controller.sendBoxesToSells as RequestHandler);
 

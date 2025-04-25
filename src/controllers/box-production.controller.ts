@@ -1,19 +1,20 @@
 /* lib */
-import { z } from 'zod'
+import { z } from "zod";
 /* express */
-import type { Request, Response } from 'express'
+import type { Request, Response } from "express";
 /* repos */
-import { AppMainMongooseRepo } from '@app/repositories/mongoose'
+import { AppMainMongooseRepo } from "@app/repositories/mongoose";
 /* services */
-import boxProductionService from '@services/box-production.service'
+import boxProductionService from "@services/box-production.service";
 /* handlers */
-import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
+import { appErrorResponseHandler } from "@app/handlers/response/error.handler";
 /* param validations */
-import { validateBarcode } from '@app/utils/validate.util'
+import { validateBarcode } from "@app/utils/validate.util";
 /* dtos */
-import { sendBoxesToSellsBody } from '@app/dtos/box-production.dto'
-import { AppLocals } from '@app/interfaces/auth.dto'
-import { customLog } from '@app/utils/util.util'
+import { sendBoxesToSellsBody } from "@app/dtos/box-production.dto";
+import { AppLocals } from "@app/interfaces/auth.dto";
+import { customLog } from "@app/utils/util.util";
+import { BoxProductionModel } from "@app/repositories/mongoose/models/box-production.model";
 
 /**
  * @swagger
@@ -22,7 +23,6 @@ import { customLog } from '@app/utils/util.util'
  *   description: API para la gestión de cajas de producción
  */
 class BoxProductionController {
-
   /**
    * @swagger
    * /api/boxes/{code}:
@@ -46,15 +46,15 @@ class BoxProductionController {
    *         description: Caja no encontrada
    */
   public async getOne(req: Request, res: Response) {
-    const code = req.params.code
+    const code = req.params.code;
     try {
-      const validatedCode = validateBarcode(code)
-      const response = await boxProductionService.getOne(validatedCode)
-      return res.status(200).json(response)
+      const validatedCode = validateBarcode(code);
+      const response = await boxProductionService.getOne(validatedCode);
+      return res.status(200).json(response);
     } catch (error) {
       customLog(`❌ Error en getOne: ${String(error)}`);
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
     }
   }
 
@@ -108,7 +108,6 @@ class BoxProductionController {
       return res.status(statusCode).json(err);
     }
   }
-
 
   /**
    * @swagger
@@ -207,7 +206,6 @@ class BoxProductionController {
     }
   }
 
-
   /**
    * @swagger
    * /api/boxes/shed/{shedId}:
@@ -251,8 +249,6 @@ class BoxProductionController {
       return res.status(statusCode).json(err);
     }
   }
-
-
 
   /**
    * @swagger
@@ -356,6 +352,10 @@ class BoxProductionController {
     }
   }
 
+  async create(req: Request, res: Response) {
+    const box = await BoxProductionModel.create(req.body);
+    res.status(201).json(box);
+  }
 }
 
-export const boxProductionController: BoxProductionController = new BoxProductionController()
+export const boxProductionController: BoxProductionController = new BoxProductionController();
