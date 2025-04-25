@@ -1,23 +1,27 @@
 /* lib */
-import { QueryTypes } from 'sequelize'
-import { AnyBulkWriteOperation, AnyKeys, AnyObject, ClientSession } from 'mongoose'
+import { ObjectId } from "mongodb";
+import { QueryTypes } from "sequelize";
+import { AnyBulkWriteOperation, RootFilterQuery } from "mongoose";
 /* repos */
-import { AppSequelizeMSSQLClient } from '@app/repositories/sequelize'
+import { AppSequelizeMSSQLClient } from "@app/repositories/sequelize";
 /* models */
-import { BoxProductionModel } from '@app/repositories/mongoose/models/box-production.model'
-import { FarmModel } from '@app/repositories/mongoose/models/farm.model'
-import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
+import { BoxProductionModel } from "@app/repositories/mongoose/models/box-production.model";
+import { BoxCategoryModel } from "@app/repositories/mongoose/catalogs/box-category.catalog";
+import { CatalogBoxModel } from "@app/repositories/mongoose/catalogs/box.catalog";
+import { FarmModel } from "@app/repositories/mongoose/models/farm.model";
+import { ShedModel } from "@app/repositories/mongoose/models/shed.model";
 /* utils */
-import { customLog } from '@app/utils/util.util'
+import { customLog } from "@app/utils/util.util";
+import { hasValidProperty } from "@app/utils/object.util";
 /* dtos */
-import { IBoxProduction, IBoxProductionSequelize, sendBoxesToSellsBody } from '@app/dtos/box-production.dto'
-import { AppErrorResponse } from '@app/models/app.response'
-import { ObjectId } from 'mongodb'
-import { CatalogBoxModel } from '@app/repositories/mongoose/catalogs/box.catalog'
-import { BoxCategoryModel } from '@app/repositories/mongoose/catalogs/box-category.catalog'
+import { IBoxProduction, IBoxProductionSequelize } from "@app/dtos/box-production.dto";
+import { AppErrorResponse } from "@app/models/app.response";
+import { IBoxCategory } from "@app/dtos/box-category.dto";
+import { ICatalogBox } from "@app/dtos/box-catalog.dto";
+import { IFarm } from "@app/dtos/farm.dto";
+import { IShed } from "@app/dtos/shed.dto";
 
 class BoxProductionService {
-
   /**
    * Obtiene todas las cajas activas y su resumen opcionalmente.
    * @param summary - Si es `true`, devuelve un resumen del tipo de huevo producido.
@@ -36,7 +40,7 @@ class BoxProductionService {
   ) {
     customLog("📌 Iniciando consulta de códigos de producción...");
 
-    const matchConditions: any = { active: true };
+    const matchConditions: RootFilterQuery<IBoxProduction> = { active: true };
 
     // 🔹 Filtrado por status
     if (status !== undefined) {
@@ -69,8 +73,10 @@ class BoxProductionService {
 
     // 🔹 Filtrado por Categoría (category)
     if (category && ObjectId.isValid(category)) {
-      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) }).select("_id").lean();
-      matchConditions.type = { $in: categoryTypes.map(t => t._id) };
+      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) })
+        .select("_id")
+        .lean();
+      matchConditions.type = { $in: categoryTypes.map((t) => t._id) };
     }
 
     // 🔹 LOGS: Mostrar condiciones de filtrado
@@ -78,42 +84,44 @@ class BoxProductionService {
 
     // 🔹 Consulta a la base de datos
     const boxes = await BoxProductionModel.find(matchConditions)
-      .populate({ path: "farm", select: "name" })
-      .populate({ path: "shed", select: "name" })
-      .populate({
+      .populate<{ farm: IFarm }>({ path: "farm", select: "name" })
+      .populate<{ shed: IShed }>({ path: "shed", select: "name" })
+      .populate<{ type: ICatalogBox & { category: ICatalogBox } }>({
         path: "type",
         model: "catalog-box",
         select: "name category",
         populate: {
           path: "category",
           model: "box-category",
-          select: "name"
-        }
+          select: "name",
+        },
       })
       .limit(limit ?? 1000000) // 🔹 Limita los resultados según el parámetro recibido
-      .lean()
       .exec();
 
     customLog(`📦 Códigos encontrados: ${boxes.length}`);
 
     // 🔹 Formatear los resultados
-    const formattedBoxes = boxes.map(box => ({
+    const formattedBoxes = boxes.map((box) => ({
       _id: box._id,
       code: box.code,
-      farm: typeof box.farm === 'object' && 'name' in box.farm ? box.farm.name : "Desconocida",
-      shed: typeof box.shed === 'object' && 'name' in box.shed ? box.shed.name : "Desconocida",
-      type: typeof box.type === 'object' && 'name' in box.type ? box.type.name : "Desconocido",
-      category: typeof box.type === 'object' && 'category' in box.type && box.type.category && typeof box.type.category === 'object' && 'name' in box.type.category ? box.type.category.name : "Sin Categoría",
+      farm: hasValidProperty(box.farm, "name") ? box.farm.name : "Desconocida",
+      shed: hasValidProperty(box.shed, "name") ? box.shed.name : "Desconocida",
+      type: hasValidProperty(box.type, "name") ? box.type.name : "Desconocido",
+      category:
+        hasValidProperty(box.type, "category") && hasValidProperty(box.type.category, "name")
+          ? box.type.category.name
+          : "Sin categoría",
       weight: box.netWeight,
       status: box.status,
       createdAt: box.createdAt,
-      updatedAt: box.updatedAt
+      updatedAt: box.updatedAt,
     }));
 
     // 🔹 Obtener todas las categorías y tipos de caja
-    const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1, category: 1 })
-      .populate("category", "name")
-      .lean();
+    const allTypes = await CatalogBoxModel.find({}, { _id: 1, name: 1, category: 1 }).populate<{
+      category: IBoxCategory;
+    }>("category");
 
     // 🔹 LOGS: Mostrar tipos de caja y categorías
     customLog(`📦 Tipos de caja encontrados: ${allTypes.length}`);
@@ -121,8 +129,11 @@ class BoxProductionService {
     const countByType = new Map<string, { category: string; count: number }>();
 
     for (const box of boxes) {
-      const typeName = typeof box.type === 'object' && 'name' in box.type ? String(box.type.name) : "Desconocido";
-      const categoryName = typeof box.type === 'object' && 'category' in box.type && box.type.category && typeof box.type.category === 'object' && 'name' in box.type.category ? String(box.type.category.name) : "Sin Categoría";
+      const typeName = hasValidProperty(box.type, "name") ? box.type?.name : "Desconocido";
+      const categoryName =
+        hasValidProperty(box.type, "category") && hasValidProperty(box.type.category, "name")
+          ? box.type.category.name
+          : "Sin categoría";
 
       if (!countByType.has(typeName)) {
         countByType.set(typeName, { category: categoryName, count: 0 });
@@ -132,10 +143,10 @@ class BoxProductionService {
     }
 
     // 🔹 Asegurar que el `summary` incluya todos los tipos de cajas, incluso los no encontrados en la consulta
-    const summaryData = allTypes.map(t => ({
-      category: t.category && typeof t.category === "object" && 'name' in t.category ? t.category.name : "Sin Categoría",
+    const summaryData = allTypes.map((t) => ({
+      category: hasValidProperty(t.category, "name") ? t.category.name : "Sin Categoría",
       type: t.name,
-      count: countByType.get(t.name)?.count || 0
+      count: countByType.get(t.name)?.count || 0,
     }));
 
     // 🔹 LOGS: Mostrar el resumen generado
@@ -144,12 +155,9 @@ class BoxProductionService {
     return {
       totalRecords: boxes.length,
       boxes: formattedBoxes,
-      summary: summaryData
+      summary: summaryData,
     };
   }
-
-
-
 
   /**
    * Obtiene una caja por su código.
@@ -157,8 +165,8 @@ class BoxProductionService {
    * @returns Caja encontrada o `null` si no existe.
    */
   async getOne(code: string) {
-    const box = await BoxProductionModel.find({ active: true, code })
-    return box
+    const box = await BoxProductionModel.find({ active: true, code });
+    return box;
   }
 
   async getSummary(shedId?: string, startDate?: string, endDate?: string, type?: string) {
@@ -179,8 +187,8 @@ class BoxProductionService {
           from: "catalog-boxes",
           localField: "type",
           foreignField: "_id",
-          as: "boxType"
-        }
+          as: "boxType",
+        },
       },
       { $unwind: "$boxType" },
       {
@@ -188,8 +196,8 @@ class BoxProductionService {
           from: "box-categories",
           localField: "boxType.category",
           foreignField: "_id",
-          as: "category"
-        }
+          as: "category",
+        },
       },
       { $unwind: "$category" },
       {
@@ -199,8 +207,8 @@ class BoxProductionService {
           count: { $sum: 1 },
           totalGrossWeight: { $sum: "$grossWeight" },
           totalNetWeight: { $sum: "$netWeight" },
-          totalEggs: { $sum: "$totalEggs" }
-        }
+          totalEggs: { $sum: "$totalEggs" },
+        },
       },
       {
         $project: {
@@ -209,27 +217,39 @@ class BoxProductionService {
           count: 1,
           totalGrossWeight: 1,
           totalNetWeight: 1,
-          totalEggs: 1
-        }
-      }
+          totalEggs: 1,
+        },
+      },
     ]).exec();
     if (type === "all") {
       const allCategories = await BoxCategoryModel.find({}, { name: 1 }).lean();
-      const categoryMap = new Map(summary.map(({ category, count, totalGrossWeight, totalNetWeight, totalEggs }) => [category, { count, totalGrossWeight, totalNetWeight, totalEggs }]));
+      const categoryMap = new Map(
+        summary.map(({ category, count, totalGrossWeight, totalNetWeight, totalEggs }) => [
+          category,
+          { count, totalGrossWeight, totalNetWeight, totalEggs },
+        ])
+      );
       return {
         summary: allCategories.map(({ name }) => ({
           category: name,
           count: categoryMap.get(name)?.count || 0,
           totalGrossWeight: categoryMap.get(name)?.totalGrossWeight || 0,
           totalNetWeight: categoryMap.get(name)?.totalNetWeight || 0,
-          totalEggs: categoryMap.get(name)?.totalEggs || 0
-        }))
+          totalEggs: categoryMap.get(name)?.totalEggs || 0,
+        })),
       };
     }
     return { summary };
   }
 
-  async getByShedId(shedId: string, startDate?: string, endDate?: string, type?: string, category?: string, summary?: boolean) {
+  async getByShedId(
+    shedId: string,
+    startDate?: string,
+    endDate?: string,
+    type?: string,
+    category?: string,
+    summary?: boolean
+  ) {
     customLog(`📌 Buscando códigos asignados al Shed ID: ${shedId}`);
 
     if (!ObjectId.isValid(shedId)) {
@@ -249,8 +269,10 @@ class BoxProductionService {
     }
 
     if (category && ObjectId.isValid(category)) {
-      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) }).select("_id").lean();
-      matchConditions.type = { $in: categoryTypes.map(t => t._id) };
+      const categoryTypes = await CatalogBoxModel.find({ category: new ObjectId(category) })
+        .select("_id")
+        .lean();
+      matchConditions.type = { $in: categoryTypes.map((t) => t._id) };
     }
 
     const boxes = await BoxProductionModel.find(matchConditions)
@@ -262,8 +284,8 @@ class BoxProductionService {
         populate: {
           path: "category",
           model: "box-category",
-          select: "name"
-        }
+          select: "name",
+        },
       })
       .lean();
 
@@ -292,20 +314,21 @@ class BoxProductionService {
       summaryData = Object.entries(countByType).map(([type, { category, count }]) => ({
         category,
         type,
-        count
+        count,
       }));
 
       if (type === "all") {
-        summaryData = allTypes.map(t => ({
+        summaryData = allTypes.map((t) => ({
           category: (t.category as { name?: string })?.name ?? "Sin Categoría",
           type: t.name,
-          count: countByType[t.name]?.count ?? 0
+          count: countByType[t.name]?.count ?? 0,
         }));
       }
 
-      summaryData.sort((a, b) =>
-        a.category.localeCompare(b.category, "es", { numeric: true }) ||
-        a.type.localeCompare(b.type, "es", { numeric: true })
+      summaryData.sort(
+        (a, b) =>
+          a.category.localeCompare(b.category, "es", { numeric: true }) ||
+          a.type.localeCompare(b.type, "es", { numeric: true })
       );
     }
 
@@ -316,10 +339,9 @@ class BoxProductionService {
       type,
       category,
       boxes,
-      ...(summary ? { summary: summaryData } : {})
+      ...(summary ? { summary: summaryData } : {}),
     };
   }
-
 
   /**
    * Sincroniza los códigos de producción desde SQL Server a MongoDB.
@@ -332,19 +354,30 @@ class BoxProductionService {
       "SELECT * FROM produccion_cajas WHERE status = 1",
       { type: QueryTypes.SELECT }
     );
-    if (!boxes.length) throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", message: "No se encontraron códigos." });
+    if (!boxes.length)
+      throw new AppErrorResponse({ statusCode: 404, name: "Codes Not Found", message: "No se encontraron códigos." });
 
-    const validBoxes = boxes.filter(box => box.codigo && box.codigo.trim() !== "");
-    if (!validBoxes.length) throw new AppErrorResponse({ statusCode: 400, name: "Invalid Data", message: "Códigos inválidos o vacíos." });
+    const validBoxes = boxes.filter((box) => box.codigo && box.codigo.trim() !== "");
+    if (!validBoxes.length)
+      throw new AppErrorResponse({ statusCode: 400, name: "Invalid Data", message: "Códigos inválidos o vacíos." });
 
-    const existingDocuments = await BoxProductionModel.find({ code: { $in: validBoxes.map(box => box.codigo) } }, { _id: 1, code: 1 });
-    const existingCodes = new Map(existingDocuments.map(doc => [doc.code, doc._id]));
+    const existingDocuments = await BoxProductionModel.find(
+      { code: { $in: validBoxes.map((box) => box.codigo) } },
+      { _id: 1, code: 1 }
+    );
+    const existingCodes = new Map(existingDocuments.map((doc) => [doc.code, doc._id]));
 
-    const farms = Object.fromEntries((await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map(f => [f.farmNumber, f._id]));
-    const sheds = Object.fromEntries((await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map(s => [`${s.farm}-${s.shedNumber}`, s._id]));
+    const farms = Object.fromEntries(
+      (await FarmModel.find({}, { _id: 1, farmNumber: 1 })).map((f) => [f.farmNumber, f._id])
+    );
+    const sheds = Object.fromEntries(
+      (await ShedModel.find({}, { _id: 1, farm: 1, shedNumber: 1 })).map((s) => [`${s.farm}-${s.shedNumber}`, s._id])
+    );
 
     const catalogBoxList = await CatalogBoxModel.find({}, { _id: 1, id: 1, category: 1, count: 1, tare: 1 });
-    const boxTypes = new Map(catalogBoxList.map(b => [b.id.toString(), { _id: b._id, category: b.category, count: b.count, tare: b.tare }]));
+    const boxTypes = new Map(
+      catalogBoxList.map((b) => [b.id.toString(), { _id: b._id, category: b.category, count: b.count, tare: b.tare }])
+    );
 
     customLog(`📦 BoxTypes cargados: ${JSON.stringify(Object.fromEntries(boxTypes))}`);
     let bulkOperations: AnyBulkWriteOperation[] = [];
@@ -381,18 +414,23 @@ class BoxProductionService {
               status: box.status,
               totalEggs,
               createdAt: box.creacion,
-              updatedAt: box.actualizacion
-            }
+              updatedAt: box.actualizacion,
+            },
           },
-          upsert: true
-        }
+          upsert: true,
+        },
       });
 
       // 🔄 Actualizar `dailyRecord` y `weeklyRecord` al mismo tiempo
       await this.updateRecords(shedId, totalEggs, grossWeight);
     }
 
-    if (!bulkOperations.length) throw new AppErrorResponse({ statusCode: 400, name: "No Valid Records", message: "No hay registros válidos para sincronizar." });
+    if (!bulkOperations.length)
+      throw new AppErrorResponse({
+        statusCode: 400,
+        name: "No Valid Records",
+        message: "No hay registros válidos para sincronizar.",
+      });
 
     let session = await BoxProductionModel.startSession();
     try {
@@ -406,7 +444,11 @@ class BoxProductionService {
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-      throw new AppErrorResponse({ statusCode: 500, name: "SyncError", message: `Error al sincronizar: ${String(error)}` });
+      throw new AppErrorResponse({
+        statusCode: 500,
+        name: "SyncError",
+        message: `Error al sincronizar: ${String(error)}`,
+      });
     }
   }
 
@@ -414,7 +456,7 @@ class BoxProductionService {
    * 🔄 Actualiza o crea un `dailyRecord` y actualiza el `weeklyRecord` correspondiente.
    */
   async updateRecords(shedId: ObjectId, totalEggs: number, grossWeight: number) {
-    const today = new Date().toISOString().split('T')[0]; // Fecha actual sin hora
+    const today = new Date().toISOString().split("T")[0]; // Fecha actual sin hora
     const currentDate = new Date();
     const currentDay = currentDate.getDay();
     const isWednesdayOrLater = currentDay >= 3;
@@ -428,13 +470,13 @@ class BoxProductionService {
           dailyRecords: {
             date: today,
             totalEggsProduced: totalEggs,
-            grossWeight
-          }
+            grossWeight,
+          },
         },
         $inc: {
           "weeklyRecord.totalEggsProduced": totalEggs,
-          "weeklyRecord.totalGrossWeight": grossWeight
-        }
+          "weeklyRecord.totalGrossWeight": grossWeight,
+        },
       }
     );
 
@@ -451,7 +493,13 @@ class BoxProductionService {
    * @param filters.status - Estado de las cajas.
    * @returns Lista de tipos de huevo con cantidad producida.
    */
-  async getEggTypeSummaryFromBoxes(filters: { startDate?: string; endDate?: string; farmNumber?: number; shedNumber?: number; status?: number }) {
+  async getEggTypeSummaryFromBoxes(filters: {
+    startDate?: string;
+    endDate?: string;
+    farmNumber?: number;
+    shedNumber?: number;
+    status?: number;
+  }) {
     console.log("Query Params:", filters);
     const matchConditions: any = { active: true };
 
@@ -464,7 +512,6 @@ class BoxProductionService {
     if (filters.farmNumber) matchConditions.farmNumber = filters.farmNumber;
     if (filters.shedNumber) matchConditions.shedNumber = filters.shedNumber;
     if (filters.status) matchConditions.status = filters.status;
-
 
     const summary = await BoxProductionModel.aggregate([
       { $match: matchConditions },
@@ -489,7 +536,7 @@ class BoxProductionService {
           name: { $first: "$boxInfo.name" },
           description: { $first: "$boxInfo.description" },
           quantity: { $sum: 1 },
-          totalEggs: { $sum: "$totalEggs" }
+          totalEggs: { $sum: "$totalEggs" },
         },
       },
       {
@@ -504,7 +551,6 @@ class BoxProductionService {
       },
     ]).exec();
 
-
     return summary;
   }
 
@@ -516,7 +562,7 @@ class BoxProductionService {
       throw new AppErrorResponse({
         statusCode: 403,
         name: "Unauthorized",
-        message: "Contraseña incorrecta"
+        message: "Contraseña incorrecta",
       });
     }
 
@@ -526,7 +572,7 @@ class BoxProductionService {
       throw new AppErrorResponse({
         statusCode: 404,
         name: "NotFound",
-        message: "No se encontró el código"
+        message: "No se encontró el código",
       });
     }
 
@@ -535,13 +581,10 @@ class BoxProductionService {
 
     return {
       success: true,
-      message: `El código ${code} ha sido marcado como inválido (status = 99).`
+      message: `El código ${code} ha sido marcado como inválido (status = 99).`,
     };
   }
-
-
-
 }
 
-const boxProductionService: BoxProductionService = new BoxProductionService()
-export default boxProductionService
+const boxProductionService: BoxProductionService = new BoxProductionService();
+export default boxProductionService;
