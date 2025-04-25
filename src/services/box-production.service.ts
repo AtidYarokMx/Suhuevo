@@ -12,6 +12,7 @@ import { FarmModel } from "@app/repositories/mongoose/models/farm.model";
 import { ShedModel } from "@app/repositories/mongoose/models/shed.model";
 /* utils */
 import { customLog } from "@app/utils/util.util";
+import { ifNotValueReturnZero } from "@app/utils/number";
 import { hasValidProperty } from "@app/utils/object.util";
 /* dtos */
 import { IBoxProduction, IBoxProductionSequelize } from "@app/dtos/box-production.dto";
@@ -99,6 +100,12 @@ class BoxProductionService {
       .limit(limit ?? 1000000) // 🔹 Limita los resultados según el parámetro recibido
       .exec();
 
+    // 🔹 Consulta a la base de datos para obtener el peso total y la cantidad total de cajas en caso de que se haya usado el filter y no depender del length
+    const totalWeight = await BoxProductionModel.aggregate([
+      { $match: matchConditions },
+      { $group: { _id: null, totalBoxes: { $sum: 1 }, totalWeight: { $sum: "$netWeight" } } },
+    ]).exec();
+
     customLog(`📦 Códigos encontrados: ${boxes.length}`);
 
     // 🔹 Formatear los resultados
@@ -153,9 +160,10 @@ class BoxProductionService {
     customLog("📊 Resumen generado:", JSON.stringify(summaryData, null, 2));
 
     return {
-      totalRecords: boxes.length,
-      boxes: formattedBoxes,
       summary: summaryData,
+      boxes: formattedBoxes,
+      totalRecords: ifNotValueReturnZero(totalWeight?.[0]?.totalBoxes),
+      totalWeight: ifNotValueReturnZero(totalWeight?.[0].totalWeight),
     };
   }
 
