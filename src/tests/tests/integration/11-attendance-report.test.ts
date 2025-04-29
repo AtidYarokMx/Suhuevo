@@ -23,7 +23,7 @@ describe("POST /api/attendance/import-csv", () => {
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     console.log(uri);
-    await mongoose.connect(uri, { dbName: "test" });
+    await mongoose.connect(uri);
     app = appServer.app;
   });
 
