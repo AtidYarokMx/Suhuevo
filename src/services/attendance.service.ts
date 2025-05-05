@@ -1,29 +1,34 @@
+/* lib */
 import moment from "moment";
 import { ClientSession } from "mongoose";
-import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from "@app/dtos/attendance.dto";
-import { EEmployeeAttendanceScheme, EEmployeStatus, IEmployeSchedule } from "@app/dtos/employee.dto";
+/* models */
 import { ScheduleExceptionModel } from "@app/repositories/mongoose/models/schedule-exception.model";
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";
 import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
 import { AppErrorResponse } from "@app/models/app.response";
+/* services */
+import overtimeService from "./overtime.service";
+/* utils */
 import { consumeSequence } from "@app/utils/sequence";
 import { customLog } from "@app/utils/util.util";
 import { readCsv } from "@app/utils/file.util";
-import overtimeService from "./overtime.service";
+/* dtos */
 import { AppMainMongooseRepo } from "@app/repositories/mongoose";
+import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from "@app/dtos/attendance.dto";
+import { EEmployeeAttendanceScheme, EEmployeStatus, IEmployeSchedule } from "@app/dtos/employee.dto";
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 15;
-  private readonly notWorkableScheduleExceptions = ['Permiso', 'Vaciones', 'Festivo', 'Festivo Trabajado'];
+  private readonly notWorkableScheduleExceptions = ["Permiso", "Vaciones", "Festivo", "Festivo Trabajado"];
   private readonly daysTranslationMap: { [key: string]: string } = {
-    monday: 'lunes',
-    tuesday: 'martes',
-    wednesday: 'miércoles',
-    thursday: 'jueves',
-    friday: 'viernes',
-    saturday: 'sábado',
-    sunday: 'domingo'
+    monday: "lunes",
+    tuesday: "martes",
+    wednesday: "miércoles",
+    thursday: "jueves",
+    friday: "viernes",
+    saturday: "sábado",
+    sunday: "domingo",
   };
 
   // Retorna el rango de semana (de miércoles a martes siguiente) basado en la fecha dada.
@@ -31,9 +36,15 @@ class AttendanceService {
     const weekday = date.isoWeekday(); // Monday=1, Tuesday=2, Wednesday=3, etc.
     let weekStart: moment.Moment;
     if (weekday >= 3) {
-      weekStart = date.clone().subtract(weekday - 3, "days").startOf("day");
+      weekStart = date
+        .clone()
+        .subtract(weekday - 3, "days")
+        .startOf("day");
     } else {
-      weekStart = date.clone().subtract(weekday + 4, "days").startOf("day");
+      weekStart = date
+        .clone()
+        .subtract(weekday + 4, "days")
+        .startOf("day");
     }
     const weekEnd = weekStart.clone().add(6, "days").endOf("day");
     return { weekStart, weekEnd };
@@ -73,18 +84,14 @@ class AttendanceService {
         filter[cleanField] = value;
       }
     }
-    const records = await AttendanceModel.find(filter)
-      .select(selection)
-      .limit(limit)
-      .sort({ createdAt: "desc" });
+    const records = await AttendanceModel.find(filter).select(selection).limit(limit).sort({ createdAt: "desc" });
     if (records.length === 0) return [];
     return this.reformatData(records);
   }
 
   public async update(body: any): Promise<any> {
     const record = await AttendanceModel.findOne({ id: body.id });
-    if (!record)
-      throw new AppErrorResponse({ statusCode: 404, name: "No se encontró la asistencia" });
+    if (!record) throw new AppErrorResponse({ statusCode: 404, name: "No se encontró la asistencia" });
     const allowedFields: (keyof IAttendance)[] = ["isLate"];
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -114,23 +121,22 @@ class AttendanceService {
     const employee = await EmployeeModel.findOne({
       $or: [{ id: employeeId }, { biometricId: employeeId }],
       status: EEmployeStatus.ACTIVE,
-      active: true
+      active: true,
     });
-    if (!employee)
-      throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` });
+    if (!employee) throw new AppErrorResponse({ statusCode: 404, name: `No se encontró el empleado ${employeeId}` });
     const employeeName = employee.fullname();
 
     const existingAttendance = await AttendanceModel.findOne({
       active: true,
       employeeId: employee.id,
-      checkInTime: { $regex: `^${day}` }
+      checkInTime: { $regex: `^${day}` },
     });
     if (existingAttendance)
       throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una asistencia para ${employeeName} el día ${day}` });
     const existingAbsence = await AbsenceModel.findOne({
       active: true,
       employeeId: employee.id,
-      date: { $regex: `^${day}` }
+      date: { $regex: `^${day}` },
     });
     if (existingAbsence)
       throw new AppErrorResponse({ statusCode: 409, name: `Ya hay una ausencia para ${employeeName} el día ${day}` });
@@ -143,16 +149,16 @@ class AttendanceService {
       name: { $nin: this.notWorkableScheduleExceptions },
       $or: [
         { $and: [{ startDate: { $regex: `^${day}` } }, { allDay: true }] },
-        { $and: [{ startDate: { $lte: day } }, { endDate: { $gt: day } }] }
-      ]
+        { $and: [{ startDate: { $lte: day } }, { endDate: { $gt: day } }] },
+      ],
     });
     if ((!scheduleForDay || !scheduleForDay.start) && !scheduleException) {
       throw new AppErrorResponse({
         statusCode: 400,
-        name: `${employeeName} no trabaja el día ${day} (${this.daysTranslationMap[dayOfWeek]})`
+        name: `${employeeName} no trabaja el día ${day} (${this.daysTranslationMap[dayOfWeek]})`,
       });
     }
-    const defaultSchedule = Object.values(employee.schedule).find(x => x?.start && x?.end);
+    const defaultSchedule = Object.values(employee.schedule).find((x) => x?.start && x?.end);
     const scheduleForDayStart = scheduleForDay?.start ?? defaultSchedule?.start;
     const scheduleForDayEnd = scheduleForDay?.end ?? defaultSchedule?.end;
     if (!scheduleForDayStart || !scheduleForDayEnd) {
@@ -181,7 +187,11 @@ class AttendanceService {
         date: day,
         isLate,
       });
-      customLog(`Creando asistencia ${id} para ${employeeName} el día ${day} (CheckIn: ${checkInTime.format("HH:mm:ss")}, CheckOut: ${checkOutTime.format("HH:mm:ss")})`);
+      customLog(
+        `Creando asistencia ${id} para ${employeeName} el día ${day} (CheckIn: ${checkInTime.format(
+          "HH:mm:ss"
+        )}, CheckOut: ${checkOutTime.format("HH:mm:ss")})`
+      );
       await attendanceRecord.save();
       customLog(`Asistencia ${id} registrada para ${employeeName}`);
       // Procesar tiempo extra: se crea una sesión específica para la creación de tiempo extra.
@@ -228,7 +238,11 @@ class AttendanceService {
           date: day,
           isLate,
         });
-        customLog(`Creando asistencia automática ${id} para ${employeeName} el día ${day} (CheckIn: ${checkInTime.format("HH:mm:ss")}, CheckOut: ${autoCheckOutTime.format("HH:mm:ss")})`);
+        customLog(
+          `Creando asistencia automática ${id} para ${employeeName} el día ${day} (CheckIn: ${checkInTime.format(
+            "HH:mm:ss"
+          )}, CheckOut: ${autoCheckOutTime.format("HH:mm:ss")})`
+        );
         await attendanceRecord.save();
         customLog(`Asistencia automática ${id} registrada para ${employeeName}`);
         return { id: attendanceRecord.id };
@@ -259,11 +273,15 @@ class AttendanceService {
 
   // importFromCsv: Procesa el CSV completo sin una transacción global.
   public async importFromCsv(file: Express.Multer.File | undefined): Promise<any> {
+    /* si no llega archivo lanza error */
     if (!file) {
       throw new AppErrorResponse({ statusCode: 400, name: "El archivo CSV es requerido" });
     }
+    /* lectura de csv */
     customLog("Iniciando lectura del CSV...");
     const csvRows = await readCsv(file);
+
+    /* si e csv no tiene registros lanza error */
     if (!csvRows || csvRows.length === 0) {
       throw new AppErrorResponse({ statusCode: 400, name: "El archivo CSV no contiene registros válidos" });
     }
@@ -280,12 +298,14 @@ class AttendanceService {
     customLog("CSV ordenado por empleado y tiempo.");
 
     // Determinar el rango de semana a procesar basado en la fecha mínima del CSV.
-    const allDates = csvRows
-      .map(row => moment(row.time, "DD/MM/YYYY HH:mm"))
-      .filter(m => m.isValid());
+    const allDates = csvRows.map((row) => moment(row.time, "DD/MM/YYYY HH:mm")).filter((m) => m.isValid());
+
+    // si no hay fechas válidas mandar error
     if (allDates.length === 0) {
       throw new AppErrorResponse({ statusCode: 400, name: "No se encontraron fechas válidas en el CSV" });
     }
+
+    // obtener fecha mínima (primer fecha en el registro)
     const minDate = moment.min(allDates);
     const { weekStart, weekEnd } = this.getWeekRange(minDate);
     customLog(`Semana a procesar: ${weekStart.format("YYYY-MM-DD")} a ${weekEnd.format("YYYY-MM-DD")}`);
@@ -304,6 +324,7 @@ class AttendanceService {
       }
       csvDataByEmployee[empId][dayStr].push(m);
     }
+
     // Ordenar cada conjunto de registros.
     for (const empId in csvDataByEmployee) {
       for (const day in csvDataByEmployee[empId]) {
@@ -316,25 +337,36 @@ class AttendanceService {
     const employees = await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE });
     const existingAttendances = await AttendanceModel.find({
       active: true,
-      date: { $gte: weekStart.format("YYYY-MM-DD"), $lte: weekEnd.format("YYYY-MM-DD") }
+      date: { $gte: weekStart.format("YYYY-MM-DD"), $lte: weekEnd.format("YYYY-MM-DD") },
     });
     const existingAbsences = await AbsenceModel.find({
       active: true,
-      date: { $gte: weekStart.format("YYYY-MM-DD"), $lte: weekEnd.format("YYYY-MM-DD") }
+      date: { $gte: weekStart.format("YYYY-MM-DD"), $lte: weekEnd.format("YYYY-MM-DD") },
     });
     const scheduleExceptions = await ScheduleExceptionModel.find({
       active: true,
       name: { $in: this.notWorkableScheduleExceptions },
       $or: [
         { $and: [{ startDate: { $regex: `^${weekStart.format("YYYY-MM-DD")}` } }, { allDay: true }] },
-        { $and: [{ startDate: { $lte: weekEnd.format("YYYY-MM-DD") } }, { endDate: { $gt: weekEnd.format("YYYY-MM-DD") } }] }
-      ]
+        {
+          $and: [
+            { startDate: { $lte: weekEnd.format("YYYY-MM-DD") } },
+            { endDate: { $gt: weekEnd.format("YYYY-MM-DD") } },
+          ],
+        },
+      ],
     });
 
-    let newAttendanceCount = 0;
-    let newAbsenceCount = 0;
+    let automaticAttendanceCount = 0; // variable para conteo de asistencias automáticas
+    let newAttendanceCount = 0; // variable para conteo de asistencias generales
+    let newAbsenceCount = 0; // variable de conteo de ausencias
     const detail: string[] = [];
-    const overtimeRequests: { employeeId: string; scheduleEndTime: moment.Moment; overtimeMinutes: number; employee?: any }[] = [];
+    const overtimeRequests: {
+      employeeId: string;
+      scheduleEndTime: moment.Moment;
+      overtimeMinutes: number;
+      employee?: any;
+    }[] = [];
 
     // Arreglo de días a procesar.
     const daysInRange: string[] = [];
@@ -345,34 +377,49 @@ class AttendanceService {
     }
     customLog(`Días a procesar en la semana: ${daysInRange.join(", ")}`);
 
+    // Hasta aquí el flujo va todo bien.
     // Procesar cada empleado y cada día.
     for (const employee of employees) {
       const employeeName = employee.fullname();
       let empCsvData = csvDataByEmployee[employee.id];
-      if (!empCsvData && employee.biometricId) {
+      if (typeof empCsvData === "undefined" && employee.biometricId) {
         empCsvData = csvDataByEmployee[employee.biometricId];
       }
       for (const dayStr of daysInRange) {
         customLog(`Procesando ${employeeName} para el día ${dayStr}`);
-        // Verificar si ya existe registro.
-        if (existingAttendances.find(a => a.employeeId === employee.id && a.date === dayStr && a.checkOutTime && a.checkOutTime.trim() !== "")) {
+
+        // Verificar si ya existe registro de asistencias.
+        const findAttendances = existingAttendances.find((a) => {
+          return a.employeeId === employee.id && a.date === dayStr && a.checkOutTime && a.checkOutTime.trim() !== "";
+        });
+        // en caso de ya tener asistencia se hace un push a los detalles
+        if (typeof findAttendances !== "undefined") {
           detail.push(`${employeeName} ya tiene asistencia completa para ${dayStr}`);
           customLog(`${employeeName} ya tiene asistencia completa para ${dayStr}`);
           continue;
         }
-        if (existingAbsences.find(a => a.employeeId === employee.id && a.date === dayStr)) {
+
+        // Verificar si ya existe registro de ausencias.
+        const findAbsences = existingAbsences.find((a) => a.employeeId === employee.id && a.date === dayStr);
+        // en caso de ya tener ausencia se hace un push a los detalles
+        if (typeof findAbsences !== "undefined") {
           detail.push(`${employeeName} ya tiene ausencia registrada para ${dayStr}`);
           customLog(`${employeeName} ya tiene ausencia registrada para ${dayStr}`);
           continue;
         }
 
+        // obtengo el nombre del día en minúsculas
         const currentDayOfWeek = moment(dayStr, "YYYY-MM-DD").format("dddd").toLowerCase();
+        // búsqueda de horario del empleado y en caso de no tener regresa null
         const scheduleForDay = employee.schedule ? employee.schedule[currentDayOfWeek as keyof IEmployeSchedule] : null;
-        if (!scheduleForDay || !scheduleForDay.start || !scheduleForDay.end) {
+
+        // verificación extra para ver que tenga los campos necesarios en el horario del empleado
+        if (scheduleForDay == null || !scheduleForDay.start || !scheduleForDay.end) {
           detail.push(`No hay horario definido para ${employeeName} en ${currentDayOfWeek} (${dayStr})`);
           customLog(`No hay horario definido para ${employeeName} en ${currentDayOfWeek} (${dayStr})`);
           continue;
         }
+        // variables de inicio y fin de horario del respectivo día
         const scheduleStartTime = moment(`${dayStr}T${scheduleForDay.start}:00`);
         const scheduleEndTime = moment(`${dayStr}T${scheduleForDay.end}:00`);
 
@@ -380,35 +427,45 @@ class AttendanceService {
         let effectiveCheckIn: moment.Moment;
         let effectiveCheckOut: moment.Moment | null = null;
         let csvDataForDay: { checkInTime: string; checkOutTime?: string } | undefined;
-        if (empCsvData && empCsvData[dayStr] && empCsvData[dayStr].length > 0) {
+
+        // revisa si el usuario se encuentra en los registros del csv que se definió al inicio del método en empCsvData
+        if (typeof empCsvData !== "undefined" && empCsvData[dayStr] && empCsvData[dayStr].length > 0) {
           const times = empCsvData[dayStr];
           effectiveCheckIn = times[0];
+          // en caso haya varios registros el mismo día, verifica que haya diferencia de 60 minutos entre un registro y otro para tomarlo en cuanta como checkOut
           if (times.length > 1 && times[times.length - 1].diff(times[0], "minutes") >= 60) {
             effectiveCheckOut = times[times.length - 1];
           }
+
+          // objeto con checkIn y checkOut del día
           csvDataForDay = {
             checkInTime: effectiveCheckIn.format("YYYY-MM-DD HH:mm:ss"),
             checkOutTime: effectiveCheckOut ? effectiveCheckOut.format("YYYY-MM-DD HH:mm:ss") : undefined,
           };
         } else {
+          // revisión de si el esquema de horario es automático o manual (por checador)
           if (employee.attendanceScheme === EEmployeeAttendanceScheme.AUTOMATIC) {
+            // en caso de que sea automático toma el horario registrado en el empleado
             effectiveCheckIn = moment(`${dayStr}T${scheduleForDay.start}:00`);
             effectiveCheckOut = moment(`${dayStr}T${scheduleForDay.end}:00`);
           } else {
+            // en caso manual almacena en checkIn el horario registrado en el empleado
             effectiveCheckIn = moment(`${dayStr}T${scheduleForDay.start}:00`);
           }
         }
 
-        const delayMinutes = effectiveCheckIn.diff(scheduleStartTime, "minutes");
-        let calculatedOvertime = 0;
+        let calculatedOvertime = 0; // variable para el tiempo de retardo
+
+        // en caso de haber checkOut
         if (effectiveCheckOut) {
           calculatedOvertime = effectiveCheckOut.diff(scheduleEndTime, "minutes");
-          if (calculatedOvertime < 0) calculatedOvertime = 0;
+          if (calculatedOvertime <= 0) calculatedOvertime = 0;
         }
-        const isLate = delayMinutes > this.MAX_TIME_DELAY;
 
         // Insertar registro en BD.
-        if (csvDataForDay) {
+        // en caso de que haya información en csvDataForDay que se definió previamente
+        if (typeof csvDataForDay !== "undefined") {
+          // en caso de que el objeto cuente con un checkOut
           if (csvDataForDay.checkOutTime) {
             const id = "AT" + String(await consumeSequence("attendances")).padStart(8, "0");
             const late = effectiveCheckIn.isAfter(moment(`${dayStr}T${scheduleForDay.start}:00`));
@@ -424,8 +481,16 @@ class AttendanceService {
             try {
               await attendanceRecord.save();
               newAttendanceCount++;
-              detail.push(`Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${csvDataForDay.checkInTime}, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`);
-              customLog(`Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${csvDataForDay.checkInTime}, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`);
+              detail.push(
+                `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${
+                  csvDataForDay.checkInTime
+                }, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`
+              );
+              customLog(
+                `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${
+                  csvDataForDay.checkInTime
+                }, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`
+              );
             } catch (error: unknown) {
               if (error instanceof Error) {
                 detail.push(`Error al insertar asistencia para ${employeeName} en ${dayStr}: ${error.message}`);
@@ -445,13 +510,13 @@ class AttendanceService {
                 employeeId: employee.id,
                 scheduleEndTime,
                 overtimeMinutes: calculatedOvertime,
-                employee
+                employee,
               });
             }
           } else {
             // CSV incompleto => ausencia.
             let reason = "No se hizo el check out";
-            const exception = scheduleExceptions.find(se => se.employeeId === employee.id);
+            const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
             let paidValue = 1;
             if (exception) {
               reason = exception.reason || "Falta Justificada";
@@ -485,6 +550,8 @@ class AttendanceService {
           }
         } else {
           // Sin CSV: según esquema.
+          // en caso de no estar en el csv
+          // revisa si es de horario automático
           if (employee.attendanceScheme === EEmployeeAttendanceScheme.AUTOMATIC) {
             const autoCheckIn = moment(`${dayStr}T${scheduleForDay.start}:00`);
             const autoCheckOut = moment(`${dayStr}T${scheduleForDay.end}:00`);
@@ -501,21 +568,34 @@ class AttendanceService {
             try {
               await attendanceRecord.save();
               newAttendanceCount++;
-              detail.push(`Se INSERTÓ asistencia automática ${id} para ${employeeName} en ${dayStr}`);
-              customLog(`Se INSERTÓ asistencia automática ${id} para ${employeeName} en ${dayStr}`);
+              automaticAttendanceCount++;
+              detail.push(
+                `Se INSERTÓ asistencia automática ${id} para ${employeeName} en ${dayStr} (día ${currentDayOfWeek})`
+              );
+              customLog(
+                `Se INSERTÓ asistencia automática ${id} para ${employeeName} en ${dayStr} (día ${currentDayOfWeek})`
+              );
             } catch (error: unknown) {
               if (error instanceof Error) {
-                detail.push(`Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${error.message}`);
-                customLog(`Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${error.message}`);
+                detail.push(
+                  `Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${error.message}`
+                );
+                customLog(
+                  `Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${error.message}`
+                );
               } else {
-                detail.push(`Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${String(error)}`);
-                customLog(`Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${String(error)}`);
+                detail.push(
+                  `Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${String(error)}`
+                );
+                customLog(
+                  `Error al insertar asistencia automática para ${employeeName} en ${dayStr}: ${String(error)}`
+                );
               }
               continue;
             }
           } else {
             let reason = "No se hizo el check in";
-            const exception = scheduleExceptions.find(se => se.employeeId === employee.id);
+            const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
             let paidValue = 1;
             if (exception) {
               reason = exception.reason || "Falta Justificada";
@@ -577,10 +657,16 @@ class AttendanceService {
             if ((error as any).statusCode === 409) {
               customLog(`Tiempo extra duplicado para ${req.employee?.fullname() || req.employeeId}: ${error.message}`);
             } else {
-              console.error(`Error creando tiempo extra para ${req.employee?.fullname() || req.employeeId}:`, error.message);
+              console.error(
+                `Error creando tiempo extra para ${req.employee?.fullname() || req.employeeId}:`,
+                error.message
+              );
             }
           } else {
-            console.error(`Error creando tiempo extra para ${req.employee?.fullname() || req.employeeId}:`, String(error));
+            console.error(
+              `Error creando tiempo extra para ${req.employee?.fullname() || req.employeeId}:`,
+              String(error)
+            );
           }
         }
       }
@@ -590,6 +676,7 @@ class AttendanceService {
       weekStart: weekStart.format("YYYY-MM-DD"),
       weekEnd: weekEnd.format("YYYY-MM-DD"),
       newAttendances: newAttendanceCount,
+      automaticAttendance: automaticAttendanceCount,
       newAbsences: newAbsenceCount,
       overtimeRequests: overtimeRequests.length,
       detail,
@@ -603,7 +690,7 @@ class AttendanceService {
     const employees = await EmployeeModel.find({
       active: true,
       status: EEmployeStatus.ACTIVE,
-      attendanceScheme: EEmployeeAttendanceScheme.AUTOMATIC
+      attendanceScheme: EEmployeeAttendanceScheme.AUTOMATIC,
     });
     let generated = 0;
     const bulkOps = [];
@@ -611,7 +698,7 @@ class AttendanceService {
       const existing = await AttendanceModel.findOne({
         active: true,
         employeeId: employee.id,
-        checkInTime: { $regex: `^${day}` }
+        checkInTime: { $regex: `^${day}` },
       });
       if (existing) continue;
       const scheduleForDay = employee.schedule ? employee.schedule[dayOfWeek as keyof IEmployeSchedule] : null;
@@ -629,8 +716,8 @@ class AttendanceService {
             checkOutTime: checkOutTime.format("YYYY-MM-DD HH:mm:ss"),
             date: day,
             isLate: false,
-          }
-        }
+          },
+        },
       });
       generated++;
       customLog(`Asistencia automática preparada para ${employee.fullname()} (${id}) en ${day}`);

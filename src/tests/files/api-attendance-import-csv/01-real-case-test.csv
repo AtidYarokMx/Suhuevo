@@ -1,0 +1,662 @@
+Person ID,Name,Department,Time,Attendance Check Point
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,09/04/2025 07:52,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,09/04/2025 17:38,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,09/04/2025 17:38,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,10/04/2025 07:57,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,10/04/2025 17:11,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,11/04/2025 07:51,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,11/04/2025 17:38,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,14/04/2025 07:51,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,14/04/2025 17:23,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,15/04/2025 07:48,Cuahutemoc_Door1_Entrance Card Reader1
+'1,Esmeralda De Jesus Flores Trujillo,Proavicol,15/04/2025 17:15,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,09/04/2025 08:01,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,09/04/2025 15:51,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,10/04/2025 08:13,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,10/04/2025 15:44,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,10/04/2025 15:44,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,11/04/2025 07:58,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,11/04/2025 14:41,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,12/04/2025 07:49,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,12/04/2025 13:02,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,14/04/2025 08:06,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,14/04/2025 15:56,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,15/04/2025 08:13,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,15/04/2025 15:55,Cuahutemoc_Door1_Entrance Card Reader1
+'1003,Antonio Marquez Quintero,Proavicol,15/04/2025 15:55,Cuahutemoc_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,09/04/2025 06:29,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,09/04/2025 17:00,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,10/04/2025 06:12,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,10/04/2025 16:43,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,11/04/2025 06:27,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,11/04/2025 17:07,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,13/04/2025 06:44,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,13/04/2025 16:28,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,14/04/2025 06:32,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,14/04/2025 20:04,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,15/04/2025 06:37,Queseria_Door1_Entrance Card Reader1
+'11,J. Natividad Victoriano Lozano,Proavicol,15/04/2025 16:44,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,09/04/2025 06:58,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,09/04/2025 15:50,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,10/04/2025 07:16,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,10/04/2025 15:57,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,11/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,11/04/2025 15:57,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,12/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,14/04/2025 07:13,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,14/04/2025 16:57,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,15/04/2025 07:19,Queseria_Door1_Entrance Card Reader1
+'13,Beatriz Alcaraz Barajas,Proavicol,15/04/2025 15:55,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,09/04/2025 06:58,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,09/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,10/04/2025 07:16,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,10/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,11/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,11/04/2025 16:02,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,12/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,12/04/2025 15:27,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,14/04/2025 07:13,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,14/04/2025 17:07,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,15/04/2025 07:18,Queseria_Door1_Entrance Card Reader1
+'14,Maria Elena Hern�ndez Rosales,Proavicol,15/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,09/04/2025 06:58,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,09/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,10/04/2025 07:17,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,10/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,11/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,11/04/2025 16:05,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,12/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,12/04/2025 15:29,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,14/04/2025 07:14,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,14/04/2025 17:08,Queseria_Door1_Entrance Card Reader1
+'15,Mar�a Martina Gildo Zepeda,Proavicol,15/04/2025 16:04,Queseria_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,09/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,10/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,10/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,11/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,11/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,12/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,12/04/2025 15:56,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,13/04/2025 06:57,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,13/04/2025 16:26,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,14/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,14/04/2025 16:02,Palmillas_Door1_Entrance Card Reader1
+'17,Jos� Joel Bracamontes Ponce,Proavicol,14/04/2025 16:05,Palmillas_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,09/04/2025 06:58,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,09/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,10/04/2025 07:17,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,10/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,11/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,11/04/2025 16:05,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,12/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,12/04/2025 15:29,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,14/04/2025 07:14,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,14/04/2025 17:07,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,15/04/2025 07:19,Queseria_Door1_Entrance Card Reader1
+'18,Ana Mar�a P�rez Quintero,Proavicol,15/04/2025 16:04,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,09/04/2025 06:58,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,09/04/2025 15:57,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,10/04/2025 07:17,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,10/04/2025 15:57,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,11/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,11/04/2025 15:58,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,12/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,12/04/2025 15:19,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,14/04/2025 07:14,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,14/04/2025 17:09,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,15/04/2025 07:18,Queseria_Door1_Entrance Card Reader1
+'19,Salvador Leyva Trillo,Proavicol,15/04/2025 16:00,Queseria_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,09/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,09/04/2025 16:26,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,10/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,10/04/2025 16:09,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,11/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,11/04/2025 16:08,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,12/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,12/04/2025 16:05,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,14/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,14/04/2025 16:24,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,15/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'20,Hector Manuel Preciado Cruz,Proavicol,15/04/2025 16:09,Palmillas_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,09/04/2025 08:14,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,09/04/2025 17:09,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,10/04/2025 08:12,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,10/04/2025 17:14,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,11/04/2025 08:16,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,11/04/2025 17:01,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,14/04/2025 08:12,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,14/04/2025 17:09,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,15/04/2025 08:12,Cuahutemoc_Door1_Entrance Card Reader1
+'21,Luis Omar Campos Ruiz,Proavicol,15/04/2025 17:04,Cuahutemoc_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,09/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,09/04/2025 16:04,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,09/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,10/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,10/04/2025 16:10,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,11/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,11/04/2025 15:40,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,12/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,12/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,14/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,14/04/2025 15:56,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,15/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'22,Josue Miguel Ortiz Garcia,Proavicol,15/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,10/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,10/04/2025 15:58,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,11/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,12/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,12/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,13/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,13/04/2025 16:29,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,14/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,14/04/2025 15:54,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,15/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'23,Jos� Eduardo Aguirre Mungu�a,Proavicol,15/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,09/04/2025 08:24,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,09/04/2025 17:57,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,10/04/2025 07:48,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,10/04/2025 17:21,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,11/04/2025 07:52,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,11/04/2025 17:46,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,14/04/2025 07:46,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,14/04/2025 17:25,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,15/04/2025 07:45,Cuahutemoc_Door1_Entrance Card Reader1
+'2423,Eliseo Castllanos Ramirez,Proavicol,15/04/2025 17:15,Cuahutemoc_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,10/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,11/04/2025 15:51,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,12/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,12/04/2025 15:54,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,13/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,13/04/2025 16:16,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,14/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,14/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,15/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'25,Erik Omar Vega Bautista,Proavicol,15/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,09/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,09/04/2025 16:08,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,10/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,10/04/2025 16:06,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,11/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,11/04/2025 15:26,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,12/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,12/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,14/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,14/04/2025 16:51,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,15/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'271,Gilberto Angel Nu�ez Reyes,Proavicol,15/04/2025 15:35,Palmillas_Door1_Entrance Card Reader1
+'281,Juan Manuel Ponce Martinez,Proavicol,09/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'281,Juan Manuel Ponce Martinez,Proavicol,09/04/2025 16:02,Palmillas_Door1_Entrance Card Reader1
+'281,Juan Manuel Ponce Martinez,Proavicol,10/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'281,Juan Manuel Ponce Martinez,Proavicol,12/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'281,Juan Manuel Ponce Martinez,Proavicol,12/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'281,Juan Manuel Ponce Martinez,Proavicol,13/04/2025 06:59,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,09/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,09/04/2025 16:05,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,11/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,11/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,12/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,13/04/2025 06:56,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,13/04/2025 16:22,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,14/04/2025 15:58,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,15/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'282,Cristopher Sarmienta Peralta,Proavicol,15/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,09/04/2025 07:53,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,09/04/2025 17:17,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,10/04/2025 08:08,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,10/04/2025 17:08,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,11/04/2025 08:10,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,11/04/2025 17:27,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,14/04/2025 08:12,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,14/04/2025 17:09,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,15/04/2025 08:11,Cuahutemoc_Door1_Entrance Card Reader1
+'283,Mayra Sugey Zamora Alvarez,Proavicol,15/04/2025 17:08,Cuahutemoc_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,10/04/2025 07:06,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,10/04/2025 15:51,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,11/04/2025 07:06,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,11/04/2025 15:39,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,12/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,12/04/2025 15:53,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,13/04/2025 06:57,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,13/04/2025 16:30,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,14/04/2025 06:57,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,14/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,15/04/2025 06:59,Palmillas_Door1_Entrance Card Reader1
+'284,Santiago Ortiz Aguilar,Proavicol,15/04/2025 15:48,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,09/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,09/04/2025 16:13,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,10/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,10/04/2025 15:55,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,11/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,11/04/2025 15:44,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,12/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,12/04/2025 15:58,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,14/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,14/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,15/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,15/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'29,Ma. Consepcion Munguia Magallon,Proavicol,15/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,09/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,09/04/2025 15:42,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,10/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,10/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,10/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,11/04/2025 06:56,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,11/04/2025 15:40,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,12/04/2025 07:04,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,12/04/2025 17:39,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,12/04/2025 17:41,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,13/04/2025 07:11,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,13/04/2025 16:16,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,15/04/2025 06:57,Palmillas_Door1_Entrance Card Reader1
+'292,Adrian de Jesus Santana Martinez,Proavicol,15/04/2025 15:39,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,09/04/2025 07:11,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,09/04/2025 15:48,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,10/04/2025 07:04,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,10/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,11/04/2025 07:06,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,11/04/2025 15:31,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,12/04/2025 07:04,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,12/04/2025 15:47,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,15/04/2025 06:59,Palmillas_Door1_Entrance Card Reader1
+'294,Jaime Guerrero Gonzales,Proavicol,15/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,09/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,09/04/2025 16:02,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,10/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,10/04/2025 16:11,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,11/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,11/04/2025 15:51,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,12/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,12/04/2025 15:51,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,13/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,13/04/2025 16:27,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,15/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'299,Juan Camilio Ramirez Figuera,Proavicol,15/04/2025 15:42,Palmillas_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,09/04/2025 07:47,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,09/04/2025 15:50,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,10/04/2025 07:46,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,10/04/2025 15:51,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,12/04/2025 07:49,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,12/04/2025 13:03,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,14/04/2025 07:45,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,14/04/2025 15:52,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,15/04/2025 07:47,Cuahutemoc_Door1_Entrance Card Reader1
+'3,Citlali Guadalupe Perez Meneses,Proavicol,15/04/2025 15:55,Cuahutemoc_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,09/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,09/04/2025 16:17,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,10/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,10/04/2025 16:01,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,11/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,11/04/2025 15:51,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,13/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,13/04/2025 16:18,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,14/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,14/04/2025 16:03,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,15/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'30,Ma. Guadalupe Ramirez Aguayo,Proavicol,15/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,09/04/2025 07:11,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,09/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,10/04/2025 07:06,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,10/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,11/04/2025 07:06,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,12/04/2025 07:04,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,14/04/2025 06:57,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,14/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,15/04/2025 06:58,Palmillas_Door1_Entrance Card Reader1
+'302,Aguirre  Castellanos Ulises,Proavicol,15/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,09/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,09/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,10/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,10/04/2025 16:08,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,11/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,11/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,12/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,12/04/2025 15:58,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,13/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,13/04/2025 16:25,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,14/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'303,Zamora Santillan Isis Maravi,Proavicol,14/04/2025 16:01,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,09/04/2025 07:17,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,09/04/2025 15:39,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,10/04/2025 07:15,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,10/04/2025 14:56,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,11/04/2025 07:10,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,11/04/2025 15:26,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,12/04/2025 07:15,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,12/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,14/04/2025 07:09,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,14/04/2025 16:49,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,15/04/2025 07:12,Palmillas_Door1_Entrance Card Reader1
+'304,Edgar Yair Avila Hernandez,Proavicol,15/04/2025 15:33,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,09/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,09/04/2025 16:17,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,10/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,10/04/2025 16:01,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,11/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,11/04/2025 16:02,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,13/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,13/04/2025 16:28,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,14/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,14/04/2025 16:16,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,15/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'31,Dulce Lizbeth Mata Avalos,Proavicol,15/04/2025 16:04,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,10/04/2025 06:53,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,10/04/2025 16:08,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,11/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,11/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,12/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,12/04/2025 16:02,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,13/04/2025 06:58,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,13/04/2025 16:28,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,14/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,14/04/2025 16:16,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,15/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'34,Norma Chavez Medrano,Proavicol,15/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,09/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,09/04/2025 16:28,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,10/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,10/04/2025 16:05,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,11/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,11/04/2025 15:44,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,12/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,12/04/2025 15:55,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,14/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,14/04/2025 16:03,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,15/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'35,Ana Luisa Cervantes Rogelio,Proavicol,15/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,09/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,09/04/2025 16:15,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,10/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,10/04/2025 15:56,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,11/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,11/04/2025 15:49,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,12/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,12/04/2025 15:54,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,13/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,13/04/2025 16:20,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,14/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'36,Ma de Lourdes Madrigal Mendez,Proavicol,14/04/2025 16:04,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,09/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,09/04/2025 16:27,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,10/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,10/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,11/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,11/04/2025 16:01,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,13/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,13/04/2025 06:56,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,13/04/2025 16:28,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,14/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,14/04/2025 16:15,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,15/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'37,Maria Guadalupe Galarza Vizcarra,Proavicol,15/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,09/04/2025 07:02,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,09/04/2025 15:44,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,10/04/2025 07:05,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,10/04/2025 15:39,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,11/04/2025 07:07,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,12/04/2025 07:08,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,13/04/2025 07:10,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,13/04/2025 12:50,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,14/04/2025 07:10,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,14/04/2025 15:41,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,15/04/2025 07:01,Palmillas_Door1_Entrance Card Reader1
+'39,Juan Manuel Marcial Ramirez,Proavicol,15/04/2025 15:34,Palmillas_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,09/04/2025 07:53,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,09/04/2025 15:51,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,10/04/2025 07:52,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,10/04/2025 15:45,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,11/04/2025 07:55,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,12/04/2025 08:06,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,12/04/2025 12:55,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,14/04/2025 08:02,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,14/04/2025 15:49,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,15/04/2025 08:03,Cuahutemoc_Door1_Entrance Card Reader1
+'4,Alvaro Mu�oz Lopez,Proavicol,15/04/2025 15:50,Cuahutemoc_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,09/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,09/04/2025 16:25,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,10/04/2025 06:44,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,10/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,11/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,13/04/2025 07:16,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,14/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,14/04/2025 16:24,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,15/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'40,Edwin Ezequiel Chavez Ramos,Proavicol,15/04/2025 16:05,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,09/04/2025 07:02,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,09/04/2025 15:46,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,10/04/2025 07:06,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,10/04/2025 15:42,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,11/04/2025 07:07,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,11/04/2025 15:11,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,12/04/2025 07:09,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,12/04/2025 15:46,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,13/04/2025 07:10,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,13/04/2025 12:51,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,14/04/2025 07:10,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,14/04/2025 15:47,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,15/04/2025 07:01,Palmillas_Door1_Entrance Card Reader1
+'41,Catherine Estefania Vega Batista,Proavicol,15/04/2025 15:36,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,09/04/2025 07:17,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,09/04/2025 15:38,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,10/04/2025 07:15,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,10/04/2025 15:37,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,11/04/2025 07:10,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,12/04/2025 07:15,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,12/04/2025 15:38,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,14/04/2025 07:08,Palmillas_Door1_Entrance Card Reader1
+'42,Alejandro Oregel Flores,Proavicol,15/04/2025 15:33,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,09/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,09/04/2025 16:03,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,10/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,10/04/2025 16:01,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,11/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,11/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,12/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,12/04/2025 15:55,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,13/04/2025 06:55,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,13/04/2025 16:19,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,15/04/2025 06:49,Palmillas_Door1_Entrance Card Reader1
+'43,Jose de Jes�s Trillo Guerrero,Proavicol,15/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'45,Antonio de Jesus Silva Gutierrez,Proavicol,09/04/2025 07:02,Palmillas_Door1_Entrance Card Reader1
+'45,Antonio de Jesus Silva Gutierrez,Proavicol,10/04/2025 07:05,Palmillas_Door1_Entrance Card Reader1
+'45,Antonio de Jesus Silva Gutierrez,Proavicol,11/04/2025 07:07,Palmillas_Door1_Entrance Card Reader1
+'45,Antonio de Jesus Silva Gutierrez,Proavicol,12/04/2025 07:07,Palmillas_Door1_Entrance Card Reader1
+'45,Antonio de Jesus Silva Gutierrez,Proavicol,14/04/2025 06:58,Palmillas_Door1_Entrance Card Reader1
+'45,Antonio de Jesus Silva Gutierrez,Proavicol,15/04/2025 07:00,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,09/04/2025 07:17,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,09/04/2025 15:38,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,10/04/2025 07:28,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,10/04/2025 15:37,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,11/04/2025 07:17,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,12/04/2025 07:07,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,12/04/2025 16:10,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,14/04/2025 07:11,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,14/04/2025 16:50,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,15/04/2025 06:58,Palmillas_Door1_Entrance Card Reader1
+'46,Salvador Rivera Centeno,Proavicol,15/04/2025 15:32,Palmillas_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,09/04/2025 07:58,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,09/04/2025 15:50,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,10/04/2025 08:04,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,10/04/2025 15:47,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,11/04/2025 08:04,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,11/04/2025 15:35,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,12/04/2025 08:10,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,14/04/2025 15:51,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,15/04/2025 08:00,Cuahutemoc_Door1_Entrance Card Reader1
+'47,Ram�n Rivera Centeno,Proavicol,15/04/2025 15:51,Cuahutemoc_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,09/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,09/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,10/04/2025 15:55,Palmillas_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,11/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,11/04/2025 16:04,Palmillas_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,13/04/2025 06:54,Palmillas_Door1_Entrance Card Reader1
+'49,Marisbel Munguia Estrada,Proavicol,13/04/2025 16:20,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,11/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,11/04/2025 16:02,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,13/04/2025 06:51,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,13/04/2025 16:28,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,14/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,14/04/2025 16:17,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,15/04/2025 06:43,Palmillas_Door1_Entrance Card Reader1
+'50,Crisol Arely Solis Gonzalez,Proavicol,15/04/2025 16:03,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,09/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,09/04/2025 16:08,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,09/04/2025 16:09,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,10/04/2025 06:44,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,10/04/2025 16:06,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,10/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,11/04/2025 06:44,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,11/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,11/04/2025 15:53,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,11/04/2025 15:55,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,12/04/2025 07:07,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,12/04/2025 07:08,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,12/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,12/04/2025 15:51,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,14/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,14/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,14/04/2025 15:50,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,15/04/2025 06:44,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,15/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'51,Marcos Bautista Flores,Proavicol,15/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,09/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,09/04/2025 15:52,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,10/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,10/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,10/04/2025 16:07,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,12/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,12/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,12/04/2025 15:59,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,13/04/2025 06:52,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,13/04/2025 16:23,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,13/04/2025 16:25,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,14/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,14/04/2025 15:54,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,15/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,15/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'52,Ma. Guadalupe Munguia P�rez,Proavicol,15/04/2025 15:47,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,09/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,09/04/2025 15:55,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,11/04/2025 06:44,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,11/04/2025 15:48,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,12/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,12/04/2025 15:53,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,13/04/2025 06:59,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,13/04/2025 16:24,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,13/04/2025 16:25,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,14/04/2025 06:48,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,14/04/2025 16:00,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,15/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'54,Heidi Yazm�n Ramos Alcaraz,Proavicol,15/04/2025 15:47,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,09/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,09/04/2025 15:46,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,10/04/2025 06:46,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,10/04/2025 15:42,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,12/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,12/04/2025 15:44,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,13/04/2025 06:50,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,13/04/2025 14:46,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,14/04/2025 06:47,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,14/04/2025 15:45,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,15/04/2025 06:45,Palmillas_Door1_Entrance Card Reader1
+'59,Veronica Alcaraz Martinez,Proavicol,15/04/2025 15:38,Palmillas_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,09/04/2025 07:03,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,09/04/2025 16:05,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,10/04/2025 07:17,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,10/04/2025 16:02,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,11/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,11/04/2025 16:19,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,12/04/2025 07:13,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,12/04/2025 15:19,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,14/04/2025 07:15,Queseria_Door1_Entrance Card Reader1
+'62,Antonio Avalos Ramirez,Proavicol,14/04/2025 17:12,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,09/04/2025 06:57,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,09/04/2025 15:50,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,10/04/2025 07:17,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,10/04/2025 15:47,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,11/04/2025 07:10,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,11/04/2025 16:01,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,12/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,12/04/2025 15:19,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,14/04/2025 07:13,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,14/04/2025 17:02,Queseria_Door1_Entrance Card Reader1
+'63,Yael Salomon Hern�ndez Rosales,Proavicol,15/04/2025 15:47,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,09/04/2025 06:59,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,09/04/2025 15:54,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,10/04/2025 07:17,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,10/04/2025 15:57,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,11/04/2025 07:11,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,11/04/2025 16:21,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,12/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,12/04/2025 15:31,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,14/04/2025 07:13,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,15/04/2025 07:19,Queseria_Door1_Entrance Card Reader1
+'64,Miguel Angel Avalos Alcaraz,Proavicol,15/04/2025 15:57,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,09/04/2025 15:51,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,10/04/2025 15:55,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,11/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,11/04/2025 15:52,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,12/04/2025 07:12,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,12/04/2025 15:21,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,14/04/2025 07:14,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,14/04/2025 16:58,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,15/04/2025 07:19,Queseria_Door1_Entrance Card Reader1
+'66,Maribel Zamora L�pez,Proavicol,15/04/2025 15:51,Queseria_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,09/04/2025 08:08,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,09/04/2025 17:39,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,10/04/2025 08:02,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,10/04/2025 17:09,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,11/04/2025 07:59,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,11/04/2025 17:51,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,14/04/2025 08:04,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,14/04/2025 17:22,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,15/04/2025 08:05,Cuahutemoc_Door1_Entrance Card Reader1
+'7,Angel Lopez Delgado,Proavicol,15/04/2025 17:18,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,09/04/2025 07:47,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,09/04/2025 15:58,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,10/04/2025 07:46,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,10/04/2025 15:52,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,11/04/2025 07:48,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,11/04/2025 15:49,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,12/04/2025 07:49,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,14/04/2025 07:45,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,14/04/2025 15:54,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,15/04/2025 07:44,Cuahutemoc_Door1_Entrance Card Reader1
+'71,Rafael Aguirre Carrillo,Proavicol,15/04/2025 15:56,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,09/04/2025 07:52,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,09/04/2025 13:09,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,10/04/2025 07:57,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,10/04/2025 11:59,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,11/04/2025 07:51,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,11/04/2025 13:04,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,14/04/2025 07:51,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,14/04/2025 12:13,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,15/04/2025 07:48,Cuahutemoc_Door1_Entrance Card Reader1
+'73,Ma de los Angeles Michel Solis,Proavicol,15/04/2025 12:45,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,09/04/2025 07:47,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,09/04/2025 15:58,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,10/04/2025 07:52,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,10/04/2025 15:43,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,11/04/2025 07:55,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,11/04/2025 15:48,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,14/04/2025 08:05,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,14/04/2025 15:53,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,15/04/2025 08:07,Cuahutemoc_Door1_Entrance Card Reader1
+'77,Kevin Benjamin Gonzalez Michel,Proavicol,15/04/2025 15:56,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,09/04/2025 07:53,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,09/04/2025 15:57,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,10/04/2025 07:50,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,10/04/2025 15:47,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,11/04/2025 07:54,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,11/04/2025 15:52,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,12/04/2025 07:52,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,15/04/2025 08:12,Cuahutemoc_Door1_Entrance Card Reader1
+'8,Miguel Ruiz Valadez,Proavicol,15/04/2025 15:52,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,10/04/2025 08:52,Palmillas_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,09/04/2025 08:16,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,09/04/2025 15:51,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,10/04/2025 15:45,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,11/04/2025 08:14,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,12/04/2025 13:06,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,14/04/2025 15:49,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,15/04/2025 08:25,Cuahutemoc_Door1_Entrance Card Reader1
+'9,Luis Roberto Alcaraz Alcaraz,Proavicol,15/04/2025 15:50,Cuahutemoc_Door1_Entrance Card Reader1
