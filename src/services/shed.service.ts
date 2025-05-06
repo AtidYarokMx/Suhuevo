@@ -1,33 +1,29 @@
 /* librerías externas */
-import { type ClientSession } from 'mongoose'
+import { type ClientSession } from "mongoose";
 
 /* modelos */
-import { ShedModel } from '@app/repositories/mongoose/models/shed.model'
-import { ShedHistoryModel } from '@app/repositories/mongoose/history/shed.history-model'
+import { ShedModel } from "@app/repositories/mongoose/models/shed.model";
+import { ShedHistoryModel } from "@app/repositories/mongoose/history/shed.history-model";
 
 /* utilidades */
-import { customLog } from '@app/utils/util.util'
+import { customLog } from "@app/utils/util.util";
 
 /* dtos e interfaces */
-import { createShedBody, initializeShedBody, IShed, ShedStatus } from '@app/dtos/shed.dto'
-import { AppErrorResponse } from '@app/models/app.response'
-import { AppLocals } from '@app/interfaces/auth.dto'
-import { Types } from '@app/repositories/mongoose'
-import { DailyRecordModel } from '@app/repositories/mongoose/models/dailyRecord.model'
-import { WeeklyRecordModel } from '@app/repositories/mongoose/models/weeklyRecord.model'
-import { getAdminWeekRange } from '@app/utils/date.util'
-import { BoxProductionModel } from '@app/repositories/mongoose/models/box-production.model'
-import { updateFarm } from '@app/dtos/farm.dto'
-import { getCurrentWeekRange } from '@app/utils/week.util'
-
+import { createShedBody, initializeShedBody, IShed, ShedStatus } from "@app/dtos/shed.dto";
+import { AppErrorResponse } from "@app/models/app.response";
+import { AppLocals } from "@app/interfaces/auth.dto";
+import { Types } from "@app/repositories/mongoose";
+import { DailyRecordModel } from "@app/repositories/mongoose/models/dailyRecord.model";
+import { WeeklyRecordModel } from "@app/repositories/mongoose/models/weeklyRecord.model";
+import { getAdminWeekRange } from "@app/utils/date.util";
+import { BoxProductionModel } from "@app/repositories/mongoose/models/box-production.model";
+import { updateFarm } from "@app/dtos/farm.dto";
+import { getCurrentWeekRange } from "@app/utils/week.util";
 
 /**
  * 📌 Servicio para la gestión de casetas (Sheds)
  */
 class ShedService {
-
-
-
   /**
    * 🐣 Calcula la edad en semanas de la parvada según la fecha de nacimiento
    */
@@ -91,12 +87,7 @@ class ShedService {
     }
   }
 
-  async initializeShed(
-    _id: string,
-    body: initializeShedBody,
-    session: ClientSession,
-    locals: AppLocals
-  ) {
+  async initializeShed(_id: string, body: initializeShedBody, session: ClientSession, locals: AppLocals) {
     customLog(`🚀 Inicializando caseta ${_id} con datos:`, body);
     try {
       const user = locals.user._id;
@@ -127,7 +118,6 @@ class ShedService {
           message: "La fecha de nacimiento es obligatoria.",
         });
       }
-
 
       // ✅ Calculamos la edad de la parvada en semanas
       const ageWeeks = this.calculateFlockAgeWeeks(birthDate);
@@ -200,8 +190,6 @@ class ShedService {
     }
   }
 
-
-
   /**
    * 🔄 Cambia el estado de una caseta asegurando el flujo correcto.
    */
@@ -220,16 +208,36 @@ class ShedService {
     };
 
     if (!validTransitions[shed.status]?.includes(newStatus)) {
-      throw new AppErrorResponse({ name: "InvalidStatusChange", statusCode: 400, message: `No se puede cambiar a '${newStatus}'.` });
+      throw new AppErrorResponse({
+        name: "InvalidStatusChange",
+        statusCode: 400,
+        message: `No se puede cambiar a '${newStatus}'.`,
+      });
     }
 
     if (shed.status === ShedStatus.PRODUCTION && newStatus === ShedStatus.INACTIVE) {
       customLog("🚀 Finalizando producción y guardando resumen...");
 
       const weeklySummary = await this.getTotalSummary(_id);
-      await ShedHistoryModel.create([{ shedId: shed._id, generationId: shed.generationId, change: { status: newStatus, summary: weeklySummary }, updatedBy: user }], { session });
+      await ShedHistoryModel.create(
+        [
+          {
+            shedId: shed._id,
+            generationId: shed.generationId,
+            change: { status: newStatus, summary: weeklySummary },
+            updatedBy: user,
+          },
+        ],
+        { session }
+      );
 
-      shed.set({ initialHensCount: 0, ageWeeks: 0, status: ShedStatus.INACTIVE, generationId: "0", lastUpdateBy: user });
+      shed.set({
+        initialHensCount: 0,
+        ageWeeks: 0,
+        status: ShedStatus.INACTIVE,
+        generationId: "0",
+        lastUpdateBy: user,
+      });
     } else {
       shed.status = newStatus;
       shed.lastUpdateBy = user;
@@ -255,6 +263,7 @@ class ShedService {
     session: ClientSession,
     locals: AppLocals
   ) {
+    console.log(dailyData);
     const user = locals.user._id;
     const { weekStart, weekEnd } = await getCurrentWeekRange();
     const captureDay = new Date(dailyData.captureDate);
@@ -263,13 +272,13 @@ class ShedService {
     customLog(`📆 Fecha de captura: ${captureDay.toISOString()}`);
     customLog(`🗓️ Semana administrativa: ${weekStart.toISOString()} - ${weekEnd.toISOString()}`);
 
-    if (captureDay < weekStart || captureDay > weekEnd) {
-      throw new AppErrorResponse({
-        statusCode: 400,
-        name: "InvalidCaptureDate",
-        message: `Fecha fuera de la semana administrativa (${weekStart.toISOString()} - ${weekEnd.toISOString()})`,
-      });
-    }
+    // if (captureDay < weekStart || captureDay > weekEnd) {
+    //   throw new AppErrorResponse({
+    //     statusCode: 400,
+    //     name: "InvalidCaptureDate",
+    //     message: `Fecha fuera de la semana administrativa (${weekStart.toISOString()} - ${weekEnd.toISOString()})`,
+    //   });
+    // }
 
     // 🔹 Obtener datos de la caseta
     const shed = await ShedModel.findById(shedId).session(session).exec();
@@ -286,7 +295,7 @@ class ShedService {
     // 🔹 Obtener la mortalidad acumulada antes de la fecha de captura
     const previousMortality = await DailyRecordModel.aggregate([
       { $match: { shedId: new Types.ObjectId(shedId), date: { $lt: captureDay } } },
-      { $group: { _id: null, totalMortality: { $sum: "$mortality" } } }
+      { $group: { _id: null, totalMortality: { $sum: "$mortality" } } },
     ])
       .session(session)
       .exec();
@@ -297,7 +306,10 @@ class ShedService {
     // 🔍 Buscar producción de cajas y huevos del día
     const boxProductionRecords = await BoxProductionModel.find({
       shed: shedId,
-      createdAt: { $gte: new Date(captureDay.setUTCHours(0, 0, 0, 0)), $lt: new Date(captureDay.setUTCHours(23, 59, 59, 999)) },
+      createdAt: {
+        $gte: new Date(captureDay.setUTCHours(0, 0, 0, 0)),
+        $lt: new Date(captureDay.setUTCHours(23, 59, 59, 999)),
+      },
       status: { $ne: 99 },
     })
       .select("totalEggs netWeight")
@@ -362,8 +374,10 @@ class ShedService {
     let weeklyRecord = await WeeklyRecordModel.findOne({
       shedId: shedId,
       weekStart: weekStart,
-      generationId: shed.generationId
-    }).session(session).exec();
+      generationId: shed.generationId,
+    })
+      .session(session)
+      .exec();
 
     if (!weeklyRecord) {
       customLog(`🆕 Creando nuevo registro semanal.`);
@@ -389,7 +403,7 @@ class ShedService {
       weeklyRecord.totalMortality += dailyData.mortality - previousData.mortality;
       weeklyRecord.totalProducedBoxes += producedBoxes - previousData.producedBoxes;
       weeklyRecord.totalProducedEggs += totalProducedEggs - previousData.producedEggs;
-      weeklyRecord.totalNetWeight += totalNetWeight - (previousData.avgEggWeight * previousData.producedEggs);
+      weeklyRecord.totalNetWeight += totalNetWeight - previousData.avgEggWeight * previousData.producedEggs;
       weeklyRecord.avgEggWeight = avgEggWeight;
       weeklyRecord.avgHensWeight = dailyData.avgHensWeight;
     }
@@ -399,7 +413,6 @@ class ShedService {
     customLog(`✅ Captura de datos diaria finalizada.`);
     return record;
   }
-
 
   /**
    * 📊 Obtiene el historial de todas las generaciones de una caseta
@@ -431,8 +444,8 @@ class ShedService {
           totalProducedBoxes: { $sum: "$totalProducedBoxes" },
           totalMortality: { $sum: "$totalMortality" },
           boxesByType: { $push: "$boxesByType" },
-        }
-      }
+        },
+      },
     ]).exec();
 
     return summary[0] || {};
@@ -459,7 +472,6 @@ class ShedService {
     return await WeeklyRecordModel.findOne({ shedId, weekStart: new Date(weekStart) }).exec();
   }
 
-
   /**
    * 📊 Obtiene el resumen total desde el inicio de la generación actual hasta hoy, incluyendo cajas por tipo.
    */
@@ -474,8 +486,8 @@ class ShedService {
       {
         $match: {
           shedId: new Types.ObjectId(shedId),
-          generationId // Filtrar solo los registros de la generación actual
-        }
+          generationId, // Filtrar solo los registros de la generación actual
+        },
       },
       {
         $group: {
@@ -485,8 +497,8 @@ class ShedService {
           totalProducedBoxes: { $sum: "$totalProducedBoxes" },
           totalMortality: { $sum: "$totalMortality" },
           boxesByType: { $push: "$boxesByType" }, // Agregamos las cajas por tipo
-        }
-      }
+        },
+      },
     ]).exec();
 
     return summary[0] || {};
@@ -528,9 +540,10 @@ class ShedService {
         });
       }
 
-      const farmData = (shed.farm && typeof shed.farm === "object" && "name" in shed.farm)
-        ? { id: shed.farm._id, name: shed.farm.name }
-        : { id: shed.farm as Types.ObjectId, name: "Nombre no disponible" };
+      const farmData =
+        shed.farm && typeof shed.farm === "object" && "name" in shed.farm
+          ? { id: shed.farm._id, name: shed.farm.name }
+          : { id: shed.farm as Types.ObjectId, name: "Nombre no disponible" };
 
       // 🔹 Obtener la semana administrativa activa
       const { weekStart, weekEnd } = await getCurrentWeekRange();
@@ -555,12 +568,10 @@ class ShedService {
       customLog(`🟢 Último registro semanal encontrado: ${latestWeeklyRecord ? "Sí" : "No"}`);
 
       // 🔹 Obtener Producción de Cajas y Huevos de `BoxProductionModel` SOLO DESDE `weekStart`
-      const boxProductions = await BoxProductionModel.find(
-        {
-          shed: _id,
-          createdAt: { $gte: weekStart } // ✅ Buscar producción solo desde `weekStart`
-        }
-      )
+      const boxProductions = await BoxProductionModel.find({
+        shed: _id,
+        createdAt: { $gte: weekStart }, // ✅ Buscar producción solo desde `weekStart`
+      })
         .select("totalEggs totalNetWeight")
         .lean();
 
@@ -582,7 +593,7 @@ class ShedService {
         avgEggWeight: 0,
         avgHensWeight: 0,
         weekStart: null,
-        weekEnd: null
+        weekEnd: null,
       };
 
       // 🔹 Sobreescribir `totalProducedBoxes` y `totalProducedEggs` con los datos de **esta semana**
@@ -600,7 +611,7 @@ class ShedService {
         {
           weekStart: 1,
           totalFoodConsumedKg: 1,
-          totalHensAlive: 1
+          totalHensAlive: 1,
         }
       )
         .sort({ weekStart: 1 })
@@ -609,7 +620,7 @@ class ShedService {
       const chartsData = weeklyRecords.map((record) => ({
         week: record.weekStart ? record.weekStart.toISOString().split("T")[0] : "No data",
         foodConsumedKG: record.totalFoodConsumedKg,
-        hensAlive: record.totalHensAlive
+        hensAlive: record.totalHensAlive,
       }));
 
       customLog(`📊 Total de registros históricos encontrados: ${chartsData.length}`);
@@ -626,7 +637,7 @@ class ShedService {
         weekEnd: summary.weekEnd,
         generationId: shed.generationId,
         summary,
-        chartsData
+        chartsData,
       };
 
       customLog(`✅ Caseta encontrada correctamente con id: ${_id}`);
@@ -650,8 +661,8 @@ class ShedService {
             from: "dailyrecords",
             localField: "_id",
             foreignField: "shedId",
-            as: "dailyRecords"
-          }
+            as: "dailyRecords",
+          },
         },
         {
           $group: {
@@ -663,8 +674,8 @@ class ShedService {
             totalWaterConsumedL: { $sum: { $ifNull: ["$dailyRecords.waterConsumedL", 0] } },
             totalProducedEggs: { $sum: { $ifNull: ["$dailyRecords.producedEggs", 0] } },
             totalProducedBoxes: { $sum: { $ifNull: ["$dailyRecords.producedBoxes", 0] } },
-            totalMortality: { $sum: { $ifNull: ["$dailyRecords.mortality", 0] } }
-          }
+            totalMortality: { $sum: { $ifNull: ["$dailyRecords.mortality", 0] } },
+          },
         },
         {
           $addFields: {
@@ -673,10 +684,10 @@ class ShedService {
               totalWaterConsumedL: "$totalWaterConsumedL",
               totalProducedEggs: "$totalProducedEggs",
               totalProducedBoxes: "$totalProducedBoxes",
-              totalMortality: "$totalMortality"
-            }
-          }
-        }
+              totalMortality: "$totalMortality",
+            },
+          },
+        },
       ]).exec();
       customLog(`Se han obtenido ${result.length} casetas activas`);
       return result;
@@ -689,8 +700,7 @@ class ShedService {
       });
     }
   }
-
 }
 
-const shedService: ShedService = new ShedService()
-export default shedService
+const shedService: ShedService = new ShedService();
+export default shedService;
