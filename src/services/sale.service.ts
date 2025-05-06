@@ -5,11 +5,10 @@ import { InventoryModel } from "@app/repositories/mongoose/models/inventory.mode
 import { SaleModel } from "@app/repositories/mongoose/schemas/sale.schema";
 import { Types } from "mongoose";
 
-
-export const generateFolio = (prefix: string = 'SALE'): string => {
+export const generateFolio = (prefix: string = "SALE"): string => {
   const now = new Date();
-  const ymd = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const hms = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const ymd = now.toISOString().slice(0, 10).replace(/-/g, "");
+  const hms = now.toTimeString().slice(0, 8).replace(/:/g, "");
   return `${prefix}-${ymd}-${hms}`;
 };
 
@@ -23,27 +22,27 @@ export const createSaleFromInventory = async (dto: CreateSaleDto, user: any) => 
   })
     .populate([
       {
-        path: 'type',
+        path: "type",
         populate: {
-          path: 'category',
-          model: 'box-category'
-        }
-      }
+          path: "category",
+          model: "catalog-box",
+        },
+      },
     ])
     .lean();
 
   if (boxes.length !== codes.length) {
-    throw new Error('Algunos códigos no están disponibles en el inventario de ventas (recibido)');
+    throw new Error("Algunos códigos no están disponibles en el inventario de ventas (recibido)");
   }
 
   const enrichedBoxes: SaleBoxDetailDto[] = boxes.map((box) => {
     const type = box.type as any;
-    const category = type.category as any;
+    const category = type as any;
     const categoryId = category?._id?.toString();
     const unitPrice = dto.pricesByCategory?.[categoryId];
 
     if (!unitPrice) {
-      throw new Error(`No se definió precio para la categoría: ${category?.name ?? 'desconocida'}`);
+      throw new Error(`No se definió precio para la categoría: ${category?.name ?? "desconocida"}`);
     }
 
     return {
@@ -62,25 +61,25 @@ export const createSaleFromInventory = async (dto: CreateSaleDto, user: any) => 
   const pricePerKg = subtotal / totalKg;
 
   const client = await ClientModel.findById(dto.clientId);
-  if (!client) throw new Error('Cliente no encontrado');
+  if (!client) throw new Error("Cliente no encontrado");
 
-  if (dto.paymentType === 'credito') {
+  if (dto.paymentType === "credito") {
     if (client.creditLimit === undefined) {
-      throw new Error('El límite de crédito del cliente no está definido');
+      throw new Error("El límite de crédito del cliente no está definido");
     }
     const availableCredit = client.creditLimit - (client.creditUsed ?? 0);
     if (totalWithIva > availableCredit) {
-      throw new Error('El cliente no tiene suficiente crédito disponible');
+      throw new Error("El cliente no tiene suficiente crédito disponible");
     }
     client.creditUsed = (client.creditUsed ?? 0) + totalWithIva;
     await client.save();
   }
 
-  const folio = generateFolio('SALE');
+  const folio = generateFolio("SALE");
 
   const sale = await SaleModel.create({
     saleDate: new Date(),
-    dueDate: dto.paymentType === 'credito' ? dto.dueDate : undefined,
+    dueDate: dto.paymentType === "credito" ? dto.dueDate : undefined,
     clientId: new Types.ObjectId(dto.clientId),
     sellerUserId: new Types.ObjectId(user._id),
     folio,
@@ -99,10 +98,7 @@ export const createSaleFromInventory = async (dto: CreateSaleDto, user: any) => 
   });
 
   // Actualizar estatus de las cajas a "Vendido" (5)
-  await BoxProductionModel.updateMany(
-    { code: { $in: codes } },
-    { $set: { status: 5 } }
-  );
+  await BoxProductionModel.updateMany({ code: { $in: codes } }, { $set: { status: 5 } });
 
   return sale;
 };
@@ -117,17 +113,17 @@ export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
   })
     .populate([
       {
-        path: 'type',
+        path: "type",
         populate: {
-          path: 'category',
-          model: 'box-category',
+          path: "category",
+          model: "box-category",
         },
       },
     ])
     .lean();
 
   if (boxes.length !== codes.length) {
-    throw new Error('Algunos códigos no están disponibles en el estado permitido para venta');
+    throw new Error("Algunos códigos no están disponibles en el estado permitido para venta");
   }
 
   // Validar y construir detalle por categoría
@@ -138,7 +134,7 @@ export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
     const unitPrice = dto.pricesByCategory?.[categoryId];
 
     if (!unitPrice) {
-      throw new Error(`No se definió precio para la categoría: ${category?.name ?? 'desconocida'}`);
+      throw new Error(`No se definió precio para la categoría: ${category?.name ?? "desconocida"}`);
     }
 
     return {
@@ -157,25 +153,25 @@ export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
   const pricePerKg = subtotal / totalKg;
 
   const client = await ClientModel.findById(dto.clientId);
-  if (!client) throw new Error('Cliente no encontrado');
+  if (!client) throw new Error("Cliente no encontrado");
 
-  if (dto.paymentType === 'credito') {
+  if (dto.paymentType === "credito") {
     if (client.creditLimit === undefined) {
-      throw new Error('El límite de crédito del cliente no está definido');
+      throw new Error("El límite de crédito del cliente no está definido");
     }
     const availableCredit = client.creditLimit - (client.creditUsed ?? 0);
     if (totalWithIva > availableCredit) {
-      throw new Error('El cliente no tiene suficiente crédito disponible');
+      throw new Error("El cliente no tiene suficiente crédito disponible");
     }
     client.creditUsed = (client.creditUsed ?? 0) + totalWithIva;
     await client.save();
   }
 
-  const folio = generateFolio('SALE');
+  const folio = generateFolio("SALE");
 
   const sale = await SaleModel.create({
     saleDate: new Date(),
-    dueDate: dto.paymentType === 'credito' ? dto.dueDate : undefined,
+    dueDate: dto.paymentType === "credito" ? dto.dueDate : undefined,
     clientId: new Types.ObjectId(dto.clientId),
     sellerUserId: new Types.ObjectId(user._id),
     folio,
@@ -194,21 +190,17 @@ export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
   });
 
   // ✅ Actualizar estado a vendido
-  await BoxProductionModel.updateMany(
-    { code: { $in: codes } },
-    { $set: { status: 5 } }
-  );
+  await BoxProductionModel.updateMany({ code: { $in: codes } }, { $set: { status: 5 } });
 
   return sale;
 };
-
 
 export const getAllSales = async (filters: FilterSaleDto = {}) => {
   const query: any = {};
 
   if (filters.clientId) query.clientId = filters.clientId;
   if (filters.status) query.status = filters.status;
-  if (filters.folio) query.folio = { $regex: filters.folio, $options: 'i' };
+  if (filters.folio) query.folio = { $regex: filters.folio, $options: "i" };
   if (filters.paymentType) query.paymentType = filters.paymentType;
   if (filters.from || filters.to) {
     query.saleDate = {};
@@ -217,8 +209,8 @@ export const getAllSales = async (filters: FilterSaleDto = {}) => {
   }
 
   const sales = await SaleModel.find(query)
-    .populate('clientId', 'name')
-    .populate('sellerUserId', 'name')
+    .populate("clientId", "name")
+    .populate("sellerUserId", "name")
     .sort({ saleDate: -1 })
     .lean();
 
@@ -237,24 +229,27 @@ export const getAllSales = async (filters: FilterSaleDto = {}) => {
     totalKg: sale.totalKg,
     totalWithIva: sale.totalWithIva,
     amountPaid: sale.amountPaid,
-    amountPending: sale.amountPending
+    amountPending: sale.amountPending,
   }));
 };
 
 export const getSaleDetails = async (saleId: string) => {
   const sale = await SaleModel.findById(saleId)
-    .populate('clientId', 'name creditLimit creditUsed')
-    .populate('sellerUserId', 'name')
+    .populate("clientId", "name creditLimit creditUsed")
+    .populate("sellerUserId", "name")
     .lean();
 
-  if (!sale) throw new Error('Venta no encontrada');
+  if (!sale) throw new Error("Venta no encontrada");
 
-  const summaryByCategory: Record<string, {
-    count: number;
-    totalKg: number;
-    totalAmount: number;
-    unitPrice: number;
-  }> = {};
+  const summaryByCategory: Record<
+    string,
+    {
+      count: number;
+      totalKg: number;
+      totalAmount: number;
+      unitPrice: number;
+    }
+  > = {};
 
   const detailedBoxes = sale.boxDetails.map((box) => {
     const total = box.unitPrice * box.weightKg;
@@ -271,7 +266,7 @@ export const getSaleDetails = async (saleId: string) => {
     summaryByCategory[box.type].totalAmount += total;
     return {
       ...box,
-      total
+      total,
     };
   });
 
@@ -293,50 +288,54 @@ export const getSaleDetails = async (saleId: string) => {
       iva: sale.iva,
       totalWithIva: sale.totalWithIva,
       amountPaid: sale.amountPaid,
-      amountPending: sale.amountPending
+      amountPending: sale.amountPending,
     },
     boxDetails: detailedBoxes,
     summaryByCategory: Object.entries(summaryByCategory).map(([category, data]) => ({
       category,
-      ...data
+      ...data,
     })),
-    payments: sale.payments
+    payments: sale.payments,
   };
 };
 
-export const registerPayment = async (saleId: string, dto: SalePaymentDto & {
-  invoiceId?: string;
-  invoiceComplementId?: string;
-  cfdiUuid?: string;
-}, user: any) => {
+export const registerPayment = async (
+  saleId: string,
+  dto: SalePaymentDto & {
+    invoiceId?: string;
+    invoiceComplementId?: string;
+    cfdiUuid?: string;
+  },
+  user: any
+) => {
   const sale = await SaleModel.findById(saleId);
-  if (!sale) throw new Error('Venta no encontrada');
+  if (!sale) throw new Error("Venta no encontrada");
 
-  if (sale.status === 'pagado') {
-    throw new Error('La venta ya ha sido liquidada.');
+  if (sale.status === "pagado") {
+    throw new Error("La venta ya ha sido liquidada.");
   }
 
-  const duplicate = sale.payments.find(p => p.reference === dto.reference);
+  const duplicate = sale.payments.find((p) => p.reference === dto.reference);
   if (duplicate) {
-    throw new Error('Ya existe un pago con esa referencia.');
+    throw new Error("Ya existe un pago con esa referencia.");
   }
 
-  const isTransferOrDeposit = dto.method === 'transferencia' || dto.method === 'deposito';
-  const isCredito = sale.paymentType === 'credito';
-  const isContado = sale.paymentType === 'contado';
+  const isTransferOrDeposit = dto.method === "transferencia" || dto.method === "deposito";
+  const isCredito = sale.paymentType === "credito";
+  const isContado = sale.paymentType === "contado";
 
   if (isTransferOrDeposit && !dto.reference) {
-    throw new Error('Debe proporcionar la referencia bancaria para pagos con transferencia o depósito.');
+    throw new Error("Debe proporcionar la referencia bancaria para pagos con transferencia o depósito.");
   }
 
   if (isCredito && dto.amount < sale.totalWithIva) {
     if (!dto.invoiceId || !dto.invoiceComplementId || !dto.cfdiUuid) {
-      throw new Error('Para pagos incompletos de crédito, debe enviar el folio de factura y del complemento.');
+      throw new Error("Para pagos incompletos de crédito, debe enviar el folio de factura y del complemento.");
     }
   }
 
   if (isContado && dto.amount < sale.totalWithIva) {
-    throw new Error('En ventas de contado, el pago debe cubrir el total con IVA.');
+    throw new Error("En ventas de contado, el pago debe cubrir el total con IVA.");
   }
 
   const payment = {
@@ -346,7 +345,7 @@ export const registerPayment = async (saleId: string, dto: SalePaymentDto & {
     reference: dto.reference ?? `PAY-${Date.now()}`,
     userId: user._id,
     invoiceComplementId: dto.invoiceComplementId,
-    cfdiUuid: dto.cfdiUuid
+    cfdiUuid: dto.cfdiUuid,
   };
 
   sale.payments.push(payment);
@@ -354,27 +353,26 @@ export const registerPayment = async (saleId: string, dto: SalePaymentDto & {
   sale.amountPending = Math.max(0, sale.totalWithIva - sale.amountPaid);
 
   if (sale.amountPending <= 0) {
-    sale.status = 'pagado';
+    sale.status = "pagado";
   }
 
   await sale.save();
 
   return {
-    message: 'Pago registrado exitosamente.',
+    message: "Pago registrado exitosamente.",
     updatedStatus: sale.status,
     totalPaid: sale.amountPaid,
     amountPending: sale.amountPending,
-    payment
+    payment,
   };
 };
-
 
 export const getOverdueSales = async () => {
   const today = new Date();
 
   return await SaleModel.find({
-    paymentType: 'credito',
-    status: 'pendiente',
+    paymentType: "credito",
+    status: "pendiente",
     dueDate: { $lt: today },
   }).sort({ dueDate: 1 });
 };
