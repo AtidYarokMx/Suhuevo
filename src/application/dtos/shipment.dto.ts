@@ -1,6 +1,6 @@
 /* types */
-import { ICommonFields } from '@app/dtos/common.dto'
-import { Types } from '@app/repositories/mongoose'
+import { ICommonFields } from "@app/dtos/common.dto";
+import { Types } from "@app/repositories/mongoose";
 
 export enum ShipmentCodeStatus {
   review = 1,
@@ -20,19 +20,22 @@ export enum ShipmentStatus {
 }
 
 export type IShipmentCode = {
-  codeId: Types.ObjectId,
-  code: string
-}
+  codeId: Types.ObjectId;
+  code: string;
+};
 
 export type IShipmentSummary = {
   totalBoxes: number;
   totalNetWeight: number;
   totalEggs: number;
-  totalByCategory: Record<string, {
-    count: number;
-    totalNetWeight: number;
-    totalEggs: number;
-  }>;
+  totalByCategory: Record<
+    string,
+    {
+      count: number;
+      totalNetWeight: number;
+      totalEggs: number;
+    }
+  >;
 };
 
 export type IShipment = ICommonFields & {
@@ -45,9 +48,9 @@ export type IShipment = ICommonFields & {
   vehiclePlates: string;
   driver: string;
   summary: IShipmentSummary;
-}
+};
 
 export type IShipmentCounter = {
   _id: Types.ObjectId;
   value: number;
-}
+};

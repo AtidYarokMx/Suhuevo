@@ -1,7 +1,7 @@
-import { Schema, AppMainMongooseRepo } from '@app/repositories/mongoose'
-import bcrypt from 'bcrypt'
-import { AppUserModel, IUserVirtuals, type IUser } from '@app/dtos/user.dto'
-import { CallbackError } from 'mongoose';
+import { Schema, AppMainMongooseRepo } from "@app/repositories/mongoose";
+import bcrypt from "bcrypt";
+import { AppUserModel, IUserVirtuals, type IUser } from "@app/dtos/user.dto";
+import { CallbackError } from "mongoose";
 
 const SALT_ROUNDS = 10;
 
@@ -71,59 +71,59 @@ const SALT_ROUNDS = 10;
  *           example: "2025-02-27T15:20:45.321Z"
  */
 
-export const UserSchema = new Schema<IUser, AppUserModel, {}, {}, IUserVirtuals>({
+export const UserSchema = new Schema<IUser, AppUserModel, {}, {}, IUserVirtuals>(
+  {
+    /* required fields */
+    id: { type: String, trim: true, unique: true },
+    name: { type: String, trim: true, required: true },
+    firstLastName: { type: String, trim: true, default: "" },
+    secondLastName: { type: String, trim: true, default: "" },
+    roleId: { type: Schema.Types.ObjectId, ref: "Role", default: "67bf6ea470d366194e1a28cd" },
 
-  /* required fields */
-  id: { type: String, trim: true, unique: true },
-  name: { type: String, trim: true, required: true },
-  firstLastName: { type: String, trim: true, default: '' },
-  secondLastName: { type: String, trim: true, default: '' },
-  roleId: { type: Schema.Types.ObjectId, ref: "Role", default: "67bf6ea470d366194e1a28cd" },
-
-  userName: { type: String, trim: true, unique: true, required: true },
-  phone: {
-    type: String,
-    trim: true,
-    validate: {
-      validator: function (v: string) {
-        return /^\d{10}$/.test(v)
+    userName: { type: String, trim: true, unique: true, required: true },
+    phone: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function (v: string) {
+          return /^\d{10}$/.test(v);
+        },
+        message: "numero de telefono invalido",
       },
-      message: "numero de telefono invalido",
-    }
-  },
-  email: {
-    type: String,
-    trim: true,
-    lowercase: true,
-    unique: true,
-    required: true,
-    validate: {
-      validator: function (v: string) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-      },
-      message: "Correo electrónico inválido",
     },
-  },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      unique: true,
+      required: true,
+      validate: {
+        validator: function (v: string) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: "Correo electrónico inválido",
+      },
+    },
 
-  /* defaults */
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
+    /* defaults */
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+    },
+    active: { type: Boolean, default: true },
   },
-  active: { type: Boolean, default: true },
-},
   {
     timestamps: true,
     toJSON: { virtuals: true },
-    toObject: { virtuals: true }
-  })
+    toObject: { virtuals: true },
+  }
+);
 
 /* virtuals */
 UserSchema.virtual("fullname").get(function (this: IUser) {
   return `${this.name} ${this.firstLastName} ${this.secondLastName}`.trim();
 });
-
 
 /* Pre-save Middleware: Hash de contraseña y actualización de timestamps */
 UserSchema.pre("save", async function (next) {
@@ -142,7 +142,6 @@ UserSchema.pre("save", async function (next) {
 UserSchema.methods.comparePassword = async function (password: string) {
   return await bcrypt.compare(password, this.password);
 };
-
 
 /* Model instance */
 export const UserModel = AppMainMongooseRepo.model<IUser, AppUserModel>("User", UserSchema);

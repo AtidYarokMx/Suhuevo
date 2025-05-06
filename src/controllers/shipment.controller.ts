@@ -1,11 +1,10 @@
-import type { Request, Response } from 'express';
-import { AppMainMongooseRepo } from '@app/repositories/mongoose';
-import { ShipmentService } from '@services/shipment.service';
-import { appErrorResponseHandler } from '@app/handlers/response/error.handler';
-import { ShipmentModel } from '@app/repositories/mongoose/schemas/shipment.schema';
+import type { Request, Response } from "express";
+import { AppMainMongooseRepo } from "@app/repositories/mongoose";
+import { ShipmentService } from "@services/shipment.service";
+import { appErrorResponseHandler } from "@app/handlers/response/error.handler";
+import { ShipmentModel } from "@app/repositories/mongoose/schemas/shipment.schema";
 
 class ShipmentController {
-
   public async sendBoxesToSells(req: Request, res: Response): Promise<Response> {
     const session = await AppMainMongooseRepo.startSession();
     const userId = (res.locals as any).user._id;
@@ -83,11 +82,9 @@ class ShipmentController {
   }
 
   async create(req: Request, res: Response) {
-    const shipment = await ShipmentModel.create(req.body)
-    res.status(201).json(shipment)
+    const shipment = await ShipmentModel.create(req.body);
+    res.status(201).json(shipment);
   }
-
-
 }
 
 export const shipmentController = new ShipmentController();
