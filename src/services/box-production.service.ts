@@ -162,8 +162,8 @@ class BoxProductionService {
     return {
       summary: summaryData,
       boxes: formattedBoxes,
-      totalRecords: ifNotValueReturnZero(totalWeight?.[0]?.totalBoxes),
-      totalWeight: ifNotValueReturnZero(totalWeight?.[0].totalWeight),
+      totalRecords: ifNotValueReturnZero(totalWeight?.[0]?.totalBoxes ?? 0),
+      totalWeight: ifNotValueReturnZero(totalWeight?.[0]?.totalWeight ?? 0),
     };
   }
 
