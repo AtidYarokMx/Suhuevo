@@ -106,17 +106,17 @@ export const createSaleFromInventory = async (dto: CreateSaleDto, user: any) => 
 export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
   const codes = dto.codes;
 
-  // Obtener las cajas que estén en tránsito (3) o recibidas (4)
+  // Obtener las cajas que estén enviados (2)
   const boxes = await BoxProductionModel.find({
     code: { $in: codes },
-    status: { $in: [3, 4] }, // Tránsito o Recibido
+    status: 2, // Enviado
   })
     .populate([
       {
         path: "type",
         populate: {
           path: "category",
-          model: "box-category",
+          model: "catalog-box",
         },
       },
     ])
@@ -129,7 +129,7 @@ export const createSaleFromShipment = async (dto: CreateSaleDto, user: any) => {
   // Validar y construir detalle por categoría
   const enrichedBoxes: SaleBoxDetailDto[] = boxes.map((box) => {
     const type = box.type as any;
-    const category = type.category as any;
+    const category = type;
     const categoryId = category?._id?.toString();
     const unitPrice = dto.pricesByCategory?.[categoryId];
 

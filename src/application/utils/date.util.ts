@@ -132,3 +132,11 @@ export function getAdminWeekRange(): { weekStart: Date; weekEnd: Date } {
 
   return { weekStart, weekEnd };
 }
+
+/**
+ * Obtiene la fecha y hora actual usando Momentjs
+ * @returns Equivalente de Date.now() pero con moment
+ */
+export function getMomentNow() {
+  return moment().toDate();
+}
