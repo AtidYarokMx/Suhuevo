@@ -1,12 +1,10 @@
+import mongoose, { ClientSession } from "mongoose";
+/* models */
 import { ShipmentModel } from "@app/repositories/mongoose/schemas/shipment.schema";
-
 import { ShipmentHistoryModel } from "@app/repositories/mongoose/history/shipment.history-model";
 import { ShipmentCounterModel } from "@app/repositories/mongoose/counters/shipment.counter";
 import { BoxProductionModel } from "@app/repositories/mongoose/models/box-production.model";
 import { CatalogBoxModel } from "@app/repositories/mongoose/catalogs/box.catalog";
-
-import mongoose, { ClientSession } from "mongoose";
-import { customLog } from "@app/utils/util.util";
 
 export class ShipmentService {
   static async createShipment({ codes, plates, driver, userId }: any, session: ClientSession) {
@@ -126,6 +124,7 @@ export class ShipmentService {
         model: "box-production",
         justOne: true,
       })
+      .lean()
       .exec();
 
     return data;

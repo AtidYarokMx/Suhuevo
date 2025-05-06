@@ -1,5 +1,7 @@
 /* repos */
 import { Schema, SchemaTypes, AppMainMongooseRepo } from "@app/repositories/mongoose";
+/* utils */
+import { getMomentNowDate } from "@app/utils/date.util";
 /* dtos */
 import { ICommonCounterFields, ICommonHistoryFields } from "@app/dtos/common.dto";
 import { IShipment, ShipmentStatus } from "@app/dtos/shipment.dto";
@@ -21,8 +23,8 @@ export const ShipmentSchema = new Schema<IShipment>(
     active: { type: Boolean, default: true },
     createdBy: { type: SchemaTypes.ObjectId, ref: "User", required: true, immutable: true },
     lastUpdateBy: { type: SchemaTypes.ObjectId, ref: "User", required: true },
-    createdAt: { type: Date, default: () => Date.now(), immutable: true },
-    updatedAt: { type: Date, default: () => Date.now() },
+    createdAt: { type: Date, default: () => getMomentNowDate(), immutable: true },
+    updatedAt: { type: Date, default: () => getMomentNowDate() },
     summary: {
       totalBoxes: { type: Number, required: true },
       totalNetWeight: { type: Number, required: true },
