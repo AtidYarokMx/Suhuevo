@@ -103,7 +103,7 @@ export interface IWeeklyRecord extends Document {
  */
 const WeeklyRecordSchema = new Schema<IWeeklyRecord>(
   {
-    shedId: { type: SchemaTypes.ObjectId, ref: "Shed", required: true, index: true },
+    shedId: { type: SchemaTypes.ObjectId, ref: "shed", required: true, index: true },
     weekStart: { type: Date, required: true, index: true },
     weekEnd: { type: Date, required: true },
     totalHensAlive: { type: Number, required: true, default: 0 },
