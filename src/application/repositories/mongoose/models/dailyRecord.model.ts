@@ -129,7 +129,7 @@ export interface IDailyRecord extends Document {
 
 const DailyRecordSchema = new Schema<IDailyRecord>(
   {
-    shedId: { type: SchemaTypes.ObjectId, ref: "Shed", required: true, index: true },
+    shedId: { type: SchemaTypes.ObjectId, ref: "shed", required: true, index: true },
     generationId: { type: String, required: true },
     date: { type: Date, required: true, default: Date.now, index: true },
     hensAlive: { type: Number, required: true },
