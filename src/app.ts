@@ -115,7 +115,7 @@ export class AppServer {
 
     // 🔐 Aplicar middleware de autenticación global, excepto en Swagger y test
     this.app.use((req, res, next) => {
-      if (process.env.NODE_ENV === "test" || req.path.startsWith("/api-docs")) {
+      if (process.env.NODE_ENV === "test" || req.path.startsWith("/api/auth") || req.path.startsWith("/api-docs")) {
         return next();
       }
       authenticateUser(req, res, next);
