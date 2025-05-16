@@ -140,3 +140,11 @@ export function getAdminWeekRange(): { weekStart: Date; weekEnd: Date } {
 export function getMomentNowDate() {
   return moment().utc(true).toDate();
 }
+
+/**
+ * Función que trae la fecha del día actual (hoy)
+ * @returns Fecha de hoy
+ */
+export function getTodayMoment() {
+  return moment();
+}
