@@ -28,6 +28,13 @@ class SummaryRoutes extends ServerRouter {
      * @middleware authenticateUser - Requiere autenticación de administrador.
      */
     this.router.get("/", [authenticateUser], this.controller.get as RequestHandler);
+    /**
+     * **Genera el reporte del bsc en formato excel**
+     * @route POST /api/bsc/excel
+     * @description Obtiene el summary BSC.
+     * @middleware authenticateUser - Requiere autenticación de administrador.
+     */
+    this.router.post("/excel", [authenticateUser], this.controller.generateExcel as RequestHandler);
   }
 }
 

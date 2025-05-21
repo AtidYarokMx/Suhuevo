@@ -1,7 +1,7 @@
+/* lib */
+import * as ExcelJS from "exceljs";
 /* models */
-import { FarmModel } from "@app/repositories/mongoose/models/farm.model";
 import { ShedModel } from "@app/repositories/mongoose/models/shed.model";
-import { WeeklyRecordModel } from "@app/repositories/mongoose/models/weeklyRecord.model";
 import { SaleModel } from "@app/repositories/mongoose/schemas/sale.schema";
 import { AbsenceModel } from "@app/repositories/mongoose/models/absence.model";
 import { AttendanceModel } from "@app/repositories/mongoose/models/attendance.model";
@@ -29,9 +29,6 @@ class SummaryService {
     }
     // Día final: martes siguiente
     const endOfWeek = startOfWeek.clone().add(6, "days");
-    // Convertir a Date para usarlos en los aggregate
-    const startDate = startOfWeek.startOf("day").toDate();
-    const endDate = endOfWeek.endOf("day").toDate();
     // Convertir a strings tipo 'YYYY-MM-DD' para comparar directamente
     const startDateStr = startOfWeek.format("YYYY-MM-DD");
     const endDateStr = endOfWeek.format("YYYY-MM-DD");
@@ -171,8 +168,6 @@ class SummaryService {
       },
     ]).exec();
 
-    // TODO: BSC para RH
-    // Pipeline de aggregation
     const absences = await AbsenceModel.aggregate([
       {
         $match: {
@@ -213,7 +208,59 @@ class SummaryService {
       farming,
       sales: sales?.[0] ?? {},
       humanResources,
+      startDate: startDateStr,
+      endDate: endDateStr,
     };
+  }
+
+  async generateExcel(workbook: ExcelJS.Workbook) {
+    const { startDate, endDate, ...data } = await this.get();
+    const worksheet = workbook.addWorksheet("BSC");
+
+    worksheet.getColumn("A").width = 25;
+    worksheet.getColumn("B").width = 15;
+
+    let rowIndex = 1;
+    /* Encabezados principales */
+    Object.entries(data).forEach(([key, value]) => {
+      const headerRow = worksheet.addRow([key]);
+      worksheet.mergeCells(rowIndex, 1, rowIndex, 2);
+
+      headerRow.eachCell((cell) => {
+        cell.style = {
+          font: {
+            size: 12,
+            bold: true,
+          },
+          fill: {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: {
+              argb: "ff83cceb",
+            },
+          },
+        };
+      });
+
+      rowIndex++;
+
+      if (Array.isArray(value) && value.length > 0) {
+        value.forEach((item) => {
+          if (typeof item === "object" && item != null) {
+            Object.keys(item).forEach((val) => {
+              worksheet.addRow([val, item[val]]);
+              rowIndex++;
+            });
+          }
+        });
+      }
+      if (typeof value === "object" && !Array.isArray(value) && value != null) {
+        Object.keys(value).forEach((val) => {
+          worksheet.addRow([val, value[val]]);
+          rowIndex++;
+        });
+      }
+    });
   }
 }
 
