@@ -9,7 +9,7 @@
     "start": "tsc && node dist/index.js",
     "build": "tsc",
     "test": "NODE_ENV=test jest --forceExit --detectOpenHandles",
-    "fast-test": "npx jest tests/integration/11-attendance-report.test.ts --forceExit --detectOpenHandles --verbose --NODE_ENV=test"
+    "fast-test": "npx jest tests/integration/12-bsc-report.test.ts --forceExit --detectOpenHandles --verbose --NODE_ENV=test"
   },
   "_moduleAliases": {
     "@": "dist",
