@@ -6,12 +6,12 @@ import moment from "moment";
  * Si no existe, la genera y la guarda.
  */
 export async function getCurrentWeekRange(): Promise<{ weekStart: Date; weekEnd: Date }> {
-  let config = await ConfigurationModel.findById("weekAdmin").lean().exec();
+  const config = await updateAdministrativeWeek();
 
-  if (!config) {
+  /* if (!config) {
     // Si no existe, calcular y guardar la semana correctamente.
     config = await updateAdministrativeWeek();
-  }
+  } */
 
   return { weekStart: config.currentWeekStart, weekEnd: config.currentWeekEnd };
 }
@@ -24,9 +24,20 @@ export async function updateAdministrativeWeek() {
   const weekday = currentDate.isoWeekday(); // Monday=1, ..., Sunday=7
 
   // 🔹 Ajuste para iniciar el miércoles a las 00:00 AM UTC
-  let weekStart = weekday >= 3
-    ? currentDate.clone().subtract(weekday - 3, "days").startOf("day").utc().toDate() // Miércoles de la semana actual
-    : currentDate.clone().subtract(weekday + 4, "days").startOf("day").utc().toDate(); // Miércoles de la semana anterior
+  let weekStart =
+    weekday >= 3
+      ? currentDate
+          .clone()
+          .subtract(weekday - 3, "days")
+          .startOf("day")
+          .utc()
+          .toDate() // Miércoles de la semana actual
+      : currentDate
+          .clone()
+          .subtract(weekday + 4, "days")
+          .startOf("day")
+          .utc()
+          .toDate(); // Miércoles de la semana anterior
 
   let weekEnd = moment.utc(weekStart).add(6, "days").endOf("day").toDate(); // Martes 23:59:59 UTC
 
@@ -36,5 +47,7 @@ export async function updateAdministrativeWeek() {
     { _id: "weekAdmin" },
     { currentWeekStart: weekStart, currentWeekEnd: weekEnd, lastUpdated: new Date() },
     { upsert: true, new: true, returnDocument: "after" }
-  ).lean().exec();
+  )
+    .lean()
+    .exec();
 }
