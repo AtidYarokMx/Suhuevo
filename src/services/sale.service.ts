@@ -341,7 +341,7 @@ export const registerPayment = async (
   const payment = {
     date: new Date(),
     amount: dto.amount,
-    method: dto.method,
+    method: sale.paymentMethod,
     reference: dto.reference ?? `PAY-${Date.now()}`,
     userId: user._id,
     invoiceComplementId: dto.invoiceComplementId,
