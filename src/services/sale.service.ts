@@ -309,7 +309,6 @@ export const registerPayment = async (
   user: any
 ) => {
   const sale = await SaleModel.findById(saleId);
-  console.log(sale);
   if (!sale) throw new Error("Venta no encontrada");
 
   if (sale.status === "pagado") {
@@ -320,8 +319,6 @@ export const registerPayment = async (
   if (duplicate) {
     throw new Error("Ya existe un pago con esa referencia.");
   }
-
-  console.log(dto);
 
   const isTransferOrDeposit = dto.method === "transferencia" || dto.method === "deposito";
   const isCredito = sale.paymentType === "credito";
