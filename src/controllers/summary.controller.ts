@@ -1,4 +1,5 @@
 /* types */
+import * as ExcelJS from "exceljs";
 import type { Request, Response } from "express";
 /* handlers */
 import { appErrorResponseHandler } from "@app/handlers/response/error.handler";
@@ -20,6 +21,21 @@ class SummaryController {
       customLog("[GET] /api/bsc");
       const response = await summaryService.get();
       return res.status(200).json(response);
+    } catch (error) {
+      customLog(`❌ [SummaryController.get] Error: ${error}`);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+  public async generateExcel(req: Request, res: Response): Promise<any> {
+    try {
+      customLog("[POST] /api/bsc/excel");
+      const workbook = new ExcelJS.Workbook();
+      await summaryService.generateExcel(workbook);
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", 'attachment; filename="bsc.xlsx"');
+      await workbook.xlsx.write(res);
+      return res.status(200).end();
     } catch (error) {
       customLog(`❌ [SummaryController.get] Error: ${error}`);
       const { statusCode, error: err } = appErrorResponseHandler(error);
