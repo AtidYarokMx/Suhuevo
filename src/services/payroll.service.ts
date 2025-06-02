@@ -16,12 +16,7 @@ import { formatParse, getNextDay } from "@app/utils/date.util";
 import { consumeSequence } from "@app/utils/sequence";
 import { groupBy, sumField } from "@app/utils/util.util";
 import type { ClientSession } from "mongoose";
-import {
-  IEmployee,
-  EEmployeStatus,
-  EEmployeeAttendanceScheme,
-  IEmployeSchedule,
-} from "@app/dtos/employee.dto";
+import { IEmployee, EEmployeStatus, EEmployeeAttendanceScheme, IEmployeSchedule } from "@app/dtos/employee.dto";
 import { IPayroll, SchemaGenerateWeeklyPayroll } from "@app/dtos/payroll.dto";
 import { BonusType, IBonus } from "@app/dtos/bonus.dto";
 import { IPersonalBonus } from "@app/dtos/personal-bonus.dto";
@@ -51,17 +46,23 @@ function customLogColored(message: string, color: "green" | "yellow" | "blue" | 
 
 // ------------------- Servicio de Nómina -------------------
 class PayrollService {
-  private readonly weekStartDay = 3;   // Miércoles
-  private readonly weekCutOffDay = 2;    // Martes (día de corte)
+  private readonly weekStartDay = 3; // Miércoles
+  private readonly weekCutOffDay = 2; // Martes (día de corte)
 
   // Retorna el rango de semana (de miércoles a martes siguiente) basado en la fecha dada.
   private getWeekRange(date: Moment): { weekStart: Moment; weekEnd: Moment } {
     const weekday = date.isoWeekday(); // Monday=1, Tuesday=2, Wednesday=3, etc.
     let weekStart: Moment;
     if (weekday >= 3) {
-      weekStart = date.clone().subtract(weekday - 3, "days").startOf("day");
+      weekStart = date
+        .clone()
+        .subtract(weekday - 3, "days")
+        .startOf("day");
     } else {
-      weekStart = date.clone().subtract(weekday + 4, "days").startOf("day");
+      weekStart = date
+        .clone()
+        .subtract(weekday + 4, "days")
+        .startOf("day");
     }
     const weekEnd = weekStart.clone().add(6, "days").endOf("day");
     return { weekStart, weekEnd };
@@ -92,10 +93,7 @@ class PayrollService {
         filter[cleanField] = value;
       }
     }
-    const records = await PayrollModel.find(filter)
-      .select(selection)
-      .limit(limit)
-      .sort({ createdAt: "desc" });
+    const records = await PayrollModel.find(filter).select(selection).limit(limit).sort({ createdAt: "desc" });
     if (records.length === 0) return [];
     return this.populateResults(records);
   }
@@ -103,9 +101,7 @@ class PayrollService {
   public async populateResults(array: IPayroll[]): Promise<any> {
     const populatedArray = JSON.parse(JSON.stringify(array));
     for (const record of populatedArray) {
-      record.totalAmount = record.lines
-        .reduce((sum: number, line: any) => sum + Number(line.netPay), 0)
-        .toFixed(2);
+      record.totalAmount = record.lines.reduce((sum: number, line: any) => sum + Number(line.netPay), 0).toFixed(2);
     }
     return populatedArray;
   }
@@ -127,11 +123,14 @@ class PayrollService {
       // Para preview se utiliza el parámetro weekStartDate (se espera que sea un miércoles)
       const weekStartDate = formatParse(body.weekStartDate);
       // Para la vista previa, se obtiene la lista de empleados activos con populate de job y department
-      const employees: (IEmployee & { job?: any; department?: any })[] =
-        await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }, null, { session })
-          .populate(["job", "department"])
-          .exec();
-      const previewData = employees.map(emp => {
+      const employees: (IEmployee & { job?: any; department?: any })[] = await EmployeeModel.find(
+        { active: true, status: EEmployeStatus.ACTIVE },
+        null,
+        { session }
+      )
+        .populate(["job", "department"])
+        .exec();
+      const previewData = employees.map((emp) => {
         const id = emp.id;
         const employeeName = getEmployeeFullName(emp);
         const department = emp.department ? emp.department.name : "Sin Departamento";
@@ -147,7 +146,7 @@ class PayrollService {
           job,
           esquema,
           dailySalary,
-          estimatedWeekly
+          estimatedWeekly,
         };
       });
       customLogColored(`Vista previa generada para ${previewData.length} empleados`, "green");
@@ -212,19 +211,57 @@ class PayrollService {
     const bonusAttendance = await BonusModel.findOne({ active: true, inputId: "asistencia", enabled: true }).exec();
     const bonusPunctuality = await BonusModel.findOne({ active: true, inputId: "puntualidad", enabled: true }).exec();
     const bonusGrocery = await BonusModel.findOne({ active: true, inputId: "despensa", enabled: true }).exec();
+    const bonusPackage = await BonusModel.findOne({ active: true, inputId: "empaque", enabled: true }).exec();
+    const bonusShed = await BonusModel.findOne({ active: true, inputId: "caseta", enabled: true }).exec();
 
-    const personalBonusOvertime = await PersonalBonusModel.find({ active: true, entityType: "bonus", entityId: bonusOvertime?._id, enabled: true }).exec();
-    const personalBonusAttendance = await PersonalBonusModel.find({ active: true, entityType: "bonus", entityId: bonusAttendance?._id, enabled: true }).exec();
-    const personalBonusPunctuality = await PersonalBonusModel.find({ active: true, entityType: "bonus", entityId: bonusPunctuality?._id, enabled: true }).exec();
-    const personalBonusGrocery = await PersonalBonusModel.find({ active: true, entityType: "bonus", entityId: bonusGrocery?._id, enabled: true }).exec();
+    const personalBonusOvertime = await PersonalBonusModel.find({
+      active: true,
+      entityType: "bonus",
+      entityId: bonusOvertime?._id,
+      enabled: true,
+    }).exec();
+    const personalBonusAttendance = await PersonalBonusModel.find({
+      active: true,
+      entityType: "bonus",
+      entityId: bonusAttendance?._id,
+      enabled: true,
+    }).exec();
+    const personalBonusPunctuality = await PersonalBonusModel.find({
+      active: true,
+      entityType: "bonus",
+      entityId: bonusPunctuality?._id,
+      enabled: true,
+    }).exec();
+    const personalBonusGrocery = await PersonalBonusModel.find({
+      active: true,
+      entityType: "bonus",
+      entityId: bonusGrocery?._id,
+      enabled: true,
+    }).exec();
+    const personalBonusPackage = await PersonalBonusModel.find({
+      active: true,
+      entityType: "empaque",
+      entityId: bonusPackage?._id,
+      enabled: true,
+    }).exec();
+    const personalBonusShed = await PersonalBonusModel.find({
+      active: true,
+      entityType: "caseta",
+      entityId: bonusShed?._id,
+      enabled: true,
+    }).exec();
 
     // Listado de empleados activos con populate de job y department
-    const employees: (IEmployee & { job?: any; department?: any })[] =
-      await EmployeeModel.find({ active: true, status: EEmployeStatus.ACTIVE }, null, { session })
-        .populate(["job", "department"])
-        .exec();
+    const employees: (IEmployee & { job?: any; department?: any })[] = await EmployeeModel.find(
+      { active: true, status: EEmployeStatus.ACTIVE },
+      null,
+      { session }
+    )
+      .populate(["job", "department"])
+      .exec();
 
     const lines: any[] = [];
+
     for (const [index, employee] of employees.entries()) {
       const dailySalary = Number(employee.dailySalary.toFixed(2));
       const jobScheme = employee.jobScheme;
@@ -238,7 +275,7 @@ class PayrollService {
       const empPaidAbsences = paidAbsencesByEmployee[employee.id] || [];
       const empJustifiedAbsences = justifiedAbsencesByEmployee[employee.id] || [];
       const empOvertimeRecords = overtimeRecordsByEmployee[employee.id] || [];
-      const employeeTardies = empAttendances.filter(a => a.isLate);
+      const employeeTardies = empAttendances.filter((a) => a.isLate);
 
       // Días trabajados = asistencias + ausencias pagadas + faltas justificadas
       const daysWorked = empAttendances.length + empPaidAbsences.length + empJustifiedAbsences.length;
@@ -248,46 +285,91 @@ class PayrollService {
       const salaryTotal = Number((dailySalary * totalDays).toFixed(2));
 
       // Horas extra
-      const empBonusOvertime = personalBonusOvertime.find(x => String(x.idEmployee) === employee.id) ?? bonusOvertime;
+      const empBonusOvertime = personalBonusOvertime.find((x) => String(x.idEmployee) === employee.id) ?? bonusOvertime;
       const extraHours = Number(sumField(empOvertimeRecords, "hours").toFixed(2));
       const extraHoursPayment = Number((extraHours * (empBonusOvertime?.value || 0)).toFixed(2));
       let taxableBonuses = 0;
       if (empBonusOvertime?.taxable) taxableBonuses += extraHoursPayment;
 
       // Bono de asistencia: se anula si existen ausencias (no pagadas)
-      const empBonusAttendance = personalBonusAttendance.find(x => String(x.idEmployee) === employee.id) ?? bonusAttendance;
+      const empBonusAttendance =
+        personalBonusAttendance.find((x) => String(x.idEmployee) === employee.id) ?? bonusAttendance;
       const attendanceBonus = empAbsences.length > 0 ? 0 : this.evaluateBonus(empBonusAttendance, salaryTotal);
-      if ((personalBonusAttendance.find(x => String(x.idEmployee) === employee.id) ?? bonusAttendance)?.taxable) {
+      if ((personalBonusAttendance.find((x) => String(x.idEmployee) === employee.id) ?? bonusAttendance)?.taxable) {
         taxableBonuses += attendanceBonus;
       }
 
       // Bono de puntualidad: se anula si hay al menos 1 tardanza
-      const empBonusPunctuality = personalBonusPunctuality.find(x => String(x.idEmployee) === employee.id) ?? bonusPunctuality;
+      const empBonusPunctuality =
+        personalBonusPunctuality.find((x) => String(x.idEmployee) === employee.id) ?? bonusPunctuality;
       const punctualityBonus = employeeTardies.length >= 1 ? 0 : this.evaluateBonus(empBonusPunctuality, salaryTotal);
-      if ((personalBonusPunctuality.find(x => String(x.idEmployee) === employee.id) ?? bonusPunctuality)?.taxable) {
+      if ((personalBonusPunctuality.find((x) => String(x.idEmployee) === employee.id) ?? bonusPunctuality)?.taxable) {
         taxableBonuses += punctualityBonus;
       }
 
       // Bono de despensa
-      const empBonusGrocery = personalBonusGrocery.find(x => String(x.idEmployee) === employee.id) ?? bonusGrocery;
+      const empBonusGrocery = personalBonusGrocery.find((x) => String(x.idEmployee) === employee.id) ?? bonusGrocery;
       const groceryBonus = this.evaluateBonus(empBonusGrocery, salaryTotal);
-      if ((personalBonusGrocery.find(x => String(x.idEmployee) === employee.id) ?? bonusGrocery)?.taxable) {
+      if ((personalBonusGrocery.find((x) => String(x.idEmployee) === employee.id) ?? bonusGrocery)?.taxable) {
         taxableBonuses += groceryBonus;
+      }
+
+      // Bono de empaque
+      const empBonusPackageExists = employee.department.name === "Empaque";
+      const empBonusPackage = empBonusPackageExists
+        ? personalBonusPackage.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackage
+        : null;
+      const packageBonus = this.evaluateBonus(empBonusPackage, salaryTotal);
+      if ((personalBonusPackage.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackage)?.taxable) {
+        taxableBonuses += packageBonus;
+      }
+
+      // Bono de caseta
+      const empBonusShedExists = employee.department.name === "Caseta";
+      const empBonusShed = empBonusShedExists
+        ? personalBonusShed.find((x) => String(x.idEmployee) === employee.id) ?? bonusShed
+        : null;
+      const shedBonus = this.evaluateBonus(empBonusShed, salaryTotal);
+      if ((personalBonusShed.find((x) => String(x.idEmployee) === employee.id) ?? bonusShed)?.taxable) {
+        taxableBonuses += shedBonus;
       }
 
       // Bono por "Festivo Trabajado": se suma el salario diario por cada ausencia con ese motivo.
       const festivoTrabajadoBonus = empAbsences
-        .filter(a => a.reason === "Festivo Trabajado")
+        .filter((a) => a.reason === "Festivo Trabajado")
         .reduce((prev, curr) => prev + dailySalary, 0);
 
       // Otros bonos personalizados (si existiesen; en este ejemplo se omite si no hay datos)
       const customBonusesAmounts: { amount: number; taxable: boolean }[] = [];
       const customBonusesTotal = Number(sumField(customBonusesAmounts, "amount").toFixed(2));
 
-      const taxPay = Number((salaryTotal + extraHoursPayment + attendanceBonus + punctualityBonus +
-        festivoTrabajadoBonus + taxableBonuses + sumField(customBonusesAmounts.filter(x => x.taxable), "amount")).toFixed(2));
-      const netPay = Number((salaryTotal + extraHoursPayment + attendanceBonus + punctualityBonus +
-        festivoTrabajadoBonus + taxableBonuses + customBonusesTotal).toFixed(2));
+      //! Este parece que no se usa, revisar si es necesario...
+      const taxPay = Number(
+        (
+          salaryTotal +
+          extraHoursPayment +
+          attendanceBonus +
+          punctualityBonus +
+          festivoTrabajadoBonus +
+          taxableBonuses +
+          sumField(
+            customBonusesAmounts.filter((x) => x.taxable),
+            "amount"
+          )
+        ).toFixed(2)
+      );
+
+      const netPay = Number(
+        (
+          salaryTotal +
+          extraHoursPayment +
+          attendanceBonus +
+          punctualityBonus +
+          festivoTrabajadoBonus +
+          taxableBonuses +
+          customBonusesTotal
+        ).toFixed(2)
+      );
 
       lines.push({
         rowIndex: index + 1,
@@ -309,13 +391,18 @@ class PayrollService {
         punctualityBonus,
         attendanceBonus,
         groceryBonus,
+        packageBonus,
+        shedBonus,
         holidayBonus: festivoTrabajadoBonus,
         customBonusesTotal: customBonusesTotal || undefined,
         netPay,
         jobScheme,
       });
+
       customLogColored(
-        `Empleado: ${employeeFullName} – Días trabajados: ${daysWorked}, Sueldo base: $${salaryTotal.toFixed(2)}, Bono Festivo Trabajado: $${festivoTrabajadoBonus.toFixed(2)}`,
+        `Empleado: ${employeeFullName} – Días trabajados: ${daysWorked}, Sueldo base: $${salaryTotal.toFixed(
+          2
+        )}, Bono Festivo Trabajado: $${festivoTrabajadoBonus.toFixed(2)}`,
         "yellow"
       );
     }
@@ -355,11 +442,9 @@ class PayrollService {
    */
   async excelReport(query: any): Promise<{ file: Buffer; fileName: string }> {
     const payrollId = query.id;
-    if (payrollId == null)
-      throw new AppErrorResponse({ statusCode: 400, name: "El id es requerido" });
+    if (payrollId == null) throw new AppErrorResponse({ statusCode: 400, name: "El id es requerido" });
     const payroll = await PayrollModel.findOne({ active: true, id: payrollId });
-    if (payroll == null)
-      throw new AppErrorResponse({ statusCode: 404, name: "No se encontró el pago de nómina" });
+    if (payroll == null) throw new AppErrorResponse({ statusCode: 404, name: "No se encontró el pago de nómina" });
 
     // Consultar datos de empleados, departamentos y puestos
     const employeeIds = payroll.lines.map((x: any) => x.employeeId);
@@ -388,9 +473,9 @@ class PayrollService {
         idBio: emp ? emp.biometricId : "",
         employeeName: emp ? getEmployeeFullName(emp) : "",
         jobName: jobs[line.jobId]?.name ?? "",
-        clabe: emp ? (emp.bankAccountNumber || "") : "",
-        mxCurp: emp ? (emp.mxCurp || "") : "",
-        mxNss: emp ? (emp.mxNss || "") : "",
+        clabe: emp ? emp.bankAccountNumber || "" : "",
+        mxCurp: emp ? emp.mxCurp || "" : "",
+        mxNss: emp ? emp.mxNss || "" : "",
         dailySalary: line.dailySalary,
         daysWorked: line.daysWorked,
         paidRestDays: line.paidRestDays,
@@ -401,6 +486,8 @@ class PayrollService {
         punctualityBonus: line.punctualityBonus,
         attendanceBonus: line.attendanceBonus,
         groceryBonus: line.groceryBonus,
+        packageBonus: line.packageBonus,
+        shedBonus: line.shedBonus,
         holidayBonus: line.holidayBonus,
         customBonusesTotal: Number(line.customBonusesTotal) !== 0 ? line.customBonusesTotal : undefined,
         netPay: line.netPay,
@@ -444,6 +531,8 @@ class PayrollService {
         { header: "Pago Horas Extra", key: "extraHoursPayment", width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: "Bono Puntualidad", key: "punctualityBonus", width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: "Bono Asistencia", key: "attendanceBonus", width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: "Bono de Empaque", key: "packageBonus", width: 15, style: { numFmt: '"$"#,##0.00' } },
+        { header: "Bono de Caseta", key: "shedBonus", width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: "Despensa", key: "groceryBonus", width: 15, style: { numFmt: '"$"#,##0.00' } },
         { header: "Bono Festivo Trabajado", key: "holidayBonus", width: 15, style: { numFmt: '"$"#,##0.00' } },
         // La columna "Otros Bonos" se incluye solo si alguno de sus valores es mayor que cero
@@ -451,10 +540,10 @@ class PayrollService {
         { header: "Total a Pagar", key: "netPay", width: 15, style: { numFmt: '"$"#,##0.00' } },
       ];
       // Verificar si se debe eliminar "Otros Bonos"
-      const includeCustom = rowArray.some(row => Number(row.customBonusesTotal) > 0);
+      const includeCustom = rowArray.some((row) => Number(row.customBonusesTotal) > 0);
       if (!includeCustom) {
         // Se elimina la columna "Otros Bonos"
-        const indexToRemove = columns.findIndex(col => col.key === "customBonusesTotal");
+        const indexToRemove = columns.findIndex((col) => col.key === "customBonusesTotal");
         if (indexToRemove > -1) {
           columns.splice(indexToRemove, 1);
         }
@@ -484,17 +573,59 @@ class PayrollService {
       const lastRowNum = worksheet.rowCount;
       const totalsRow = worksheet.addRow({
         idBio: "Totales",
-        salary: { formula: `SUM(${worksheet.getColumn("salary").letter}2:${worksheet.getColumn("salary").letter}${lastRowNum})` },
-        extraHours: { formula: `SUM(${worksheet.getColumn("extraHours").letter}2:${worksheet.getColumn("extraHours").letter}${lastRowNum})` },
-        extraHoursPayment: { formula: `SUM(${worksheet.getColumn("extraHoursPayment").letter}2:${worksheet.getColumn("extraHoursPayment").letter}${lastRowNum})` },
-        punctualityBonus: { formula: `SUM(${worksheet.getColumn("punctualityBonus").letter}2:${worksheet.getColumn("punctualityBonus").letter}${lastRowNum})` },
-        attendanceBonus: { formula: `SUM(${worksheet.getColumn("attendanceBonus").letter}2:${worksheet.getColumn("attendanceBonus").letter}${lastRowNum})` },
-        groceryBonus: { formula: `SUM(${worksheet.getColumn("groceryBonus").letter}2:${worksheet.getColumn("groceryBonus").letter}${lastRowNum})` },
-        holidayBonus: { formula: `SUM(${worksheet.getColumn("holidayBonus").letter}2:${worksheet.getColumn("holidayBonus").letter}${lastRowNum})` },
+        salary: {
+          formula: `SUM(${worksheet.getColumn("salary").letter}2:${worksheet.getColumn("salary").letter}${lastRowNum})`,
+        },
+        extraHours: {
+          formula: `SUM(${worksheet.getColumn("extraHours").letter}2:${
+            worksheet.getColumn("extraHours").letter
+          }${lastRowNum})`,
+        },
+        extraHoursPayment: {
+          formula: `SUM(${worksheet.getColumn("extraHoursPayment").letter}2:${
+            worksheet.getColumn("extraHoursPayment").letter
+          }${lastRowNum})`,
+        },
+        punctualityBonus: {
+          formula: `SUM(${worksheet.getColumn("punctualityBonus").letter}2:${
+            worksheet.getColumn("punctualityBonus").letter
+          }${lastRowNum})`,
+        },
+        attendanceBonus: {
+          formula: `SUM(${worksheet.getColumn("attendanceBonus").letter}2:${
+            worksheet.getColumn("attendanceBonus").letter
+          }${lastRowNum})`,
+        },
+        packageBonus: {
+          formula: `SUM(${worksheet.getColumn("packageBonus").letter}2:${
+            worksheet.getColumn("packageBonus").letter
+          }${lastRowNum})`,
+        },
+        shedBonus: {
+          formula: `SUM(${worksheet.getColumn("shedBonus").letter}2:${
+            worksheet.getColumn("shedBonus").letter
+          }${lastRowNum})`,
+        },
+        groceryBonus: {
+          formula: `SUM(${worksheet.getColumn("groceryBonus").letter}2:${
+            worksheet.getColumn("groceryBonus").letter
+          }${lastRowNum})`,
+        },
+        holidayBonus: {
+          formula: `SUM(${worksheet.getColumn("holidayBonus").letter}2:${
+            worksheet.getColumn("holidayBonus").letter
+          }${lastRowNum})`,
+        },
         ...(includeCustom && {
-          customBonusesTotal: { formula: `SUM(${worksheet.getColumn("customBonusesTotal").letter}2:${worksheet.getColumn("customBonusesTotal").letter}${lastRowNum})` },
+          customBonusesTotal: {
+            formula: `SUM(${worksheet.getColumn("customBonusesTotal").letter}2:${
+              worksheet.getColumn("customBonusesTotal").letter
+            }${lastRowNum})`,
+          },
         }),
-        netPay: { formula: `SUM(${worksheet.getColumn("netPay").letter}2:${worksheet.getColumn("netPay").letter}${lastRowNum})` },
+        netPay: {
+          formula: `SUM(${worksheet.getColumn("netPay").letter}2:${worksheet.getColumn("netPay").letter}${lastRowNum})`,
+        },
       });
       totalsRow.eachCell({ includeEmpty: true }, (cell) => {
         cell.font = { bold: true };
@@ -509,7 +640,7 @@ class PayrollService {
     }
 
     // Hoja de resumen
-    const summaryData = Object.keys(rowsByDept).map(depName => {
+    const summaryData = Object.keys(rowsByDept).map((depName) => {
       const rows = rowsByDept[depName];
       const totalEmployees = rows.length;
       const totalAmount = Number(rows.reduce((sum: number, row: any) => sum + Number(row.netPay), 0).toFixed(2));
@@ -528,11 +659,11 @@ class PayrollService {
       cell.alignment = { horizontal: "center", vertical: "middle" };
       cell.font = { bold: true };
     });
-    summaryData.forEach(row => summarySheet.addRow(row));
+    summaryData.forEach((row) => summarySheet.addRow(row));
     const totalSummaryRow = summarySheet.addRow({
       departmentName: "TOTAL =",
       totalEmployees: { formula: `SUM(B2:B${summarySheet.rowCount})` },
-      totalAmount: { formula: `SUM(C2:C${summarySheet.rowCount})` }
+      totalAmount: { formula: `SUM(C2:C${summarySheet.rowCount})` },
     });
     totalSummaryRow.font = { bold: true };
     totalSummaryRow.eachCell((cell) => {
