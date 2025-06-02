@@ -6,6 +6,9 @@ import { fileController } from "@controllers/file.controller";
 const router = express.Router();
 
 // ✅ Ruta para subir archivos temporalmente
+router.post("/single", authenticateUser, uploadTempFileMiddleware.single("file"), fileController.uploadTempFile);
+
+// ✅ Ruta para subir archivos temporalmente
 router.post("/upload-temp", authenticateUser, uploadTempFileMiddleware.single("file"), fileController.uploadTempFile);
 
 // ✅ Ruta para mover archivos a la carpeta del empleado
