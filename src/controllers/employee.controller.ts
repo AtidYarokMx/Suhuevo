@@ -1,17 +1,17 @@
-import type { Request, Response } from 'express'
-import { appErrorResponseHandler } from '@app/handlers/response/error.handler'
-import { AppMainMongooseRepo } from '@app/repositories/mongoose'
-import employeeService from '../services/employee.service'
+import type { Request, Response } from "express";
+import { appErrorResponseHandler } from "@app/handlers/response/error.handler";
+import { AppMainMongooseRepo } from "@app/repositories/mongoose";
+import employeeService from "../services/employee.service";
 
 class EmployeeController {
   public async get(req: Request, res: Response): Promise<any> {
-    const query = req.query
+    const query = req.query;
     try {
-      const response = await employeeService.get(query)
-      return res.status(200).json(response)
+      const response = await employeeService.get(query);
+      return res.status(200).json(response);
     } catch (error) {
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
     }
   }
 
@@ -31,7 +31,7 @@ class EmployeeController {
       if (error instanceof Error && error.name === "ValidationError") {
         return res.status(400).json({
           message: "Error de validación",
-          errors: (error as any)?.errors || "Detalles no disponibles"
+          errors: (error as any)?.errors || "Detalles no disponibles",
         });
       }
 
@@ -40,31 +40,66 @@ class EmployeeController {
   }
 
   public async update(req: Request, res: Response): Promise<any> {
-    const body: any = req.body
-    const session = await AppMainMongooseRepo.startSession()
+    const body: any = req.body;
+    const session = await AppMainMongooseRepo.startSession();
     try {
-      session.startTransaction()
-      const response = await employeeService.update(body, session)
-      await session.commitTransaction()
-      await session.endSession()
-      return res.status(200).json(response)
+      session.startTransaction();
+      const response = await employeeService.update(body, session);
+      await session.commitTransaction();
+      await session.endSession();
+      return res.status(200).json(response);
     } catch (error) {
-      console.log(error)
-      await session.abortTransaction()
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
+      console.log(error);
+      await session.abortTransaction();
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
     }
   }
 
   public async search(req: Request, res: Response): Promise<any> {
-    const query = req.query
+    const query = req.query;
     try {
-      const response = await employeeService.search(query)
-      return res.status(200).json(response)
+      const response = await employeeService.search(query);
+      return res.status(200).json(response);
     } catch (error) {
-      console.log(error)
-      const { statusCode, error: err } = appErrorResponseHandler(error)
-      return res.status(statusCode).json(err)
+      console.log(error);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+  public async getSchedule(req: Request, res: Response): Promise<any> {
+    try {
+      const response = await employeeService.getSchedule();
+      return res.status(200).json(response);
+    } catch (error) {
+      console.log(error);
+      const { statusCode, error: err } = appErrorResponseHandler(error);
+      return res.status(statusCode).json(err);
+    }
+  }
+
+  public async bulkSchedule(req: Request, res: Response): Promise<any> {
+    const body = req.body; // Extraemos archivos temporales
+    const session = await AppMainMongooseRepo.startSession();
+
+    try {
+      session.startTransaction();
+      const response = await employeeService.bulkSchedule(body, session); // Pasamos tempFiles
+      await session.commitTransaction();
+      await session.endSession();
+      return res.status(200).json(response);
+    } catch (error) {
+      console.error("🔴 Error al crear empleado:", error);
+
+      if (error instanceof Error && error.name === "ValidationError") {
+        return res.status(400).json({
+          message: "Error de validación",
+          errors: (error as any)?.errors || "Detalles no disponibles",
+        });
+      }
+
+      return res.status(500).json({ message: "Error al crear empleado", error });
     }
   }
 
@@ -91,4 +126,4 @@ class EmployeeController {
   }
 }
 
-export const employeeController: EmployeeController = new EmployeeController()
+export const employeeController: EmployeeController = new EmployeeController();
