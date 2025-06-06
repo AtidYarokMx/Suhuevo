@@ -58,7 +58,7 @@ web_modules/
 # files
 /docs
 /tmp
-
+/uploads
 
 
 # TypeScript cache

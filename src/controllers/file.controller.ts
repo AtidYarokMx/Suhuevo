@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import fileService from "@services/file.service";
 import { EmployeeModel } from "@app/repositories/mongoose/models/employee.model";
 import employeeService from "@services/employee.service";
+import { AppTemporalFileModel } from "@/application/repositories/mongoose/models/file.model";
 
 class FileController {
   /**
