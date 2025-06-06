@@ -123,12 +123,7 @@ class EmployeeService {
       }
     }
 
-    const records = await EmployeeModel.find(filter)
-      .select(selection)
-      .limit(limit)
-      .sort({ createdAt: "desc" })
-      .populate(["ineFront", "ineBack", "contract"])
-      .exec();
+    const records = await EmployeeModel.find(filter).select(selection).limit(limit).sort({ createdAt: "desc" }).exec();
     if (records.length === 0) return [];
     return await this.populateResults(records);
   }
@@ -238,37 +233,20 @@ class EmployeeService {
     const record = await EmployeeModel.findOne({ id: body.id });
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: "No se encontró el empleado" });
 
-    for (const field of this.allowedUpdateFields) {
-      if (!(typeof body[field] !== "undefined" && body[field] !== "")) continue;
+    const { ineFront, ineBack, contract } = body;
+    const files = [ineFront, ineBack, contract];
 
-      if (!["ineFront", "ineBack", "contract"].includes(field)) {
-        (record as any)[field] = body[field];
-        continue;
+    for (const file of files) {
+      if (file !== "") {
+        fs.renameSync(`${path.join(tempDocsDir, file)}`, `${path.join(docsDir, file)}`);
       }
-
-      const id = body[field];
-      if (!Types.ObjectId.isValid(id as any)) continue;
-
-      const tempFile = await AppTemporalFileModel.findById(id);
-      if (tempFile == null) continue;
-
-      const file = new AppFileModel({
-        idUser: tempFile.idUser,
-        filename: tempFile.filename,
-        mimetype: tempFile.mimetype,
-        path: "/docs/",
-        size: tempFile.size,
-      });
-      fs.renameSync(`${path.join(tempDocsDir, tempFile.filename)}`, `${path.join(docsDir, file.filename)}`);
-      const savedFile = await file.save({ session });
-      (record as any)[field] = savedFile._id;
     }
 
     if (body.schedule != null && typeof body.schedule === "string") record.schedule = JSON.parse(body.schedule);
 
+    record.set({ ...body });
     const savedRecord = await record.save({ validateBeforeSave: true, session });
-    const populated = await savedRecord.populate(["ineFront", "ineBack", "contract"]);
-    return { ...populated.toJSON() };
+    return savedRecord.toJSON();
   }
 
   async delete(body: any, session: ClientSession): Promise<any> {}
@@ -286,9 +264,6 @@ class EmployeeService {
       record.jobName = jobs[record.jobId]?.name;
       record.timeEntry = Object.values(record.schedule as IEmployee).find((x) => x?.start != null)?.start;
       record.timeDeparture = Object.values(record.schedule as IEmployee).find((x) => x?.end != null)?.end;
-      record.ineFront = record.ineFront?.fullpath ?? null;
-      record.ineBack = record.ineBack?.fullpath ?? null;
-      record.contract = record.contract?.fullpath ?? null;
     }
 
     return populatedArray;

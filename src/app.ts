@@ -8,6 +8,7 @@ import morgan from "morgan";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
+import mime from "mime";
 import https from "https";
 import * as http from "http";
 import cookieParser from "cookie-parser";
@@ -16,7 +17,7 @@ import fsPromises from "fs/promises";
 
 /* consts */
 import { cors as serverCors } from "@app/constants/cors.constants";
-import { tempDocsDir } from "@app/constants/file.constants";
+import { docsDir, tempDocsDir } from "@app/constants/file.constants";
 
 /* handlers */
 import { ServerLogger } from "@app/handlers/loggers/server.logger";
@@ -113,6 +114,21 @@ export class AppServer {
     // 📌 🚀 Cargar documentación de Swagger ANTES de aplicar autenticación
     this.app.use(swaggerRoutes);
 
+    // 📌 Rutas de acceso público
+    this.app.use("/favicon.ico", express.static(path.join(__dirname, "../images/favicon.ico")));
+    this.app.use("/public", express.static(path.join(__dirname, "../public")));
+    this.app.use(
+      "/docs",
+      express.static(path.join(__dirname, "../docs"), {
+        setHeaders(res, path, stat) {
+          const type = mime.getType(path) ?? "text/plain";
+          const ext = mime.getExtension(type);
+          res.setHeader("Content-disposition", `attachment; filename=${Date.now()}.${ext}`);
+          res.setHeader("Content-type", type);
+        },
+      })
+    );
+
     // 🔐 Aplicar middleware de autenticación global, excepto en Swagger y test
     this.app.use((req, res, next) => {
       if (process.env.NODE_ENV === "test" || req.path.startsWith("/api/auth") || req.path.startsWith("/api-docs")) {
@@ -126,12 +142,7 @@ export class AppServer {
   }
 
   routes(): void {
-    this.app.use("/favicon.ico", express.static(path.join(__dirname, "../images/favicon.ico")));
-    this.app.use("/public", express.static(path.join(__dirname, "../public")));
-    //this.app.use(swaggerRoutes)
-
     this.app.use(router);
-
     this.app.use("/api/personal-bonus", personalBonusRoutes);
     this.app.use("/api/attendance", attendanceRoutes);
     this.app.use("/api/department", deparmentRoutes);
@@ -167,6 +178,9 @@ export class AppServer {
     try {
       if (!fs.existsSync(tempDocsDir)) {
         await fsPromises.mkdir(tempDocsDir, { recursive: true });
+      }
+      if (!fs.existsSync(docsDir)) {
+        await fsPromises.mkdir(docsDir, { recursive: true });
       }
     } catch (error) {
       ServerLogger.error("Error creating temp directory:", error);
