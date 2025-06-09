@@ -315,7 +315,7 @@ class PayrollService {
       }
 
       // Bono de empaque
-      const empBonusPackageExists = employee.department.name === "Empaque";
+      const empBonusPackageExists = employee.department.name === "Empaque" && employee.job.name === "Casetero";
       const empBonusPackage = empBonusPackageExists
         ? personalBonusPackage.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackage
         : null;

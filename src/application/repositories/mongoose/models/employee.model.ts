@@ -8,7 +8,6 @@ import {
   IEmployeeVirtuals,
   EEmployeeAttendanceScheme,
 } from "@app/dtos/employee.dto";
-import { docsDir } from "@app/constants/file.constants";
 
 export const EmployeeSchema = new Schema<IEmployee, AppEmployeeModel, IEmployeeMethods, {}, IEmployeeVirtuals>(
   {
