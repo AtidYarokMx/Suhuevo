@@ -196,7 +196,7 @@ export class AppServer {
     });
   }
   crons(): void {
-    automaticSync();
+    // automaticSync();
   }
 
   close() {
