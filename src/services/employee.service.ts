@@ -199,9 +199,10 @@ class EmployeeService {
     }
 
     // ✅ Mover archivos temporales al directorio final del empleado
-    const filePaths = await fileService.moveFilesToEmployee(id, tempFiles);
+    const { ineFront, ineBack, contract } = body;
+    const files = [ineFront, ineBack, contract];
 
-    customLog(`Archivos movidos con éxito: ${filePaths.length} archivos.`);
+    customLog(`Archivos movidos con éxito: ${files.length} archivos.`);
     // ✅ Crear el registro del empleado con los archivos
     const record = new EmployeeModel({
       ...body,
@@ -209,7 +210,6 @@ class EmployeeService {
       schedule,
       userId,
       roleId: body.roleId ?? "67bf6ea470d366194e1a28cd",
-      documents: filePaths, // ✅ Guardar rutas en el array `documents`
       ineFront: body.ineFront,
       ineBack: body.ineBack,
       contract: body.contract,
@@ -223,10 +223,16 @@ class EmployeeService {
       birthFile: body.birthFile,
     });
 
-    customLog(`Empleado ${record.id} creado con éxito con ${filePaths.length} documentos.`);
+    customLog(`Empleado ${record.id} creado con éxito con ${files.length} documentos.`);
     await record.save({ session });
 
-    return { id: record.id, documentPaths: filePaths };
+    for (const file of files) {
+      if (file !== "") {
+        fs.renameSync(`${path.join(tempDocsDir, file)}`, `${path.join(docsDir, file)}`);
+      }
+    }
+
+    return { id: record.id };
   }
 
   async update(body: AppUpdateBody, session: ClientSession): Promise<any> {
