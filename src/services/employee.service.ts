@@ -200,7 +200,8 @@ class EmployeeService {
 
     // ✅ Mover archivos temporales al directorio final del empleado
     const { ineFront, ineBack, contract } = body;
-    const files = [ineFront, ineBack, contract];
+    const files = [ineFront, ineBack, contract].filter((f): f is string => typeof f === "string" && f.trim() !== "");
+
 
     customLog(`Archivos movidos con éxito: ${files.length} archivos.`);
     // ✅ Crear el registro del empleado con los archivos
@@ -227,8 +228,21 @@ class EmployeeService {
     await record.save({ session });
 
     for (const file of files) {
-      if (file !== "") {
-        fs.renameSync(`${path.join(tempDocsDir, file)}`, `${path.join(docsDir, file)}`);
+      if (typeof file === "string" && file.trim() !== "") {
+        const tempPath = path.join(tempDocsDir, file);
+        const destPath = path.join(docsDir, file);
+
+        try {
+          // Solo mover si el archivo existe en temporales
+          if (fs.existsSync(tempPath)) {
+            fs.renameSync(tempPath, destPath);
+            customLog(`✅ Archivo movido desde temporales: ${file}`);
+          } else {
+            customLog(`🔸 Archivo ya estaba en destino o no fue modificado: ${file}`);
+          }
+        } catch (err) {
+          customLog(`❌ Error al mover archivo ${file}: ${String(err)}`, "red");
+        }
       }
     }
 
@@ -240,22 +254,44 @@ class EmployeeService {
     if (record == null) throw new AppErrorResponse({ statusCode: 404, name: "No se encontró el empleado" });
 
     const { ineFront, ineBack, contract } = body;
-    const files = [ineFront, ineBack, contract];
+    const files = [ineFront, ineBack, contract].filter((f): f is string => typeof f === "string" && f.trim() !== "");
+
 
     for (const file of files) {
-      if (file !== "") {
-        fs.renameSync(`${path.join(tempDocsDir, file)}`, `${path.join(docsDir, file)}`);
+      if (typeof file === "string" && file.trim() !== "") {
+        const tempPath = path.join(tempDocsDir, file);
+        const destPath = path.join(docsDir, file);
+
+        try {
+          // Solo mover si el archivo existe en temporales
+          if (fs.existsSync(tempPath)) {
+            fs.renameSync(tempPath, destPath);
+            customLog(`✅ Archivo movido desde temporales: ${file}`);
+          } else {
+            customLog(`🔸 Archivo ya estaba en destino o no fue modificado: ${file}`);
+          }
+        } catch (err) {
+          customLog(`❌ Error al mover archivo ${file}: ${String(err)}`, "red");
+        }
       }
     }
 
-    if (body.schedule != null && typeof body.schedule === "string") record.schedule = JSON.parse(body.schedule);
+    if (body.schedule && typeof body.schedule === "string") {
+      try {
+        body.schedule = JSON.parse(body.schedule);
+      } catch (err) {
+        throw new AppErrorResponse({ statusCode: 400, name: "Formato inválido en schedule" });
+      }
+    }
 
     record.set({ ...body });
     const savedRecord = await record.save({ validateBeforeSave: true, session });
     return savedRecord.toJSON();
   }
 
-  async delete(body: any, session: ClientSession): Promise<any> {}
+
+
+  async delete(body: any, session: ClientSession): Promise<any> { }
 
   async populateResults(array: IEmployee[]): Promise<any> {
     const departmentIds = array.map((x) => x.departmentId);
@@ -274,6 +310,7 @@ class EmployeeService {
 
     return populatedArray;
   }
+
 }
 
 const employeeService: EmployeeService = new EmployeeService();

@@ -13,9 +13,11 @@ const storage = multer.diskStorage({
     cb(null, tempStorageDir);
   },
   filename: (req, file, cb) => {
-    const uniqueName = `${uuidv4()}_${file.originalname}`;
+    const ext = path.extname(file.originalname);
+    const baseName = path.basename(file.originalname, ext).replace(/\s+/g, "_").replace(/[^\w\-]/gi, "");
+    const uniqueName = `${uuidv4()}_${baseName}${ext}`;
     cb(null, uniqueName);
-  },
+  }
 });
 
 // ✅ Configurar almacenamiento para archivos de asistencia (CSV)

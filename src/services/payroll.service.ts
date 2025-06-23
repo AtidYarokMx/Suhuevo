@@ -211,7 +211,8 @@ class PayrollService {
     const bonusAttendance = await BonusModel.findOne({ active: true, inputId: "asistencia", enabled: true }).exec();
     const bonusPunctuality = await BonusModel.findOne({ active: true, inputId: "puntualidad", enabled: true }).exec();
     const bonusGrocery = await BonusModel.findOne({ active: true, inputId: "despensa", enabled: true }).exec();
-    const bonusPackage = await BonusModel.findOne({ active: true, inputId: "empaque", enabled: true }).exec();
+    const bonusPackageH = await BonusModel.findOne({ active: true, inputId: "empaque_h", enabled: true }).exec();
+    const bonusPackageM = await BonusModel.findOne({ active: true, inputId: "empaque_m", enabled: true }).exec();
     const bonusShed = await BonusModel.findOne({ active: true, inputId: "caseta", enabled: true }).exec();
 
     const personalBonusOvertime = await PersonalBonusModel.find({
@@ -238,10 +239,16 @@ class PayrollService {
       entityId: bonusGrocery?._id,
       enabled: true,
     }).exec();
-    const personalBonusPackage = await PersonalBonusModel.find({
+    const personalBonusPackageH = await PersonalBonusModel.find({
       active: true,
-      entityType: "empaque",
-      entityId: bonusPackage?._id,
+      entityType: "empaque_h",
+      entityId: bonusPackageH?._id,
+      enabled: true,
+    }).exec();
+    const personalBonusPackageM = await PersonalBonusModel.find({
+      active: true,
+      entityType: "empaque_m",
+      entityId: bonusPackageH?._id,
       enabled: true,
     }).exec();
     const personalBonusShed = await PersonalBonusModel.find({
@@ -314,25 +321,32 @@ class PayrollService {
         taxableBonuses += groceryBonus;
       }
 
-      // Bono de empaque
-      const empBonusPackageExists = employee.department.name === "Empaque" && employee.job.name === "Casetero";
-      const empBonusPackage = empBonusPackageExists
-        ? personalBonusPackage.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackage
-        : null;
-      const packageBonus = this.evaluateBonus(empBonusPackage, salaryTotal);
-      if ((personalBonusPackage.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackage)?.taxable) {
-        taxableBonuses += packageBonus;
-      }
 
-      // Bono de caseta
-      const empBonusShedExists = employee.department.name === "Caseta";
-      const empBonusShed = empBonusShedExists
+      // Bono de caseta (solo si el puesto es "Casetero")
+      const empBonusShed = employee.job?.name === "Casetero"
         ? personalBonusShed.find((x) => String(x.idEmployee) === employee.id) ?? bonusShed
         : null;
       const shedBonus = this.evaluateBonus(empBonusShed, salaryTotal);
-      if ((personalBonusShed.find((x) => String(x.idEmployee) === employee.id) ?? bonusShed)?.taxable) {
-        taxableBonuses += shedBonus;
+      if (empBonusShed?.taxable) taxableBonuses += shedBonus;
+
+      // Bono de empaque (solo aplica uno: H o M)
+      let empBonusPackage: IBonus | IPersonalBonus | null = null;
+      let packageBonus = 0;
+
+      if (employee.job?.name === "Empaque H") {
+        empBonusPackage =
+          personalBonusPackageH.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackageH;
+      } else if (employee.job?.name === "Empaque M") {
+        empBonusPackage =
+          personalBonusPackageM.find((x) => String(x.idEmployee) === employee.id) ?? bonusPackageM;
       }
+
+      if (empBonusPackage) {
+        packageBonus = this.evaluateBonus(empBonusPackage, salaryTotal);
+        if (empBonusPackage.taxable) taxableBonuses += packageBonus;
+      }
+
+
 
       // Bono por "Festivo Trabajado": se suma el salario diario por cada ausencia con ese motivo.
       const festivoTrabajadoBonus = empAbsences
@@ -577,50 +591,41 @@ class PayrollService {
           formula: `SUM(${worksheet.getColumn("salary").letter}2:${worksheet.getColumn("salary").letter}${lastRowNum})`,
         },
         extraHours: {
-          formula: `SUM(${worksheet.getColumn("extraHours").letter}2:${
-            worksheet.getColumn("extraHours").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("extraHours").letter}2:${worksheet.getColumn("extraHours").letter
+            }${lastRowNum})`,
         },
         extraHoursPayment: {
-          formula: `SUM(${worksheet.getColumn("extraHoursPayment").letter}2:${
-            worksheet.getColumn("extraHoursPayment").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("extraHoursPayment").letter}2:${worksheet.getColumn("extraHoursPayment").letter
+            }${lastRowNum})`,
         },
         punctualityBonus: {
-          formula: `SUM(${worksheet.getColumn("punctualityBonus").letter}2:${
-            worksheet.getColumn("punctualityBonus").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("punctualityBonus").letter}2:${worksheet.getColumn("punctualityBonus").letter
+            }${lastRowNum})`,
         },
         attendanceBonus: {
-          formula: `SUM(${worksheet.getColumn("attendanceBonus").letter}2:${
-            worksheet.getColumn("attendanceBonus").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("attendanceBonus").letter}2:${worksheet.getColumn("attendanceBonus").letter
+            }${lastRowNum})`,
         },
         packageBonus: {
-          formula: `SUM(${worksheet.getColumn("packageBonus").letter}2:${
-            worksheet.getColumn("packageBonus").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("packageBonus").letter}2:${worksheet.getColumn("packageBonus").letter
+            }${lastRowNum})`,
         },
         shedBonus: {
-          formula: `SUM(${worksheet.getColumn("shedBonus").letter}2:${
-            worksheet.getColumn("shedBonus").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("shedBonus").letter}2:${worksheet.getColumn("shedBonus").letter
+            }${lastRowNum})`,
         },
         groceryBonus: {
-          formula: `SUM(${worksheet.getColumn("groceryBonus").letter}2:${
-            worksheet.getColumn("groceryBonus").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("groceryBonus").letter}2:${worksheet.getColumn("groceryBonus").letter
+            }${lastRowNum})`,
         },
         holidayBonus: {
-          formula: `SUM(${worksheet.getColumn("holidayBonus").letter}2:${
-            worksheet.getColumn("holidayBonus").letter
-          }${lastRowNum})`,
+          formula: `SUM(${worksheet.getColumn("holidayBonus").letter}2:${worksheet.getColumn("holidayBonus").letter
+            }${lastRowNum})`,
         },
         ...(includeCustom && {
           customBonusesTotal: {
-            formula: `SUM(${worksheet.getColumn("customBonusesTotal").letter}2:${
-              worksheet.getColumn("customBonusesTotal").letter
-            }${lastRowNum})`,
+            formula: `SUM(${worksheet.getColumn("customBonusesTotal").letter}2:${worksheet.getColumn("customBonusesTotal").letter
+              }${lastRowNum})`,
           },
         }),
         netPay: {

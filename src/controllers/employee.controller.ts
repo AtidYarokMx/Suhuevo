@@ -119,7 +119,8 @@ class EmployeeController {
 
     try {
       const filePath = await employeeService.getEmployeeFilePath(id, fileName);
-      return res.sendFile(filePath);
+      return res.download(filePath, fileName); // 👈 así se conserva la extensión y el nombre correcto
+
     } catch (error) {
       return res.status(404).json({ message: "Archivo no encontrado", error });
     }
