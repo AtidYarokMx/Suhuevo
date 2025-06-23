@@ -276,12 +276,20 @@ class EmployeeService {
       }
     }
 
-    if (body.schedule != null && typeof body.schedule === "string") record.schedule = JSON.parse(body.schedule);
+    if (body.schedule && typeof body.schedule === "string") {
+      try {
+        body.schedule = JSON.parse(body.schedule);
+      } catch (err) {
+        throw new AppErrorResponse({ statusCode: 400, name: "Formato inválido en schedule" });
+      }
+    }
 
     record.set({ ...body });
     const savedRecord = await record.save({ validateBeforeSave: true, session });
     return savedRecord.toJSON();
   }
+
+
 
   async delete(body: any, session: ClientSession): Promise<any> { }
 
@@ -302,6 +310,7 @@ class EmployeeService {
 
     return populatedArray;
   }
+
 }
 
 const employeeService: EmployeeService = new EmployeeService();
