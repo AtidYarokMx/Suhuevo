@@ -314,7 +314,7 @@ class PayrollService {
         taxableBonuses += punctualityBonus;
       }
 
-      // Bono de despensa
+      // Bono de despensa (se aplica a todos los empleados)
       const empBonusGrocery = personalBonusGrocery.find((x) => String(x.idEmployee) === employee.id) ?? bonusGrocery;
       const groceryBonus = this.evaluateBonus(empBonusGrocery, salaryTotal);
       if ((personalBonusGrocery.find((x) => String(x.idEmployee) === employee.id) ?? bonusGrocery)?.taxable) {
