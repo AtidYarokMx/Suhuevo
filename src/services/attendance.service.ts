@@ -20,7 +20,7 @@ import { EEmployeeAttendanceScheme, EEmployeStatus, IEmployeSchedule } from "@ap
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 15;
-  private readonly notWorkableScheduleExceptions = ["Permiso", "Vaciones", "Festivo", "Festivo Trabajado"];
+  private readonly notWorkableScheduleExceptions = ["Permiso sin Sueldo", "Permiso con Sueldo", "Vacaciones", "Festivo", "Festivo Trabajado"];
   private readonly daysTranslationMap: { [key: string]: string } = {
     monday: "lunes",
     tuesday: "martes",
@@ -194,6 +194,24 @@ class AttendanceService {
       );
       await attendanceRecord.save();
       customLog(`Asistencia ${id} registrada para ${employeeName}`);
+
+      // ✅ Si es Festivo Trabajado → crear ausencia adicional pagada
+      if (scheduleException?.name === "Festivo Trabajado") {
+        const festivoId = "AB" + String(await consumeSequence("absences")).padStart(8, "0");
+        const festivoTrabajadoAbsence = new AbsenceModel({
+          id: festivoId,
+          employeeId: employee.id,
+          employeeName,
+          date: day,
+          reason: "Festivo Trabajado",
+          isPaid: true,
+          paidValue: 1,
+        });
+
+
+        await festivoTrabajadoAbsence.save();
+        customLog(`Absencia de bono Festivo Trabajado (${festivoId}) creada para ${employeeName}`);
+      }
       // Procesar tiempo extra: se crea una sesión específica para la creación de tiempo extra.
       if (
         employee.overtimeAllowed &&
@@ -482,13 +500,11 @@ class AttendanceService {
               await attendanceRecord.save();
               newAttendanceCount++;
               detail.push(
-                `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${
-                  csvDataForDay.checkInTime
+                `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${csvDataForDay.checkInTime
                 }, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`
               );
               customLog(
-                `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${
-                  csvDataForDay.checkInTime
+                `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${csvDataForDay.checkInTime
                 }, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`
               );
             } catch (error: unknown) {
