@@ -267,10 +267,49 @@ class AttendanceService {
       } else {
         let reason = "No se hizo el check out";
         let paidValue = 1;
+        let isPaid = false;
+        let isJustified = false;
+
         if (scheduleException) {
-          reason = scheduleException.reason || "Falta Justificada";
-          paidValue = scheduleException.name === "Festivo Trabajado" ? 2 : 1;
+          isJustified = true;
+          switch (scheduleException.name) {
+            case "Permiso con Sueldo":
+              reason = "Permiso con goce de sueldo";
+              isPaid = true;
+              paidValue = 1;
+              break;
+            case "Permiso sin Sueldo":
+              reason = "Permiso sin goce de sueldo";
+              isPaid = false;
+              paidValue = 0;
+              break;
+            case "Vacaciones":
+              reason = "Vacaciones";
+              isPaid = true;
+              paidValue = 1;
+              break;
+            case "Festivo":
+              reason = "Festivo";
+              isPaid = true;
+              paidValue = 1;
+              break;
+            case "Festivo Trabajado":
+              reason = "Festivo Trabajado";
+              isPaid = true;
+              paidValue = 2;
+              break;
+            default:
+              reason = scheduleException.reason || "Falta Justificada";
+              isPaid = true;
+              paidValue = 1;
+          }
+        } else {
+          // Ausencia normal sin excepción
+          isJustified = false;
+          isPaid = false;
+          paidValue = 0;
         }
+
         const id = "AB" + String(await consumeSequence("absences")).padStart(8, "0");
         const absenceRecord = new AbsenceModel({
           id,
@@ -278,8 +317,9 @@ class AttendanceService {
           employeeName,
           date: day,
           reason,
-          isPaid: !!scheduleException,
+          isPaid,
           paidValue,
+          isJustified,
         });
         customLog(`Creando ausencia ${id} para ${employeeName} el día ${day} (${reason})`);
         await absenceRecord.save();
@@ -532,12 +572,51 @@ class AttendanceService {
           } else {
             // CSV incompleto => ausencia.
             let reason = "No se hizo el check out";
-            const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
             let paidValue = 1;
+            let isPaid = false;
+            let isJustified = false;
+
+            const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
+
             if (exception) {
-              reason = exception.reason || "Falta Justificada";
-              paidValue = exception.name === "Festivo Trabajado" ? 2 : 1;
+              isJustified = true;
+              switch (exception.name) {
+                case "Permiso con Sueldo":
+                  reason = "Permiso con goce de sueldo";
+                  isPaid = true;
+                  paidValue = 1;
+                  break;
+                case "Permiso sin Sueldo":
+                  reason = "Permiso sin goce de sueldo";
+                  isPaid = false;
+                  paidValue = 0;
+                  break;
+                case "Vacaciones":
+                  reason = "Vacaciones";
+                  isPaid = true;
+                  paidValue = 1;
+                  break;
+                case "Festivo":
+                  reason = "Festivo";
+                  isPaid = true;
+                  paidValue = 1;
+                  break;
+                case "Festivo Trabajado":
+                  reason = "Festivo Trabajado";
+                  isPaid = true;
+                  paidValue = 2;
+                  break;
+                default:
+                  reason = exception.reason || "Falta Justificada";
+                  isPaid = true;
+                  paidValue = 1;
+              }
+            } else {
+              isJustified = false;
+              isPaid = false;
+              paidValue = 0;
             }
+
             const id = "AB" + String(await consumeSequence("absences")).padStart(8, "0");
             const absenceRecord = new AbsenceModel({
               id,
@@ -545,9 +624,11 @@ class AttendanceService {
               employeeName,
               date: dayStr,
               reason,
-              isPaid: !!exception,
+              isPaid,
               paidValue,
+              isJustified,
             });
+
             try {
               await absenceRecord.save();
               newAbsenceCount++;

@@ -380,6 +380,9 @@ class PayrollService {
           attendanceBonus +
           punctualityBonus +
           festivoTrabajadoBonus +
+          groceryBonus +
+          packageBonus +
+          shedBonus +
           taxableBonuses +
           customBonusesTotal
         ).toFixed(2)
