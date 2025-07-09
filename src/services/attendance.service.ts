@@ -149,9 +149,22 @@ class AttendanceService {
       name: { $nin: this.notWorkableScheduleExceptions },
       $or: [
         { $and: [{ startDate: { $regex: `^${day}` } }, { allDay: true }] },
-        { $and: [{ startDate: { $lte: day } }, { endDate: { $gt: day } }] },
+        {
+          $and: [
+            { startDate: { $lte: day } },
+            {
+              $or: [
+                { endDate: { $gt: day } },
+                { endDate: "" },
+                { endDate: null },
+                { endDate: { $exists: false } }
+              ],
+            },
+          ],
+        },
       ],
     });
+
     if ((!scheduleForDay || !scheduleForDay.start) && !scheduleException) {
       throw new AppErrorResponse({
         statusCode: 400,
@@ -409,10 +422,15 @@ class AttendanceService {
         {
           $and: [
             { startDate: { $lte: weekEnd.format("YYYY-MM-DD") } },
-            { endDate: { $gt: weekEnd.format("YYYY-MM-DD") } },
-          ],
-        },
-      ],
+            {
+              $or: [
+                { endDate: { $gt: weekEnd.format("YYYY-MM-DD") } },
+                { endDate: { $eq: "" } }
+              ]
+            }
+          ]
+        }
+      ]
     });
 
     let automaticAttendanceCount = 0; // variable para conteo de asistencias automáticas
@@ -579,6 +597,7 @@ class AttendanceService {
             const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
 
             if (exception) {
+              console.log(`Se encontró excepción para ${employeeName} en ${dayStr}: ${exception.name}`);
               isJustified = true;
               switch (exception.name) {
                 case "Permiso con Sueldo":
