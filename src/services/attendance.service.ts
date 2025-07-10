@@ -681,15 +681,14 @@ class AttendanceService {
 
             const exception = scheduleExceptions.find((se) => {
               if (se.employeeId !== employee.id) return false;
-              const start = moment(se.startDate, "YYYY-MM-DD");
-              const end = se.endDate ? moment(se.endDate, "YYYY-MM-DD") : null;
+              const start = moment(se.startDate).startOf("day");
+              const end = se.endDate ? moment(se.endDate).endOf("day") : null;
               const target = moment(dayStr, "YYYY-MM-DD");
               return (
-                (se.allDay && start.isSame(target, "day")) ||
-                (start.isSameOrBefore(target, "day") && (!end || end.isAfter(target, "day")))
+                (se.allDay && target.isSame(start, "day")) ||
+                (target.isSameOrAfter(start, "day") && (!end || target.isSameOrBefore(end, "day")))
               );
             });
-
 
             if (exception) {
               console.log(`Excepción encontrada para ${employeeName} en ${dayStr}: ${exception.name}`);
@@ -735,9 +734,11 @@ class AttendanceService {
               employeeName,
               date: dayStr,
               reason,
-              isPaid: !!exception,
+              isPaid,
               paidValue,
+              isJustified,
             });
+
             try {
               await absenceRecord.save();
               newAbsenceCount++;
