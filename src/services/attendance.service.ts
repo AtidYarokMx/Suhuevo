@@ -432,6 +432,10 @@ class AttendanceService {
         }
       ]
     });
+    console.log(`Empleados activos encontrados: ${employees.length}`);
+    console.log(`Asistencias existentes encontradas: ${existingAttendances.length}`);
+    console.log(`Ausencias existentes encontradas: ${existingAbsences.length}`);
+    console.log(`Excepciones de horario encontradas: ${scheduleExceptions.length}`);
 
     let automaticAttendanceCount = 0; // variable para conteo de asistencias automáticas
     let newAttendanceCount = 0; // variable para conteo de asistencias generales
@@ -590,51 +594,9 @@ class AttendanceService {
           } else {
             // CSV incompleto => ausencia.
             let reason = "No se hizo el check out";
-            let paidValue = 1;
+            let paidValue = 0;
             let isPaid = false;
             let isJustified = false;
-
-            const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
-
-            if (exception) {
-              console.log(`Se encontró excepción para ${employeeName} en ${dayStr}: ${exception.name}`);
-              isJustified = true;
-              switch (exception.name) {
-                case "Permiso con Sueldo":
-                  reason = "Permiso con goce de sueldo";
-                  isPaid = true;
-                  paidValue = 1;
-                  break;
-                case "Permiso sin Sueldo":
-                  reason = "Permiso sin goce de sueldo";
-                  isPaid = false;
-                  paidValue = 0;
-                  break;
-                case "Vacaciones":
-                  reason = "Vacaciones";
-                  isPaid = true;
-                  paidValue = 1;
-                  break;
-                case "Festivo":
-                  reason = "Festivo";
-                  isPaid = true;
-                  paidValue = 1;
-                  break;
-                case "Festivo Trabajado":
-                  reason = "Festivo Trabajado";
-                  isPaid = true;
-                  paidValue = 2;
-                  break;
-                default:
-                  reason = exception.reason || "Falta Justificada";
-                  isPaid = true;
-                  paidValue = 1;
-              }
-            } else {
-              isJustified = false;
-              isPaid = false;
-              paidValue = 0;
-            }
 
             const id = "AB" + String(await consumeSequence("absences")).padStart(8, "0");
             const absenceRecord = new AbsenceModel({
@@ -711,12 +673,61 @@ class AttendanceService {
             }
           } else {
             let reason = "No se hizo el check in";
-            const exception = scheduleExceptions.find((se) => se.employeeId === employee.id);
-            let paidValue = 1;
+
+            let paidValue = 0;
+            let isPaid = false;
+            let isJustified = false;
+
+
+            const exception = scheduleExceptions.find((se) => {
+              if (se.employeeId !== employee.id) return false;
+              const start = moment(se.startDate, "YYYY-MM-DD");
+              const end = se.endDate ? moment(se.endDate, "YYYY-MM-DD") : null;
+              const target = moment(dayStr, "YYYY-MM-DD");
+              return (
+                (se.allDay && start.isSame(target, "day")) ||
+                (start.isSameOrBefore(target, "day") && (!end || end.isAfter(target, "day")))
+              );
+            });
+
+
             if (exception) {
-              reason = exception.reason || "Falta Justificada";
-              paidValue = exception.name === "Festivo Trabajado" ? 2 : 1;
+              console.log(`Excepción encontrada para ${employeeName} en ${dayStr}: ${exception.name}`);
+              isJustified = true;
+              switch (exception.name) {
+                case "Permiso con Sueldo":
+                  reason = "Permiso con goce de sueldo";
+                  isPaid = true;
+                  paidValue = 1;
+                  break;
+                case "Permiso sin Sueldo":
+                  reason = "Permiso sin goce de sueldo";
+                  isPaid = false;
+                  paidValue = 0;
+                  break;
+                case "Vacaciones":
+                  reason = "Vacaciones";
+                  isPaid = true;
+                  paidValue = 1;
+                  break;
+                case "Festivo":
+                  reason = "Festivo";
+                  isPaid = true;
+                  paidValue = 1;
+                  break;
+                case "Festivo Trabajado":
+                  reason = "Festivo Trabajado";
+                  isPaid = true;
+                  paidValue = 2;
+                  break;
+                default:
+                  reason = exception.reason || "Falta Justificada";
+                  isPaid = true;
+                  paidValue = 1;
+              }
             }
+
+
             const id = "AB" + String(await consumeSequence("absences")).padStart(8, "0");
             const absenceRecord = new AbsenceModel({
               id,
