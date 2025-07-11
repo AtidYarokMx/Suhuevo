@@ -682,8 +682,13 @@ class AttendanceService {
             const exception = scheduleExceptions.find((se) => {
               if (se.employeeId !== employee.id) return false;
               const start = moment(se.startDate).startOf("day");
-              const end = se.endDate ? moment(se.endDate).endOf("day") : null;
               const target = moment(dayStr, "YYYY-MM-DD");
+
+              let end: moment.Moment | null = null;
+              if (se.endDate && se.endDate !== "") {
+                end = moment(se.endDate).endOf("day");
+              }
+
               return (
                 (se.allDay && target.isSame(start, "day")) ||
                 (target.isSameOrAfter(start, "day") && (!end || target.isSameOrBefore(end, "day")))
@@ -799,6 +804,26 @@ class AttendanceService {
         }
       }
     }
+    const resumenPorEmpleado: Record<string, { asistencias: number; ausencias: number; excepciones: number }> = {};
+
+    for (const record of [...existingAttendances, ...existingAbsences, ...scheduleExceptions]) {
+      const empId = record.employeeId;
+      if (!resumenPorEmpleado[empId]) {
+        resumenPorEmpleado[empId] = { asistencias: 0, ausencias: 0, excepciones: 0 };
+      }
+      if ("checkInTime" in record) resumenPorEmpleado[empId].asistencias++;
+      if ("reason" in record) resumenPorEmpleado[empId].ausencias++;
+      if ("name" in record) resumenPorEmpleado[empId].excepciones++;
+    }
+
+    customLog("Resumen por empleado:");
+    for (const empId in resumenPorEmpleado) {
+      const e = employees.find(emp => emp.id === empId);
+      const nombre = e ? e.fullname() : empId;
+      const r = resumenPorEmpleado[empId];
+      customLog(`- ${nombre}: ${r.asistencias} asistencias, ${r.ausencias} ausencias, ${r.excepciones} excepciones`);
+    }
+
 
     return {
       weekStart: weekStart.format("YYYY-MM-DD"),

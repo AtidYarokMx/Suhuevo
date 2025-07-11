@@ -284,8 +284,20 @@ class PayrollService {
       const empOvertimeRecords = overtimeRecordsByEmployee[employee.id] || [];
       const employeeTardies = empAttendances.filter((a) => a.isLate);
 
-      // Días trabajados = asistencias + ausencias pagadas + faltas justificadas
-      const daysWorked = empAttendances.length + empPaidAbsences.length + empJustifiedAbsences.length;
+      // Filtra ausencias justificadas que NO estén ya en pagadas
+      const onlyJustifiedAbsences = empJustifiedAbsences.filter((justified) => {
+        return !empPaidAbsences.some((paid) => paid.date === justified.date);
+      });
+
+      // Luego, suma solo:
+      // - Asistencias
+      // - Ausencias pagadas
+      // - Ausencias justificadas (excluyendo las ya pagadas)
+      const daysWorked = empAttendances.length + empPaidAbsences.length + onlyJustifiedAbsences.length;
+      customLogColored(
+        `Empleado: ${employeeFullName} – Asistencias: ${empAttendances.length}, Ausencias pagadas: ${empPaidAbsences.length}, Ausencias justificadas: ${onlyJustifiedAbsences.length}`,
+        "yellow"
+      );
       const restDaysMultiplier = jobScheme === "5" ? fiveDaysSchemeBase : sixDaysSchemeBase;
       const paidRestDays = Number(bigMath.multiply(daysWorked, restDaysMultiplier).toFixed(2));
       const totalDays = daysWorked + paidRestDays;
