@@ -682,16 +682,12 @@ class AttendanceService {
             const exception = scheduleExceptions.find((se) => {
               if (se.employeeId !== employee.id) return false;
               const start = moment(se.startDate).startOf("day");
+              const end = se.endDate && se.endDate !== "" ? moment(se.endDate).endOf("day") : null;
               const target = moment(dayStr, "YYYY-MM-DD");
-
-              let end: moment.Moment | null = null;
-              if (se.endDate && se.endDate !== "") {
-                end = moment(se.endDate).endOf("day");
-              }
 
               return (
                 (se.allDay && target.isSame(start, "day")) ||
-                (target.isSameOrAfter(start, "day") && (!end || target.isSameOrBefore(end, "day")))
+                (end && target.isSameOrAfter(start, "day") && target.isSameOrBefore(end, "day"))
               );
             });
 
