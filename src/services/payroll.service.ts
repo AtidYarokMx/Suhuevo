@@ -20,6 +20,8 @@ import { IEmployee, EEmployeStatus, EEmployeeAttendanceScheme, IEmployeSchedule 
 import { IPayroll, SchemaGenerateWeeklyPayroll } from "@app/dtos/payroll.dto";
 import { BonusType, IBonus } from "@app/dtos/bonus.dto";
 import { IPersonalBonus } from "@app/dtos/personal-bonus.dto";
+import { FestiveWorkModel } from "@app/repositories/mongoose/models/festive-work.model";
+
 
 // ------------------- Helpers -------------------
 const defaultDateFormat = "YYYY-MM-DD";
@@ -360,10 +362,14 @@ class PayrollService {
 
 
 
-      // Bono por "Festivo Trabajado": se suma el salario diario por cada ausencia con ese motivo.
-      const festivoTrabajadoBonus = empAbsences
-        .filter((a) => a.reason === "Festivo Trabajado")
-        .reduce((prev, curr) => prev + dailySalary, 0);
+      // Obtener el número de días registrados como Festivo Trabajado desde FestiveWorkModel
+      const festivosTrabajados = await FestiveWorkModel.find({
+        employeeId: employee.id,
+        date: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate },
+        active: { $ne: false }, // por si se inactiva algún día
+      }, null, { session });
+
+      const festivoTrabajadoBonus = festivosTrabajados.length * dailySalary;
 
       // Otros bonos personalizados (si existiesen; en este ejemplo se omite si no hay datos)
       const customBonusesAmounts: { amount: number; taxable: boolean }[] = [];

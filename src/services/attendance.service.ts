@@ -17,6 +17,8 @@ import { readCsv } from "@app/utils/file.util";
 import { AppMainMongooseRepo } from "@app/repositories/mongoose";
 import { CreateAttendanceBody, CreateAttendanceResponse, IAttendance } from "@app/dtos/attendance.dto";
 import { EEmployeeAttendanceScheme, EEmployeStatus, IEmployeSchedule } from "@app/dtos/employee.dto";
+import { FestiveWorkModel } from "@app/repositories/mongoose/models/festive-work.model";
+
 
 class AttendanceService {
   private readonly MAX_TIME_DELAY = 15;
@@ -209,21 +211,17 @@ class AttendanceService {
       customLog(`Asistencia ${id} registrada para ${employeeName}`);
 
       // ✅ Si es Festivo Trabajado → crear ausencia adicional pagada
+      // Si es Festivo Trabajado → crear registro en FestiveWorkModel
       if (scheduleException?.name === "Festivo Trabajado") {
-        const festivoId = "AB" + String(await consumeSequence("absences")).padStart(8, "0");
-        const festivoTrabajadoAbsence = new AbsenceModel({
-          id: festivoId,
+        const festiveWorkId = "FW" + String(await consumeSequence("festiveWork")).padStart(8, "0");
+        const festiveRecord = new FestiveWorkModel({
+          id: festiveWorkId,
           employeeId: employee.id,
           employeeName,
           date: day,
-          reason: "Festivo Trabajado",
-          isPaid: true,
-          paidValue: 1,
         });
-
-
-        await festivoTrabajadoAbsence.save();
-        customLog(`Absencia de bono Festivo Trabajado (${festivoId}) creada para ${employeeName}`);
+        await festiveRecord.save();
+        customLog(`🎉 Se creó registro de Festivo Trabajado (${festiveWorkId}) para ${employeeName}`);
       }
       // Procesar tiempo extra: se crea una sesión específica para la creación de tiempo extra.
       if (
@@ -305,11 +303,6 @@ class AttendanceService {
               reason = "Festivo";
               isPaid = true;
               paidValue = 1;
-              break;
-            case "Festivo Trabajado":
-              reason = "Festivo Trabajado";
-              isPaid = true;
-              paidValue = 2;
               break;
             default:
               reason = scheduleException.reason || "Falta Justificada";
@@ -569,6 +562,29 @@ class AttendanceService {
                 `Se INSERTÓ asistencia ${id} para ${employeeName} en ${dayStr} [CheckIn: ${csvDataForDay.checkInTime
                 }, CheckOut: ${csvDataForDay.checkOutTime || "N/A"}]`
               );
+              // Verificar si tiene excepción Festivo Trabajado para este día y registrar bono
+              const exception = scheduleExceptions.find((se) => {
+                if (se.employeeId !== employee.id || se.name !== "Festivo Trabajado") return false;
+                const start = moment(se.startDate).startOf("day");
+                const end = se.endDate && se.endDate !== "" ? moment(se.endDate).endOf("day") : null;
+                const target = moment(dayStr, "YYYY-MM-DD");
+                return (
+                  (se.allDay && target.isSame(start, "day")) ||
+                  (end && target.isSameOrAfter(start, "day") && target.isSameOrBefore(end, "day"))
+                );
+              });
+
+              if (exception) {
+                const festiveWorkId = "FW" + String(await consumeSequence("festiveWork")).padStart(8, "0");
+                const festiveRecord = new FestiveWorkModel({
+                  id: festiveWorkId,
+                  employeeId: employee.id,
+                  employeeName,
+                  date: dayStr,
+                });
+                await festiveRecord.save();
+                customLog(`🎉 Registro de Festivo Trabajado creado para ${employeeName} (${festiveWorkId})`);
+              }
             } catch (error: unknown) {
               if (error instanceof Error) {
                 detail.push(`Error al insertar asistencia para ${employeeName} en ${dayStr}: ${error.message}`);
@@ -714,11 +730,6 @@ class AttendanceService {
                   reason = "Festivo";
                   isPaid = true;
                   paidValue = 1;
-                  break;
-                case "Festivo Trabajado":
-                  reason = "Festivo Trabajado";
-                  isPaid = true;
-                  paidValue = 2;
                   break;
                 default:
                   reason = exception.reason || "Falta Justificada";
