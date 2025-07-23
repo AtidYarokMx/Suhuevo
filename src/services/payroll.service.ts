@@ -193,7 +193,13 @@ class PayrollService {
       { session }
     ).exec();
     const overtimeRecords = await OvertimeModel.find(
-      { active: true, startTime: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+      {
+        active: true,
+        startTime: {
+          $gte: moment(weekStartDate).startOf("day").toDate(),
+          $lte: moment(weekCutoffDate).endOf("day").toDate()
+        }
+      },
       null,
       { session }
     ).exec();
@@ -437,7 +443,7 @@ class PayrollService {
       customLogColored(
         `Empleado: ${employeeFullName} – Días trabajados: ${daysWorked}, Sueldo base: $${salaryTotal.toFixed(
           2
-        )}, Bono Festivo Trabajado: $${festivoTrabajadoBonus.toFixed(2)}`,
+        )}, Bono Festivo Trabajado: $${festivoTrabajadoBonus.toFixed(2)} , horas extra: ${extraHours}, pago horas extra: $${extraHoursPayment.toFixed(2)}`,
         "yellow"
       );
     }
@@ -517,7 +523,7 @@ class PayrollService {
         totalDays: line.totalDays,
         salary: line.salary,
         extraHours: line.extraHours,
-        extraHoursPayment: line.extraHoursPayment,
+        extraHoursPayment: isNaN(Number(line.extraHoursPayment)) ? 0 : Number(line.extraHoursPayment),
         punctualityBonus: line.punctualityBonus,
         attendanceBonus: line.attendanceBonus,
         groceryBonus: line.groceryBonus,
