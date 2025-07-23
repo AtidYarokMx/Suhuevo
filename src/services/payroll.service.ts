@@ -170,6 +170,7 @@ class PayrollService {
     const formattedWeekCutoffDate = weekCutoffDate.format("YYYY-MM-DD");
 
     customLogColored(`Generando nómina para la semana: ${formattedWeekStartDate} a ${formattedWeekCutoffDate}`, "blue");
+    customLogColored(`Fecha de inicio: ${formatDate(weekStartDate)}, Fecha de corte: ${formatDate(weekCutoffDate)}`, "blue");
 
     // Consultar registros dentro del período
     const attendances = await AttendanceModel.find(
