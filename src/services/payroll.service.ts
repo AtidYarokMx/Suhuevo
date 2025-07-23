@@ -194,7 +194,13 @@ class PayrollService {
       { session }
     ).exec();
     const overtimeRecords = await OvertimeModel.find(
-      { active: true, startTime: { $gte: formattedWeekStartDate, $lte: formattedWeekCutoffDate } },
+      {
+        active: true,
+        startTime: {
+          $gte: new Date(`${formattedWeekStartDate}T00:00:00.000Z`),
+          $lte: new Date(`${formattedWeekCutoffDate}T23:59:59.999Z`),
+        },
+      },
       null,
       { session }
     ).exec();
