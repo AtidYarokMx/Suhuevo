@@ -171,6 +171,10 @@ class PayrollService {
 
     customLogColored(`Generando nómina para la semana: ${formattedWeekStartDate} a ${formattedWeekCutoffDate}`, "blue");
     customLogColored(`Fecha de inicio: ${formatDate(weekStartDate)}, Fecha de corte: ${formatDate(weekCutoffDate)}`, "blue");
+    customLogColored(`🧾 Fecha de inicio de semana: ${weekStartDate.format("YYYY-MM-DD HH:mm:ss")}`, "blue");
+    customLogColored(`📆 Fecha de corte de semana (martes): ${weekCutoffDate.format("YYYY-MM-DD HH:mm:ss")}`, "blue");
+    customLogColored(`🕓 Corte con endOf("day"): ${weekCutoffDate.clone().endOf("day").format("YYYY-MM-DD HH:mm:ss.SSS")}`, "blue");
+
 
     // Consultar registros dentro del período
     const attendances = await AttendanceModel.find(
@@ -197,13 +201,18 @@ class PayrollService {
       {
         active: true,
         startTime: {
-          $gte: new Date(`${formattedWeekStartDate}T00:00:00.000Z`),
-          $lte: new Date(`${formattedWeekCutoffDate}T23:59:59.999Z`),
+          $gte: weekStartDate.toDate(),
+          $lte: weekCutoffDate.endOf("day").toDate(),
         },
       },
       null,
       { session }
     ).exec();
+
+    customLogColored(`📈 Registros de horas extra encontrados: ${overtimeRecords.length}`, "yellow");
+    const lastDay = weekCutoffDate.clone().endOf("day");
+    customLogColored(`📅 ¿Incluye martes completo? Revisando si ${lastDay.format("YYYY-MM-DD HH:mm:ss")} es > startTime de registros...`, "blue");
+
 
     // Agrupar registros por empleado
     const attendancesByEmployee = groupBy(attendances, "employeeId");
