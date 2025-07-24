@@ -1,7 +1,7 @@
 export interface IOvertime {
   id: string
 
-  startTime: string
+  startTime: Date
   hours: number
   status: EOvertimeStatus
 

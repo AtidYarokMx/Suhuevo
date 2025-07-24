@@ -10,7 +10,8 @@ export const OvertimeSchema = new Schema<IOvertime>({
 
   employeeId: { type: String, required: true },
   employeeName: { type: String },
-  startTime: { type: String, required: true },
+  startTime: { type: Date, required: true },
+
 
   active: { type: Boolean, default: true },
   updatedAt: { type: Date, default: () => Date.now() },

@@ -197,17 +197,13 @@ class PayrollService {
       null,
       { session }
     ).exec();
-    const overtimeRecords = await OvertimeModel.find(
-      {
-        active: true,
-        startTime: {
-          $gte: weekStartDate.toDate(),
-          $lte: weekCutoffDate.endOf("day").toDate(),
-        },
-      },
-      null,
-      { session }
-    ).exec();
+    const overtimeRecords = await OvertimeModel.find({
+      active: true,
+      startTime: {
+        $gte: new Date(formattedWeekStartDate),
+        $lte: new Date(moment(formattedWeekCutoffDate).endOf("day").toISOString()),
+      }
+    }, null, { session }).exec();
 
     customLogColored(`📈 Registros de horas extra encontrados: ${overtimeRecords.length}`, "yellow");
     const lastDay = weekCutoffDate.clone().endOf("day");

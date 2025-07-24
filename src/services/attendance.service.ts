@@ -784,7 +784,7 @@ class AttendanceService {
           await overtimeService.create(
             {
               employeeId: req.employeeId,
-              startTime: req.scheduleEndTime.format("YYYY-MM-DD HH:mm:ss"),
+              startTime: req.scheduleEndTime.toDate(),
               hours: Math.floor(req.overtimeMinutes / 60),
             },
             otSession
