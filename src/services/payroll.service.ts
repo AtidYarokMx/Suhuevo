@@ -324,6 +324,9 @@ class PayrollService {
       let taxableBonuses = 0;
       if (empBonusOvertime?.taxable) taxableBonuses += extraHoursPayment;
 
+      customLogColored(`Horas extra: ${extraHours}, Pago por hora: ${empBonusOvertime?.value || 0}, Total a pagar: $${extraHoursPayment.toFixed(2)} para ${employeeFullName}`, "blue");
+
+
       // Bono de asistencia: se anula si existen ausencias (no pagadas)
       const empBonusAttendance =
         personalBonusAttendance.find((x) => String(x.idEmployee) === employee.id) ?? bonusAttendance;
