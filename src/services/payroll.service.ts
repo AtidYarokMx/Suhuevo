@@ -684,15 +684,40 @@ class PayrollService {
     const summaryData = Object.keys(rowsByDept).map((depName) => {
       const rows = rowsByDept[depName];
       const totalEmployees = rows.length;
-      const totalAmount = Number(rows.reduce((sum: number, row: any) => sum + Number(row.netPay), 0).toFixed(2));
-      return { departmentName: depName, totalEmployees, totalAmount };
+      const totalSalary = Number(rows.reduce((sum, row) => sum + (row.salary ?? 0), 0).toFixed(2));
+      const totalExtraHoursPayment = Number(rows.reduce((sum, row) => sum + (row.extraHoursPayment ?? 0), 0).toFixed(2));
+      const totalBonuses = Number(rows.reduce((sum, row) => {
+        return sum +
+          (row.attendanceBonus ?? 0) +
+          (row.punctualityBonus ?? 0) +
+          (row.groceryBonus ?? 0) +
+          (row.packageBonus ?? 0) +
+          (row.shedBonus ?? 0) +
+          (row.holidayBonus ?? 0) +
+          (row.customBonusesTotal ?? 0);
+      }, 0).toFixed(2));
+      const totalAmount = Number(rows.reduce((sum, row) => sum + (row.netPay ?? 0), 0).toFixed(2));
+
+      return {
+        departmentName: depName,
+        totalEmployees,
+        totalSalary,
+        totalExtraHoursPayment,
+        totalBonuses,
+        totalAmount,
+      };
     });
+
     const summarySheet = workbook.addWorksheet("Resumen");
     summarySheet.columns = [
       { header: "Departamento", key: "departmentName", width: 20 },
       { header: "Empleados", key: "totalEmployees", width: 15 },
+      { header: "Sueldos", key: "totalSalary", width: 20, style: { numFmt: '"$"#,##0.00' } },
+      { header: "Horas Extra", key: "totalExtraHoursPayment", width: 20, style: { numFmt: '"$"#,##0.00' } },
+      { header: "Bonos", key: "totalBonuses", width: 20, style: { numFmt: '"$"#,##0.00' } },
       { header: "Cantidad a Pagar", key: "totalAmount", width: 20, style: { numFmt: '"$"#,##0.00' } },
     ];
+
     const headerRowSummary = summarySheet.getRow(1);
     headerRowSummary.eachCell((cell) => {
       cell.fill = headerFill;
@@ -704,8 +729,12 @@ class PayrollService {
     const totalSummaryRow = summarySheet.addRow({
       departmentName: "TOTAL =",
       totalEmployees: { formula: `SUM(B2:B${summarySheet.rowCount})` },
-      totalAmount: { formula: `SUM(C2:C${summarySheet.rowCount})` },
+      totalSalary: { formula: `SUM(C2:C${summarySheet.rowCount})` },
+      totalExtraHoursPayment: { formula: `SUM(D2:D${summarySheet.rowCount})` },
+      totalBonuses: { formula: `SUM(E2:E${summarySheet.rowCount})` },
+      totalAmount: { formula: `SUM(F2:F${summarySheet.rowCount})` },
     });
+
     totalSummaryRow.font = { bold: true };
     totalSummaryRow.eachCell((cell) => {
       cell.border = { top: { style: "thin" }, bottom: { style: "double" } };
